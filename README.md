@@ -12,7 +12,15 @@ A desktop application for managing Rekordbox DJ library files with advanced dupl
 
 ## Screenshots
 
-[Add screenshots here when available]
+### Main Interface
+The clean, modern interface provides easy access to all library management functions.
+
+![Main Interface](screenshots/main-interface.png)
+
+### Duplicate Detection
+Advanced duplicate detection with configurable algorithms and quality-based resolution.
+
+![Duplicate Detection](screenshots/duplicate-detection-tab.png)
 
 ## Installation
 

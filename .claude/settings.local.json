@@ -5,7 +5,15 @@
       "Bash(npx tsc:*)",
       "WebSearch",
       "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --index-filter 'git rm -rf --cached --ignore-unmatch node_modules' --prune-empty --tag-name-filter cat -- --all)",
-      "Bash(git lfs:*)"
+      "Bash(git lfs:*)",
+      "Bash(npm run dev:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_click",
+      "mcp__serena__find_file",
+      "mcp__serena__find_symbol",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)"
     ],
     "deny": [],
     "ask": []
