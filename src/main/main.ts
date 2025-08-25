@@ -134,14 +134,113 @@ ipcMain.handle('find-duplicates', async (_, options: {
 });
 
 ipcMain.handle('resolve-duplicates', async (_, resolution: {
+  libraryPath: string;
   duplicates: any[];
   strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
-  selections?: Map<string, string>;
+  pathPreferences: string[];
 }) => {
+  console.log(`🔧 IPC: Resolving ${resolution.duplicates.length} duplicate sets`);
   try {
-    const resolved = await duplicateDetector.resolveDuplicates(resolution);
-    return { success: true, data: resolved };
+    // Step 1: Create backup of original XML
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${resolution.libraryPath}.backup.${timestamp}`;
+    
+    const fs = require('fs');
+    fs.copyFileSync(resolution.libraryPath, backupPath);
+    console.log(`📁 Backup created: ${backupPath}`);
+    
+    // Step 2: Parse current library
+    const library = await rekordboxParser.parseLibrary(resolution.libraryPath);
+    
+    // Step 3: Determine which tracks to remove for each duplicate set
+    let tracksToRemove: string[] = [];
+    
+    for (const duplicateSet of resolution.duplicates) {
+      const tracksInSet = duplicateSet.tracks;
+      let trackToKeep;
+      
+      // Apply resolution strategy
+      if (resolution.strategy === 'keep-highest-quality') {
+        trackToKeep = tracksInSet.reduce((best: any, current: any) => {
+          const bestScore = (best.bitrate || 0) + (best.size || 0) / 1000000;
+          const currentScore = (current.bitrate || 0) + (current.size || 0) / 1000000;
+          return currentScore > bestScore ? current : best;
+        });
+      } else if (resolution.strategy === 'keep-newest') {
+        trackToKeep = tracksInSet.reduce((newest: any, current: any) => {
+          if (!newest.dateModified) return current;
+          if (!current.dateModified) return newest;
+          return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
+        });
+      } else if (resolution.strategy === 'keep-oldest') {
+        trackToKeep = tracksInSet.reduce((oldest: any, current: any) => {
+          if (!oldest.dateAdded) return current;
+          if (!current.dateAdded) return oldest;
+          return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
+        });
+      } else if (resolution.strategy === 'keep-preferred-path') {
+        // Sort by path preference
+        const sortedTracks = [...tracksInSet].sort((a: any, b: any) => {
+          const aMatch = resolution.pathPreferences.findIndex((pref: string) => 
+            a.location && a.location.toLowerCase().includes(pref.toLowerCase())
+          );
+          const bMatch = resolution.pathPreferences.findIndex((pref: string) => 
+            b.location && b.location.toLowerCase().includes(pref.toLowerCase())
+          );
+          
+          if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
+          if (aMatch !== -1) return -1;
+          if (bMatch !== -1) return 1;
+          return 0;
+        });
+        trackToKeep = sortedTracks[0];
+      } else {
+        // Default: keep first track
+        trackToKeep = tracksInSet[0];
+      }
+      
+      // Add all other tracks to removal list
+      const tracksToRemoveFromSet = tracksInSet
+        .filter((track: any) => track.id !== trackToKeep.id)
+        .map((track: any) => track.id);
+      
+      tracksToRemove.push(...tracksToRemoveFromSet);
+      
+      console.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
+    }
+    
+    // Step 4: Remove tracks from library
+    console.log(`🗑️ Removing ${tracksToRemove.length} duplicate tracks from library`);
+    
+    // Remove from tracks Map
+    tracksToRemove.forEach(trackId => {
+      library.tracks.delete(trackId);
+    });
+    
+    // Remove from playlists
+    library.playlists.forEach((playlist: any) => {
+      if (playlist.tracks) {
+        playlist.tracks = playlist.tracks.filter((trackId: string) => 
+          !tracksToRemove.includes(trackId)
+        );
+      }
+    });
+    
+    // Step 5: Save updated library
+    await rekordboxParser.saveLibrary(library, resolution.libraryPath);
+    
+    console.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
+    logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
+    
+    return { 
+      success: true, 
+      backupPath,
+      tracksRemoved: tracksToRemove.length,
+      updatedLibrary: library
+    };
+    
   } catch (error) {
+    console.error('❌ Resolution failed:', error);
     logger.error('DUPLICATE_RESOLUTION_FAILED', {
       strategy: resolution.strategy,
       duplicateSetsCount: resolution.duplicates.length,

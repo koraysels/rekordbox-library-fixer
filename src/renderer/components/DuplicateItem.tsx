@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -18,7 +18,7 @@ interface DuplicateItemProps {
   resolutionStrategy: string;
 }
 
-const DuplicateItem: React.FC<DuplicateItemProps> = ({
+const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   duplicate,
   isSelected,
   onToggleSelection,
@@ -27,7 +27,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 
-  const getConfidenceBadge = (confidence: number) => {
+  const getConfidenceBadge = useCallback((confidence: number) => {
     if (confidence >= 90) {
       return <span className="px-2 py-1 bg-green-600 text-white text-xs rounded-full">High</span>;
     } else if (confidence >= 70) {
@@ -35,22 +35,22 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
     } else {
       return <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded-full">Low</span>;
     }
-  };
+  }, []);
 
-  const formatFileSize = (bytes: number | undefined) => {
+  const formatFileSize = useCallback((bytes: number | undefined) => {
     if (!bytes) return 'N/A';
     const mb = bytes / (1024 * 1024);
     return `${mb.toFixed(1)} MB`;
-  };
+  }, []);
 
-  const formatDuration = (seconds: number | undefined) => {
+  const formatDuration = useCallback((seconds: number | undefined) => {
     if (!seconds) return 'N/A';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  const getRecommendedTrack = () => {
+  const recommendedTrack = useMemo(() => {
     if (resolutionStrategy === 'manual') return null;
     
     let recommended = duplicate.tracks[0];
@@ -103,11 +103,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
     }
     
     return recommended;
-  };
+  }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
 
-  const recommendedTrack = getRecommendedTrack();
-
-  const openFileLocation = async (filePath: string) => {
+  const openFileLocation = useCallback(async (filePath: string) => {
     console.log('🗂️ Opening file location:', filePath);
     try {
       if (window.electronAPI?.showFileInFolder) {
@@ -121,7 +119,15 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
       console.error('❌ Failed to open file location:', error);
       alert(`Failed to open file location: ${error}`);
     }
-  };
+  }, []);
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
+  const handleManualSelection = useCallback((trackId: string) => {
+    setSelectedTrackId(trackId);
+  }, []);
 
   return (
     <div className={`card ${isSelected ? 'ring-2 ring-rekordbox-purple' : ''}`}>
@@ -151,7 +157,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
         </div>
 
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={toggleExpanded}
           className="p-2 hover:bg-zinc-700 rounded-lg transition-colors"
         >
           {isExpanded ? (
@@ -264,7 +270,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
 
                   {resolutionStrategy === 'manual' && (
                     <button
-                      onClick={() => setSelectedTrackId(track.id)}
+                      onClick={() => handleManualSelection(track.id)}
                       className={`ml-4 px-3 py-1 text-sm rounded-lg transition-colors ${
                         isManuallySelected
                           ? 'bg-rekordbox-purple text-white'
@@ -282,6 +288,18 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Only re-render if relevant props changed
+  return (
+    prevProps.duplicate.id === nextProps.duplicate.id &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.resolutionStrategy === nextProps.resolutionStrategy &&
+    JSON.stringify(prevProps.duplicate.pathPreferences) === JSON.stringify(nextProps.duplicate.pathPreferences) &&
+    prevProps.duplicate.tracks.length === nextProps.duplicate.tracks.length
+  );
+});
+
+DuplicateItem.displayName = 'DuplicateItem';
 
 export default DuplicateItem;

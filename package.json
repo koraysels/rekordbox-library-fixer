@@ -50,6 +50,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.12",
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "^11.2.1",
     "crypto-js": "^4.2.0",
@@ -71,6 +72,7 @@
       "dist/**/*",
       "package.json"
     ],
+    "icon": "assets/icon.png",
     "mac": {
       "category": "public.app-category.music",
       "target": [

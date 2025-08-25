@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search,
   Settings,
@@ -6,15 +6,19 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  Shield
 } from 'lucide-react';
-import DuplicateItem from './DuplicateItem';
+import { useDuplicates } from '../hooks';
+import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
+import type { LibraryData, NotificationType } from '../types';
 
 interface DuplicateDetectorProps {
-  libraryData: any;
+  libraryData: LibraryData;
   libraryPath: string;
-  onUpdate: (updatedLibrary: any) => void;
-  showNotification: (type: 'success' | 'error' | 'info', message: string) => void;
+  onUpdate: (updatedLibrary: LibraryData) => void;
+  showNotification: (type: NotificationType, message: string) => void;
 }
 
 const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
@@ -24,22 +28,31 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 }) => {
   console.log('🏗️ DuplicateDetector render - libraryPath:', libraryPath);
   
-  const [duplicates, setDuplicates] = useState<any[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [hasScanned, setHasScanned] = useState(false);
+  // Use the custom duplicates hook
+  const {
+    duplicates,
+    setDuplicates,
+    isScanning,
+    setIsScanning,
+    hasScanned,
+    setHasScanned,
+    selectedDuplicates,
+    scanOptions,
+    setScanOptions,
+    resolutionStrategy,
+    setResolutionStrategy,
+    currentLibraryPath,
+    setCurrentLibraryPath,
+    toggleDuplicateSelection,
+    selectAll,
+    clearAll,
+    selectedCount,
+    isResolveDisabled,
+    memoizedVisibleDuplicates
+  } = useDuplicates(libraryPath, showNotification);
+  
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedDuplicates, setSelectedDuplicates] = useState<Set<string>>(new Set());
-  const [scanOptions, setScanOptions] = useState({
-    useFingerprint: true,
-    useMetadata: false,
-    metadataFields: ['artist', 'title', 'duration'],
-    pathPreferences: [] as string[]
-  });
-  const [resolutionStrategy, setResolutionStrategy] = useState<
-    'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual'
-  >('keep-highest-quality');
   const [pathPreferenceInput, setPathPreferenceInput] = useState('');
-  const [currentLibraryPath, setCurrentLibraryPath] = useState<string>('');
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -126,28 +139,38 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     localStorage.setItem('duplicateDetectorPreferences', JSON.stringify(preferences));
   }, [scanOptions, resolutionStrategy]);
 
-  // Save duplicate results to SQLite
-  const saveDuplicateResults = async () => {
+  // Debounced save function to reduce database writes
+  const debouncedSaveRef = React.useRef<NodeJS.Timeout>();
+  
+  const saveDuplicateResults = useCallback(async () => {
     if (!libraryPath) return;
     
-    try {
-      const result = await window.electronAPI.saveDuplicateResults({
-        libraryPath,
-        duplicates,
-        selectedDuplicates: Array.from(selectedDuplicates),
-        hasScanned,
-        scanOptions
-      });
-      
-      if (result.success) {
-        console.log(`💾 Saved results to SQLite for: ${libraryPath}`);
-      } else {
-        console.error('Failed to save duplicate results to SQLite:', result.error);
-      }
-    } catch (error) {
-      console.error('Failed to save duplicate results to SQLite:', error);
+    // Clear existing timeout
+    if (debouncedSaveRef.current) {
+      clearTimeout(debouncedSaveRef.current);
     }
-  };
+    
+    // Debounce saves by 1 second
+    debouncedSaveRef.current = setTimeout(async () => {
+      try {
+        const result = await window.electronAPI.saveDuplicateResults({
+          libraryPath,
+          duplicates,
+          selectedDuplicates: Array.from(selectedDuplicates),
+          hasScanned,
+          scanOptions
+        });
+        
+        if (result.success) {
+          console.log(`💾 Saved results to SQLite for: ${libraryPath}`);
+        } else {
+          console.error('Failed to save duplicate results to SQLite:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to save duplicate results to SQLite:', error);
+      }
+    }, 1000);
+  }, [libraryPath, duplicates, selectedDuplicates, hasScanned, scanOptions]);
 
   // Auto-save duplicate results when they change (but only for the current library)
   useEffect(() => {
@@ -196,12 +219,22 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       return;
     }
 
+    // Show confirmation dialog
+    const confirmMessage = `This will:\n1. Create a backup of your XML file\n2. Remove ${selectedDuplicates.size} duplicate sets from your library\n3. Save the updated library\n\nProceed?`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
     const selectedDuplicateSets = duplicates.filter(d => 
       selectedDuplicates.has(d.id)
     );
 
+    setIsScanning(true); // Reuse loading state
+    showNotification('info', 'Creating backup and resolving duplicates...');
+
     try {
       const result = await window.electronAPI.resolveDuplicates({
+        libraryPath,
         duplicates: selectedDuplicateSets,
         strategy: resolutionStrategy,
         pathPreferences: scanOptions.pathPreferences,
@@ -209,53 +242,110 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
       if (result.success) {
         // Remove resolved duplicates from the list
-        setDuplicates(duplicates.filter(d => !selectedDuplicates.has(d.id)));
+        const remainingDuplicates = duplicates.filter(d => !selectedDuplicates.has(d.id));
+        setDuplicates(remainingDuplicates);
         setSelectedDuplicates(new Set());
-        showNotification('success', `Resolved ${selectedDuplicates.size} duplicate sets`);
         
-        // Update library data
-        // This would need to be implemented based on the resolution result
+        showNotification('success', 
+          `✅ Successfully resolved ${selectedDuplicates.size} duplicate sets!\n` +
+          `📁 Backup created: ${result.backupPath}\n` +
+          `📝 XML updated with ${result.tracksRemoved} tracks removed`
+        );
+        
+        // Update library data with the new version
+        if (result.updatedLibrary) {
+          // The onUpdate callback should refresh the main library data
+          // This will trigger a re-scan if needed
+        }
+      } else {
+        showNotification('error', `Failed to resolve duplicates: ${result.error}`);
       }
     } catch (error) {
-      showNotification('error', 'Failed to resolve duplicates');
+      console.error('Resolution failed:', error);
+      showNotification('error', 'Failed to resolve duplicates. Check console for details.');
+    } finally {
+      setIsScanning(false);
     }
   };
 
-  const toggleDuplicateSelection = (id: string) => {
-    const newSelection = new Set(selectedDuplicates);
-    if (newSelection.has(id)) {
-      newSelection.delete(id);
-    } else {
-      newSelection.add(id);
-    }
-    console.log(`🔘 Toggle selection for ${id}, new count: ${newSelection.size}`);
-    setSelectedDuplicates(newSelection);
-  };
+  const toggleDuplicateSelection = useCallback((id: string) => {
+    setSelectedDuplicates(prev => {
+      const newSelection = new Set(prev);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      console.log(`🔘 Toggle selection for ${id}, new count: ${newSelection.size}`);
+      return newSelection;
+    });
+  }, []);
 
-  const selectAll = () => {
+  const selectAll = useCallback(() => {
     setSelectedDuplicates(new Set(duplicates.map(d => d.id)));
-  };
+  }, [duplicates]);
 
-  const deselectAll = () => {
+  const deselectAll = useCallback(() => {
     setSelectedDuplicates(new Set());
-  };
+  }, []);
 
-  const addPathPreference = () => {
+  const addPathPreference = useCallback(() => {
     if (pathPreferenceInput.trim() && !scanOptions.pathPreferences.includes(pathPreferenceInput.trim())) {
-      setScanOptions({
-        ...scanOptions,
-        pathPreferences: [...scanOptions.pathPreferences, pathPreferenceInput.trim()]
-      });
+      setScanOptions(prev => ({
+        ...prev,
+        pathPreferences: [...prev.pathPreferences, pathPreferenceInput.trim()]
+      }));
       setPathPreferenceInput('');
     }
-  };
+  }, [pathPreferenceInput, scanOptions.pathPreferences]);
 
-  const removePathPreference = (index: number) => {
-    setScanOptions({
-      ...scanOptions,
-      pathPreferences: scanOptions.pathPreferences.filter((_, i) => i !== index)
-    });
-  };
+  const removePathPreference = useCallback((index: number) => {
+    setScanOptions(prev => ({
+      ...prev,
+      pathPreferences: prev.pathPreferences.filter((_, i) => i !== index)
+    }));
+  }, []);
+
+  // Memoize expensive calculations
+  const visibleDuplicates = useMemo(() => {
+    return duplicates.slice(0, displayLimit);
+  }, [duplicates, displayLimit]);
+
+  const hasMoreDuplicates = useMemo(() => {
+    return duplicates.length > displayLimit;
+  }, [duplicates.length, displayLimit]);
+
+  const loadMoreDuplicates = useCallback(() => {
+    setDisplayLimit(prev => Math.min(prev + 50, duplicates.length));
+  }, [duplicates.length]);
+
+  // Memoize duplicate items with pathPreferences to prevent unnecessary re-renders
+  const memoizedVisibleDuplicates = useMemo(() => {
+    return visibleDuplicates.map(duplicate => ({
+      ...duplicate,
+      pathPreferences: scanOptions.pathPreferences
+    }));
+  }, [visibleDuplicates, scanOptions.pathPreferences]);
+
+  // Memoize expensive calculations
+  const selectedCount = useMemo(() => selectedDuplicates.size, [selectedDuplicates.size]);
+  const totalDuplicateCount = useMemo(() => duplicates.length, [duplicates.length]);
+  const isResolveDisabled = useMemo(() => selectedCount === 0 || isScanning, [selectedCount, isScanning]);
+  
+  // Memoize checkbox states for optimization
+  const isAllSelected = useMemo(() => {
+    return duplicates.length > 0 && duplicates.every(d => selectedDuplicates.has(d.id));
+  }, [duplicates, selectedDuplicates]);
+  
+  const isSomeSelected = useMemo(() => {
+    return selectedCount > 0 && selectedCount < totalDuplicateCount;
+  }, [selectedCount, totalDuplicateCount]);
+
+  // Memoize text content to avoid recalculation on every render
+  const displayLimitText = useMemo(() => 
+    `(${displayLimit} of ${totalDuplicateCount} shown)`, 
+    [displayLimit, totalDuplicateCount]
+  );
 
   return (
     <div>
@@ -578,25 +668,31 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
             <button
               onClick={resolveDuplicates}
-              disabled={selectedDuplicates.size === 0}
-              className="btn-primary flex items-center space-x-2"
+              disabled={isResolveDisabled}
+              className="btn-primary flex items-center space-x-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500"
             >
-              <Trash2 className="w-4 h-4" />
-              <span>Resolve Selected</span>
+              {isScanning ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Resolving...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <Shield className="w-3 h-3" />
+                  <span>Resolve Selected</span>
+                </>
+              )}
             </button>
           </div>
 
-          <div className="space-y-4">
-            {duplicates.map((duplicate) => (
-              <DuplicateItem
-                key={duplicate.id}
-                duplicate={{...duplicate, pathPreferences: scanOptions.pathPreferences}}
-                isSelected={selectedDuplicates.has(duplicate.id)}
-                onToggleSelection={() => toggleDuplicateSelection(duplicate.id)}
-                resolutionStrategy={resolutionStrategy}
-              />
-            ))}
-          </div>
+          <VirtualizedDuplicateList
+            duplicates={duplicates}
+            selectedDuplicates={selectedDuplicates}
+            onToggleSelection={toggleDuplicateSelection}
+            resolutionStrategy={resolutionStrategy}
+            containerHeight={600}
+          />
         </>
       )}
 
