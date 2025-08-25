@@ -52,6 +52,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     memoizedVisibleDuplicates
   } = useDuplicates(libraryPath, showNotification);
   
+  console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
+  
   const [showSettings, setShowSettings] = useState(false);
   const [pathPreferenceInput, setPathPreferenceInput] = useState('');
 
@@ -628,12 +630,14 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             </button>
           </div>
 
-          <VirtualizedDuplicateList
-            duplicates={duplicates}
-            selectedDuplicates={selectedDuplicates}
-            onToggleSelection={toggleDuplicateSelection}
-            resolutionStrategy={resolutionStrategy}
-          />
+          <div className="flex-1 min-h-0">
+            <VirtualizedDuplicateList
+              duplicates={duplicates}
+              selectedDuplicates={selectedDuplicates}
+              onToggleSelection={toggleDuplicateSelection}
+              resolutionStrategy={resolutionStrategy}
+            />
+          </div>
         </div>
       )}
 

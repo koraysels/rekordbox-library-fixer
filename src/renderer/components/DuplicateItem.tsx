@@ -122,10 +122,8 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   }, []);
 
   const toggleExpanded = useCallback(() => {
-    if (onExpansionChange) {
-      onExpansionChange(!isExpanded);
-    }
-  }, [isExpanded, onExpansionChange]);
+    setIsExpanded(prev => !prev);
+  }, []);
 
   const handleManualSelection = useCallback((trackId: string) => {
     setSelectedTrackId(trackId);
