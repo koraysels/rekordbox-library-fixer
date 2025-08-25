@@ -46,6 +46,15 @@ export const useDuplicates = (
     setSelectedDuplicates(new Set());
   }, []);
 
+  // Set selections directly (for loading from storage)
+  const setSelections = useCallback((selections: Set<string> | string[]) => {
+    if (Array.isArray(selections)) {
+      setSelectedDuplicates(new Set(selections));
+    } else {
+      setSelectedDuplicates(new Set(selections));
+    }
+  }, []);
+
   // Memoized calculations
   const selectedCount = useMemo(() => selectedDuplicates.size, [selectedDuplicates.size]);
   const totalDuplicateCount = useMemo(() => duplicates.length, [duplicates.length]);
@@ -117,7 +126,6 @@ export const useDuplicates = (
     hasScanned,
     setHasScanned,
     selectedDuplicates,
-    setSelectedDuplicates,
     scanOptions,
     setScanOptions,
     resolutionStrategy,
@@ -129,6 +137,7 @@ export const useDuplicates = (
     toggleDuplicateSelection,
     selectAll,
     clearAll,
+    setSelections,
     selectedCount,
     totalDuplicateCount,
     isResolveDisabled,

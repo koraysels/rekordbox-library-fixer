@@ -19,16 +19,13 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-rekordbox-dark">
+    <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
       {/* Header */}
       <AppHeader
         libraryPath={libraryPath}
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
       />
-
-      {/* Header Spacer */}
-      <div className="h-28"></div>
 
       {/* Notification */}
       {notification && <NotificationToast notification={notification} />}
@@ -41,7 +38,7 @@ const App: React.FC = () => {
       />
 
       {/* Content */}
-      <div className="p-6 pb-20">
+      <div className="flex-1 p-6 pb-20 overflow-hidden">
         {!libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} />
         ) : (

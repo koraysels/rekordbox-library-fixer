@@ -46,6 +46,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     toggleDuplicateSelection,
     selectAll,
     clearAll,
+    setSelections,
     selectedCount,
     isResolveDisabled,
     memoizedVisibleDuplicates
@@ -94,7 +95,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             console.log(`   - Has scanned: ${stored.hasScanned}`);
             
             setDuplicates(stored.duplicates || []);
-            setSelectedDuplicates(new Set(stored.selectedDuplicates || []));
+            setSelections(stored.selectedDuplicates || []);
             setHasScanned(stored.hasScanned || false);
             // Merge stored scan options with current preferences
             if (stored.scanOptions) {
@@ -105,21 +106,21 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             console.log(`🆕 No stored results in SQLite for: ${libraryPath} - fresh start`);
             setHasScanned(false);
             setDuplicates([]);
-            setSelectedDuplicates(new Set());
+            setSelections([]);
           }
         } catch (error) {
           console.error('❌ Failed to load stored duplicate results from SQLite:', error);
           // Reset to default state on error
           setHasScanned(false);
           setDuplicates([]);
-          setSelectedDuplicates(new Set());
+          setSelections([]);
         }
       } else {
         // No library loaded, reset state
         console.log('📭 No library loaded - clearing all state');
         setHasScanned(false);
         setDuplicates([]);
-        setSelectedDuplicates(new Set());
+        setSelections([]);
       }
 
       // Update the current library path tracker
@@ -244,7 +245,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         // Remove resolved duplicates from the list
         const remainingDuplicates = duplicates.filter(d => !selectedDuplicates.has(d.id));
         setDuplicates(remainingDuplicates);
-        setSelectedDuplicates(new Set());
+        setSelections([]);
         
         showNotification('success', 
           `✅ Successfully resolved ${selectedDuplicates.size} duplicate sets!\n` +
@@ -268,26 +269,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     }
   };
 
-  const toggleDuplicateSelection = useCallback((id: string) => {
-    setSelectedDuplicates(prev => {
-      const newSelection = new Set(prev);
-      if (newSelection.has(id)) {
-        newSelection.delete(id);
-      } else {
-        newSelection.add(id);
-      }
-      console.log(`🔘 Toggle selection for ${id}, new count: ${newSelection.size}`);
-      return newSelection;
-    });
-  }, []);
-
-  const selectAll = useCallback(() => {
-    setSelectedDuplicates(new Set(duplicates.map(d => d.id)));
-  }, [duplicates]);
-
-  const deselectAll = useCallback(() => {
-    setSelectedDuplicates(new Set());
-  }, []);
 
   const addPathPreference = useCallback(() => {
     if (pathPreferenceInput.trim() && !scanOptions.pathPreferences.includes(pathPreferenceInput.trim())) {
@@ -307,48 +288,9 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   }, []);
 
   // Memoize expensive calculations
-  const visibleDuplicates = useMemo(() => {
-    return duplicates.slice(0, displayLimit);
-  }, [duplicates, displayLimit]);
-
-  const hasMoreDuplicates = useMemo(() => {
-    return duplicates.length > displayLimit;
-  }, [duplicates.length, displayLimit]);
-
-  const loadMoreDuplicates = useCallback(() => {
-    setDisplayLimit(prev => Math.min(prev + 50, duplicates.length));
-  }, [duplicates.length]);
-
-  // Memoize duplicate items with pathPreferences to prevent unnecessary re-renders
-  const memoizedVisibleDuplicates = useMemo(() => {
-    return visibleDuplicates.map(duplicate => ({
-      ...duplicate,
-      pathPreferences: scanOptions.pathPreferences
-    }));
-  }, [visibleDuplicates, scanOptions.pathPreferences]);
-
-  // Memoize expensive calculations
-  const selectedCount = useMemo(() => selectedDuplicates.size, [selectedDuplicates.size]);
-  const totalDuplicateCount = useMemo(() => duplicates.length, [duplicates.length]);
-  const isResolveDisabled = useMemo(() => selectedCount === 0 || isScanning, [selectedCount, isScanning]);
-  
-  // Memoize checkbox states for optimization
-  const isAllSelected = useMemo(() => {
-    return duplicates.length > 0 && duplicates.every(d => selectedDuplicates.has(d.id));
-  }, [duplicates, selectedDuplicates]);
-  
-  const isSomeSelected = useMemo(() => {
-    return selectedCount > 0 && selectedCount < totalDuplicateCount;
-  }, [selectedCount, totalDuplicateCount]);
-
-  // Memoize text content to avoid recalculation on every render
-  const displayLimitText = useMemo(() => 
-    `(${displayLimit} of ${totalDuplicateCount} shown)`, 
-    [displayLimit, totalDuplicateCount]
-  );
 
   return (
-    <div>
+    <div className="h-full flex flex-col">
       {/* Library Info */}
       {libraryPath && (
         <div className="card mb-4 bg-blue-900/20 border-blue-500/30">
@@ -407,7 +349,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
                 Select All
               </button>
               <button
-                onClick={deselectAll}
+                onClick={clearAll}
                 className="text-sm text-rekordbox-purple hover:text-purple-400"
               >
                 Deselect All
@@ -663,8 +605,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
       {/* Results */}
       {duplicates.length > 0 && (
-        <>
-          <div className="mb-4 flex items-center justify-between">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="mb-4 flex items-center justify-between flex-shrink-0">
             <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
             <button
               onClick={resolveDuplicates}
@@ -691,9 +633,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             selectedDuplicates={selectedDuplicates}
             onToggleSelection={toggleDuplicateSelection}
             resolutionStrategy={resolutionStrategy}
-            containerHeight={600}
           />
-        </>
+        </div>
       )}
 
       

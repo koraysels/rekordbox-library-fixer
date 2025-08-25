@@ -26,8 +26,8 @@ function createWindow() {
 
   // In development, load from localhost
   if (process.env.NODE_ENV === 'development') {
-    // Try different ports in case 3000 is occupied
-    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3001';
+    // Fixed port to match Vite config
+    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3000';
     mainWindow.loadURL(devUrl);
     mainWindow.webContents.openDevTools();
   } else {
