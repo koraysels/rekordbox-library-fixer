@@ -5,11 +5,14 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
-    "dev:electron": "npm run build:main && electron .",
+    "dev:electron": "npm run build:main && NODE_ENV=development electron .",
     "build": "npm run build:vite && npm run build:main",
     "build:vite": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "dist": "npm run build && electron-builder",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:all": "npm run build && electron-builder --mac --win",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
@@ -28,6 +31,7 @@
   "description": "A powerful tool for managing and fixing Rekordbox libraries",
   "devDependencies": {
     "@playwright/test": "^1.55.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/crypto-js": "^4.2.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.5.1",
@@ -63,12 +67,74 @@
     "directories": {
       "output": "release"
     },
-    "mac": {
-      "category": "public.app-category.music"
-    },
     "files": [
       "dist/**/*",
       "package.json"
-    ]
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Rekordbox Library Manager"
+    },
+    "dmg": {
+      "title": "Rekordbox Library Manager",
+      "window": {
+        "width": 600,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 200
+        },
+        {
+          "x": 450,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
   }
 }

@@ -19,7 +19,10 @@
       "Bash(npm install:*)",
       "Bash(npm run test:unit:*)",
       "Bash(npm test)",
-      "mcp__serena__search_for_pattern"
+      "mcp__serena__search_for_pattern",
+      "Bash(npm run dist:mac:*)",
+      "Bash(node:*)",
+      "Bash(npx electron:*)"
     ],
     "deny": [],
     "ask": []

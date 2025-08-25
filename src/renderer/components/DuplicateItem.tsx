@@ -7,7 +7,8 @@ import {
   Clock,
   HardDrive,
   Star,
-  CheckCircle
+  CheckCircle,
+  ExternalLink
 } from 'lucide-react';
 
 interface DuplicateItemProps {
@@ -72,12 +73,55 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
         if (!current.dateAdded) return oldest;
         return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
       });
+    } else if (resolutionStrategy === 'keep-preferred-path') {
+      // Find track with path that matches any of the preferred paths
+      const pathPreferences = duplicate.pathPreferences || [];
+      console.log('🔍 Path preferences:', pathPreferences);
+      
+      if (pathPreferences.length > 0) {
+        // Sort tracks by preference priority (lower index = higher priority)
+        const sortedTracks = [...duplicate.tracks].sort((a: any, b: any) => {
+          const aMatch = pathPreferences.findIndex((pref: string) => 
+            a.location && a.location.toLowerCase().includes(pref.toLowerCase())
+          );
+          const bMatch = pathPreferences.findIndex((pref: string) => 
+            b.location && b.location.toLowerCase().includes(pref.toLowerCase())
+          );
+          
+          // If both match, return the one with lower index (higher priority)
+          if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
+          // If only one matches, prioritize the matching one
+          if (aMatch !== -1) return -1;
+          if (bMatch !== -1) return 1;
+          // If neither match, keep original order
+          return 0;
+        });
+        
+        recommended = sortedTracks[0];
+        console.log('📁 Recommended track by path preference:', recommended?.location);
+      }
     }
     
     return recommended;
   };
 
   const recommendedTrack = getRecommendedTrack();
+
+  const openFileLocation = async (filePath: string) => {
+    console.log('🗂️ Opening file location:', filePath);
+    try {
+      if (window.electronAPI?.showFileInFolder) {
+        const result = await window.electronAPI.showFileInFolder(filePath);
+        console.log('✅ File location opened:', result);
+      } else {
+        console.error('❌ showFileInFolder API not available');
+        alert('File manager integration not available');
+      }
+    } catch (error) {
+      console.error('❌ Failed to open file location:', error);
+      alert(`Failed to open file location: ${error}`);
+    }
+  };
 
   return (
     <div className={`card ${isSelected ? 'ring-2 ring-rekordbox-purple' : ''}`}>
@@ -121,6 +165,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
       {isExpanded && (
         <div className="mt-4 space-y-3">
           {duplicate.tracks.map((track: any) => {
+            console.log('🎵 Rendering track:', { id: track.id, location: track.location, name: track.name });
             const isRecommended = recommendedTrack && track.id === recommendedTrack.id;
             const isManuallySelected = resolutionStrategy === 'manual' && track.id === selectedTrackId;
             
@@ -180,17 +225,28 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
                     </div>
 
                     <div className="mt-2 text-xs text-zinc-500">
-                      <div className="flex items-center space-x-1">
-                        <span className="text-zinc-600">Path:</span>
-                        <span 
-                          className="font-mono break-all" 
-                          title={track.location}
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-600 font-medium">Full Path:</span>
+                          <button
+                            onClick={() => {
+                              console.log('🔵 Go to File button clicked!', track.location);
+                              openFileLocation(track.location);
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-md border border-blue-500 hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
+                            title="Open file location in system file manager"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span className="font-medium">📁 Go to File</span>
+                          </button>
+                        </div>
+                        <div 
+                          className="font-mono text-xs bg-zinc-900 p-2 rounded border border-zinc-700 select-all whitespace-pre-wrap word-break-all"
+                          title="Click to select full path"
+                          style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}
                         >
-                          {track.location.length > 60 
-                            ? '...' + track.location.slice(-57) 
-                            : track.location
-                          }
-                        </span>
+                          {track.location || 'No file path available'}
+                        </div>
                       </div>
                     </div>
 

@@ -13,6 +13,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveRekordboxXML: (data: any) => 
     ipcRenderer.invoke('save-rekordbox-xml', data),
   getLogsInfo: () => ipcRenderer.invoke('get-logs-info'),
+  showFileInFolder: (filePath: string) => 
+    ipcRenderer.invoke('show-file-in-folder', filePath),
+  saveDuplicateResults: (data: any) => 
+    ipcRenderer.invoke('save-duplicate-results', data),
+  getDuplicateResults: (libraryPath: string) => 
+    ipcRenderer.invoke('get-duplicate-results', libraryPath),
+  deleteDuplicateResults: (libraryPath: string) => 
+    ipcRenderer.invoke('delete-duplicate-results', libraryPath),
 });
 
 export {};

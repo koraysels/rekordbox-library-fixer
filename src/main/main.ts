@@ -1,13 +1,15 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import * as path from 'path';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
+import { DuplicateStorage } from './duplicateStorage';
 
 let mainWindow: BrowserWindow | null = null;
 let rekordboxParser: RekordboxParser;
 let duplicateDetector: DuplicateDetector;
 let logger: Logger;
+let duplicateStorage: DuplicateStorage;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -24,7 +26,9 @@ function createWindow() {
 
   // In development, load from localhost
   if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:3000');
+    // Try different ports in case 3000 is occupied
+    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:3001';
+    mainWindow.loadURL(devUrl);
     mainWindow.webContents.openDevTools();
   } else {
     // In production, load the built files
@@ -40,6 +44,15 @@ app.whenReady().then(() => {
   logger = new Logger();
   rekordboxParser = new RekordboxParser();
   duplicateDetector = new DuplicateDetector();
+  
+  try {
+    duplicateStorage = new DuplicateStorage();
+    console.log('✅ SQLite storage initialized');
+  } catch (error) {
+    console.error('❌ Failed to initialize SQLite storage:', error);
+    // Continue without storage for now - could fallback to localStorage
+  }
+  
   createWindow();
 });
 
@@ -167,4 +180,103 @@ ipcMain.handle('get-logs-info', async () => {
     logFilePath: logger.getLogPath(),
     logsDirectory: logger.getLogsDirectory()
   };
+});
+
+// Show file in system file manager
+ipcMain.handle('show-file-in-folder', async (_, filePath: string) => {
+  try {
+    shell.showItemInFolder(filePath);
+    return { success: true };
+  } catch (error) {
+    logger.error('SHOW_FILE_FAILED', {
+      filePath,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+});
+
+// Duplicate Storage IPC Handlers
+ipcMain.handle('save-duplicate-results', async (_, data: {
+  libraryPath: string;
+  duplicates: any[];
+  selectedDuplicates: string[];
+  hasScanned: boolean;
+  scanOptions: any;
+}) => {
+  console.log(`💾 IPC: Saving duplicate results for ${data.libraryPath}`);
+  try {
+    if (!duplicateStorage) {
+      console.error('❌ Database not initialized yet');
+      return { success: false, error: 'Database not initialized yet' };
+    }
+    duplicateStorage.saveDuplicateResult({
+      libraryPath: data.libraryPath,
+      duplicates: data.duplicates,
+      selectedDuplicates: data.selectedDuplicates,
+      hasScanned: data.hasScanned,
+      scanOptions: data.scanOptions
+    });
+    console.log(`✅ Successfully saved duplicate results for ${data.libraryPath}`);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Save failed:', error);
+    logger.error('SAVE_DUPLICATE_RESULTS_FAILED', {
+      libraryPath: data.libraryPath,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+});
+
+ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
+  console.log(`📖 IPC: Loading duplicate results for ${libraryPath}`);
+  try {
+    if (!duplicateStorage) {
+      console.log('⏳ Database not ready yet, returning null');
+      return { success: true, data: null }; // Return null if not ready yet
+    }
+    const result = duplicateStorage.getDuplicateResult(libraryPath);
+    if (result) {
+      console.log(`✅ Found stored results: ${result.duplicates.length} duplicates, ${result.selectedDuplicates.length} selected`);
+    } else {
+      console.log('🆕 No stored results found for this library');
+    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('❌ Load failed:', error);
+    logger.error('GET_DUPLICATE_RESULTS_FAILED', {
+      libraryPath,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+});
+
+ipcMain.handle('delete-duplicate-results', async (_, libraryPath: string) => {
+  try {
+    if (!duplicateStorage) {
+      return { success: false, error: 'Database not initialized yet' };
+    }
+    duplicateStorage.deleteDuplicateResult(libraryPath);
+    return { success: true };
+  } catch (error) {
+    logger.error('DELETE_DUPLICATE_RESULTS_FAILED', {
+      libraryPath,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
 });

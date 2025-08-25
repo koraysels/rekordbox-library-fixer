@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Disc3, 
   FolderOpen, 
@@ -19,6 +19,10 @@ declare global {
       findDuplicates: (options: any) => Promise<any>;
       resolveDuplicates: (resolution: any) => Promise<any>;
       saveRekordboxXML: (data: any) => Promise<any>;
+      showFileInFolder: (filePath: string) => Promise<any>;
+      saveDuplicateResults: (data: any) => Promise<any>;
+      getDuplicateResults: (libraryPath: string) => Promise<any>;
+      deleteDuplicateResults: (libraryPath: string) => Promise<any>;
     };
   }
 }
@@ -39,6 +43,8 @@ const App: React.FC = () => {
     try {
       const path = await window.electronAPI.selectRekordboxXML();
       if (path) {
+        // Clear previous library data when selecting new library
+        setLibraryData(null);
         setLibraryPath(path);
         await loadLibrary(path);
       }
@@ -64,9 +70,64 @@ const App: React.FC = () => {
     }
   };
 
+  // Load persisted library data on mount
+  useEffect(() => {
+    const savedLibraryPath = localStorage.getItem('rekordboxLibraryPath');
+    const savedLibraryData = localStorage.getItem('rekordboxLibraryData');
+    
+    if (savedLibraryPath) {
+      setLibraryPath(savedLibraryPath);
+    }
+    
+    if (savedLibraryData) {
+      try {
+        const parsedData = JSON.parse(savedLibraryData);
+        // Convert tracks array back to Map
+        if (parsedData && parsedData.tracks && Array.isArray(parsedData.tracks)) {
+          parsedData.tracks = new Map(parsedData.tracks);
+          setLibraryData(parsedData);
+        }
+      } catch (error) {
+        console.warn('Failed to load saved library data:', error);
+        localStorage.removeItem('rekordboxLibraryData');
+      }
+    }
+  }, []);
+
+  // Save library data whenever it changes
+  useEffect(() => {
+    if (libraryData) {
+      try {
+        // Convert Map to array for JSON serialization
+        const dataToSave = {
+          ...libraryData,
+          tracks: Array.from(libraryData.tracks.entries())
+        };
+        localStorage.setItem('rekordboxLibraryData', JSON.stringify(dataToSave));
+      } catch (error) {
+        console.warn('Failed to save library data:', error);
+      }
+    }
+  }, [libraryData]);
+
+  // Save library path whenever it changes
+  useEffect(() => {
+    if (libraryPath) {
+      localStorage.setItem('rekordboxLibraryPath', libraryPath);
+    }
+  }, [libraryPath]);
+
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
+  };
+
+  const clearStoredData = () => {
+    localStorage.removeItem('rekordboxLibraryPath');
+    localStorage.removeItem('rekordboxLibraryData');
+    setLibraryPath('');
+    setLibraryData(null);
+    showNotification('info', 'Library data cleared');
   };
 
   const tabs = [
@@ -79,7 +140,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-rekordbox-dark">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 app-header bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-4">
+      <header className="fixed top-0 left-0 right-0 z-50 app-header bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-4 shadow-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Music className="w-8 h-8 text-white" />
@@ -112,10 +173,10 @@ const App: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
+      </header>
       
       {/* Header Spacer */}
-      <div className="h-24"></div>
+      <div className="h-28"></div>
 
       {/* Notification */}
       {notification && (
@@ -176,13 +237,15 @@ const App: React.FC = () => {
           </div>
         ) : (
           <>
-            {activeTab === 'duplicates' && (
+            {/* Keep DuplicateDetector always mounted to preserve state */}
+            <div style={{ display: activeTab === 'duplicates' ? 'block' : 'none' }}>
               <DuplicateDetector 
                 libraryData={libraryData}
+                libraryPath={libraryPath}
                 onUpdate={(updatedLibrary) => setLibraryData(updatedLibrary)}
                 showNotification={showNotification}
               />
-            )}
+            </div>
             
             {activeTab === 'import' && (
               <div className="card">

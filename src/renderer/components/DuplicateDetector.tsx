@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Settings,
@@ -12,16 +12,21 @@ import DuplicateItem from './DuplicateItem';
 
 interface DuplicateDetectorProps {
   libraryData: any;
+  libraryPath: string;
   onUpdate: (updatedLibrary: any) => void;
   showNotification: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
 const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   libraryData,
+  libraryPath,
   showNotification
 }) => {
+  console.log('🏗️ DuplicateDetector render - libraryPath:', libraryPath);
+  
   const [duplicates, setDuplicates] = useState<any[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [hasScanned, setHasScanned] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedDuplicates, setSelectedDuplicates] = useState<Set<string>>(new Set());
   const [scanOptions, setScanOptions] = useState({
@@ -34,6 +39,123 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual'
   >('keep-highest-quality');
   const [pathPreferenceInput, setPathPreferenceInput] = useState('');
+  const [currentLibraryPath, setCurrentLibraryPath] = useState<string>('');
+
+  // Load preferences from localStorage
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('duplicateDetectorPreferences');
+    if (savedPreferences) {
+      try {
+        const prefs = JSON.parse(savedPreferences);
+        setScanOptions(prefs.scanOptions || scanOptions);
+        setResolutionStrategy(prefs.resolutionStrategy || resolutionStrategy);
+        // Don't restore hasScanned - it should always start false for new sessions
+      } catch (error) {
+        console.warn('Failed to load preferences:', error);
+      }
+    }
+  }, []);
+
+  // Load stored duplicate results when library changes OR when component mounts
+  useEffect(() => {
+    const loadStoredResults = async () => {
+      console.log(`🔄 DuplicateDetector effect triggered - Current: "${currentLibraryPath}", New: "${libraryPath}"`);
+      
+      // Always load when component first mounts (currentLibraryPath is empty)
+      // Or when library actually changes
+      if (currentLibraryPath === libraryPath && currentLibraryPath !== '') {
+        console.log('↩️ No library change, skipping load');
+        return;
+      }
+
+      console.log(`📚 Library loading: "${libraryPath}"`);
+      
+      if (libraryPath) {
+        try {
+          const result = await window.electronAPI.getDuplicateResults(libraryPath);
+          if (result.success && result.data) {
+            const stored = result.data;
+            console.log(`✅ Loaded stored results from SQLite for: ${libraryPath}`);
+            console.log(`   - ${stored.duplicates.length} duplicate sets`);
+            console.log(`   - ${stored.selectedDuplicates.length} selected`);
+            console.log(`   - Has scanned: ${stored.hasScanned}`);
+            
+            setDuplicates(stored.duplicates || []);
+            setSelectedDuplicates(new Set(stored.selectedDuplicates || []));
+            setHasScanned(stored.hasScanned || false);
+            // Merge stored scan options with current preferences
+            if (stored.scanOptions) {
+              setScanOptions(prev => ({...prev, ...stored.scanOptions}));
+            }
+          } else {
+            // No stored results for this library, reset to default state
+            console.log(`🆕 No stored results in SQLite for: ${libraryPath} - fresh start`);
+            setHasScanned(false);
+            setDuplicates([]);
+            setSelectedDuplicates(new Set());
+          }
+        } catch (error) {
+          console.error('❌ Failed to load stored duplicate results from SQLite:', error);
+          // Reset to default state on error
+          setHasScanned(false);
+          setDuplicates([]);
+          setSelectedDuplicates(new Set());
+        }
+      } else {
+        // No library loaded, reset state
+        console.log('📭 No library loaded - clearing all state');
+        setHasScanned(false);
+        setDuplicates([]);
+        setSelectedDuplicates(new Set());
+      }
+
+      // Update the current library path tracker
+      setCurrentLibraryPath(libraryPath || '');
+    };
+
+    loadStoredResults();
+  }, [libraryPath]);
+
+  // Save preferences to localStorage whenever they change
+  useEffect(() => {
+    const preferences = {
+      scanOptions,
+      resolutionStrategy
+      // Note: hasScanned is NOT saved in localStorage - now saved in SQLite
+    };
+    localStorage.setItem('duplicateDetectorPreferences', JSON.stringify(preferences));
+  }, [scanOptions, resolutionStrategy]);
+
+  // Save duplicate results to SQLite
+  const saveDuplicateResults = async () => {
+    if (!libraryPath) return;
+    
+    try {
+      const result = await window.electronAPI.saveDuplicateResults({
+        libraryPath,
+        duplicates,
+        selectedDuplicates: Array.from(selectedDuplicates),
+        hasScanned,
+        scanOptions
+      });
+      
+      if (result.success) {
+        console.log(`💾 Saved results to SQLite for: ${libraryPath}`);
+      } else {
+        console.error('Failed to save duplicate results to SQLite:', result.error);
+      }
+    } catch (error) {
+      console.error('Failed to save duplicate results to SQLite:', error);
+    }
+  };
+
+  // Auto-save duplicate results when they change (but only for the current library)
+  useEffect(() => {
+    if (libraryPath && libraryPath === currentLibraryPath) {
+      console.log(`💾 Auto-saving results for: ${libraryPath}`);
+      saveDuplicateResults();
+    }
+  }, [duplicates, selectedDuplicates, hasScanned, libraryPath, currentLibraryPath]);
 
   const scanForDuplicates = async () => {
     setIsScanning(true);
@@ -45,11 +167,17 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       });
       
       if (result.success) {
-        setDuplicates(result.data);
+        const duplicatesFound = result.data;
+        setDuplicates(duplicatesFound);
+        setHasScanned(true);
+        
+        // Immediately save scan results to SQLite
+        // (The auto-save effect will handle this, but this ensures immediate save)
+        
         showNotification(
-          result.data.length > 0 ? 'info' : 'success',
-          result.data.length > 0 
-            ? `Found ${result.data.length} duplicate sets`
+          duplicatesFound.length > 0 ? 'info' : 'success',
+          duplicatesFound.length > 0 
+            ? `Found ${duplicatesFound.length} duplicate sets`
             : 'No duplicates found in your library!'
         );
       } else {
@@ -100,6 +228,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     } else {
       newSelection.add(id);
     }
+    console.log(`🔘 Toggle selection for ${id}, new count: ${newSelection.size}`);
     setSelectedDuplicates(newSelection);
   };
 
@@ -130,6 +259,21 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
   return (
     <div>
+      {/* Library Info */}
+      {libraryPath && (
+        <div className="card mb-4 bg-blue-900/20 border-blue-500/30">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
+            <div>
+              <p className="text-sm text-blue-200 font-medium">Active Library</p>
+              <p className="text-xs text-blue-300 font-mono break-all">
+                {libraryPath.length > 80 ? '...' + libraryPath.slice(-77) : libraryPath}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls */}
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -243,61 +387,80 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
               <div>
                 <h3 className="font-semibold mb-3">Resolution Strategy</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
+                <div className="space-y-3">
+                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                     <input
                       type="radio"
                       name="strategy"
                       value="keep-highest-quality"
                       checked={resolutionStrategy === 'keep-highest-quality'}
                       onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="text-rekordbox-purple"
+                      className="mt-1 text-rekordbox-purple"
                     />
-                    <span>Keep Highest Quality</span>
+                    <div>
+                      <span className="font-medium">Keep Highest Quality</span>
+                      <p className="text-sm text-zinc-400">Keeps tracks with higher bitrate and file size</p>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-2">
+                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                     <input
                       type="radio"
                       name="strategy"
                       value="keep-newest"
                       checked={resolutionStrategy === 'keep-newest'}
                       onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="text-rekordbox-purple"
+                      className="mt-1 text-rekordbox-purple"
                     />
-                    <span>Keep Newest</span>
+                    <div>
+                      <span className="font-medium">Keep Newest</span>
+                      <p className="text-sm text-zinc-400">Keeps tracks with most recent modification date</p>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-2">
+                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                     <input
                       type="radio"
                       name="strategy"
                       value="keep-oldest"
                       checked={resolutionStrategy === 'keep-oldest'}
                       onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="text-rekordbox-purple"
+                      className="mt-1 text-rekordbox-purple"
                     />
-                    <span>Keep Oldest</span>
+                    <div>
+                      <span className="font-medium">Keep Oldest</span>
+                      <p className="text-sm text-zinc-400">Keeps tracks that were added to library first</p>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-2">
+                  <label className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    resolutionStrategy === 'keep-preferred-path' 
+                      ? 'border-rekordbox-purple bg-rekordbox-purple/10' 
+                      : 'border-zinc-700 hover:border-zinc-600'
+                  }`}>
                     <input
                       type="radio"
                       name="strategy"
                       value="keep-preferred-path"
                       checked={resolutionStrategy === 'keep-preferred-path'}
                       onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="text-rekordbox-purple"
+                      className="mt-1 text-rekordbox-purple"
                     />
-                    <span>Keep Preferred Path</span>
+                    <div>
+                      <span className="font-medium">Keep Preferred Path</span>
+                      <p className="text-sm text-zinc-400">Keeps tracks from your preferred folders/locations</p>
+                    </div>
                   </label>
-                  <label className="flex items-center space-x-2">
+                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                     <input
                       type="radio"
                       name="strategy"
                       value="manual"
                       checked={resolutionStrategy === 'manual'}
                       onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="text-rekordbox-purple"
+                      className="mt-1 text-rekordbox-purple"
                     />
-                    <span>Manual Selection</span>
+                    <div>
+                      <span className="font-medium">Manual Selection</span>
+                      <p className="text-sm text-zinc-400">Let you choose which track to keep for each duplicate</p>
+                    </div>
                   </label>
                 </div>
               </div>
@@ -347,6 +510,65 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             </div>
           </div>
         )}
+
+        {/* Path Preferences - Always visible when strategy is selected */}
+        {resolutionStrategy === 'keep-preferred-path' && (
+          <div className="card mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">📁 Path Preferences</h3>
+              <span className="text-sm text-zinc-400">Priority order (drag to reorder)</span>
+            </div>
+            
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-200">
+                <strong>How it works:</strong> When duplicates are found, tracks in paths listed here will be kept over others. 
+                Higher priority paths (listed first) take precedence.
+              </p>
+            </div>
+
+            <div className="flex space-x-2 mb-4">
+              <input
+                type="text"
+                value={pathPreferenceInput}
+                onChange={(e) => setPathPreferenceInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
+                placeholder="e.g., /Users/DJ/Main Library, C:\Music\Master"
+                className="flex-1 input"
+              />
+              <button
+                onClick={addPathPreference}
+                disabled={!pathPreferenceInput.trim()}
+                className="btn-primary px-4"
+              >
+                Add Path
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {scanOptions.pathPreferences.map((path, index) => (
+                <div key={index} className="flex items-center justify-between bg-zinc-800 px-4 py-3 rounded-lg border border-zinc-700">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
+                    <span className="font-mono text-sm text-zinc-200">{path}</span>
+                  </div>
+                  <button
+                    onClick={() => removePathPreference(index)}
+                    className="text-red-400 hover:text-red-300 text-sm hover:bg-red-900/20 px-2 py-1 rounded"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {scanOptions.pathPreferences.length === 0 && (
+                <div className="text-center py-8 text-zinc-500">
+                  <div className="text-4xl mb-2">📂</div>
+                  <p>No preferred paths set</p>
+                  <p className="text-sm">Add folder paths that should be prioritized when resolving duplicates</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results */}
@@ -368,7 +590,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             {duplicates.map((duplicate) => (
               <DuplicateItem
                 key={duplicate.id}
-                duplicate={duplicate}
+                duplicate={{...duplicate, pathPreferences: scanOptions.pathPreferences}}
                 isSelected={selectedDuplicates.has(duplicate.id)}
                 onToggleSelection={() => toggleDuplicateSelection(duplicate.id)}
                 resolutionStrategy={resolutionStrategy}
@@ -378,14 +600,33 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         </>
       )}
 
-      {/* Empty State */}
-      {!isScanning && duplicates.length === 0 && (
+      
+      {/* Empty State - After Scan */}
+      {!isScanning && duplicates.length === 0 && hasScanned && (
         <div className="card text-center py-12">
           <CheckCircle2 className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Duplicates Found</h3>
           <p className="text-zinc-400">
-            Your library appears to be clean! Run a scan to check for duplicates.
+            Your library appears to be clean! No duplicate tracks were detected.
           </p>
+        </div>
+      )}
+
+      {/* Initial State - Before Any Scan */}
+      {!isScanning && duplicates.length === 0 && !hasScanned && (
+        <div className="card text-center py-12">
+          <Search className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Ready to Scan</h3>
+          <p className="text-zinc-400 mb-4">
+            Click "Find Duplicates" to scan your library for duplicate tracks.
+          </p>
+          <button
+            onClick={scanForDuplicates}
+            className="btn-primary flex items-center space-x-2 mx-auto"
+          >
+            <Search className="w-4 h-4" />
+            <span>Find Duplicates</span>
+          </button>
         </div>
       )}
     </div>
