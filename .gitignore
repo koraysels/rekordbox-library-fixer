@@ -1,0 +1,30 @@
+# Dependencies
+/node_modules/
+
+# Build outputs
+/dist/
+
+# IDE files
+/.idea/
+/.vscode/
+
+# Logs
+/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Electron build outputs
+/out/
+/release/
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local

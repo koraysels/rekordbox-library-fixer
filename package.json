@@ -1,0 +1,63 @@
+{
+  "name": "rekordbox-library-manager",
+  "version": "1.0.0",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "npm run build:main && electron .",
+    "build": "npm run build:vite && npm run build:main",
+    "build:vite": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "dist": "npm run build && electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "rekordbox",
+    "dj",
+    "library",
+    "management"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "A powerful tool for managing and fixing Rekordbox libraries",
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "^22.5.1",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/xml2js": "^0.4.14",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "electron": "^32.0.1",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.20",
+    "better-sqlite3": "^11.2.1",
+    "crypto-js": "^4.2.0",
+    "lucide-react": "^0.436.0",
+    "music-metadata": "^10.4.0",
+    "postcss": "^8.4.41",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.10",
+    "xml2js": "^0.6.2"
+  },
+  "build": {
+    "appId": "com.rekordbox.library.manager",
+    "productName": "Rekordbox Library Manager",
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.music"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ]
+  }
+}

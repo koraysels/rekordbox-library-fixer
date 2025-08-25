@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-rekordbox-dark text-rekordbox-light;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-rekordbox-purple hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-rekordbox-gray hover:bg-zinc-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
+  .card {
+    @apply bg-rekordbox-gray rounded-xl p-6 shadow-xl border border-zinc-800;
+  }
+  
+  .input {
+    @apply bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-rekordbox-light focus:outline-none focus:ring-2 focus:ring-rekordbox-purple;
+  }
+  
+  .checkbox {
+    @apply w-4 h-4 text-rekordbox-purple bg-zinc-800 border-zinc-600 rounded focus:ring-rekordbox-purple focus:ring-2;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-zinc-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-600;
+}
+
+/* App header drag region */
+.app-header {
+  -webkit-app-region: drag;
+}
+
+.app-header button,
+.app-header a {
+  -webkit-app-region: no-drag;
+}

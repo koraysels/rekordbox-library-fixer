@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "WebSearch",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --index-filter 'git rm -rf --cached --ignore-unmatch node_modules' --prune-empty --tag-name-filter cat -- --all)",
+      "Bash(git lfs:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
