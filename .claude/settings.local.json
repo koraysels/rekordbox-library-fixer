@@ -17,7 +17,9 @@
       "mcp__serena__list_dir",
       "mcp__serena__get_symbols_overview",
       "Bash(npm install:*)",
-      "Bash(npm run test:unit:*)"
+      "Bash(npm run test:unit:*)",
+      "Bash(npm test)",
+      "mcp__serena__search_for_pattern"
     ],
     "deny": [],
     "ask": []

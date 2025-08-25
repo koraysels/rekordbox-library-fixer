@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DuplicateDetector } from '../../src/main/duplicateDetector';
 import type { DuplicateOptions } from '../../src/main/duplicateDetector';
 import type { Track } from '../../src/main/rekordboxParser';
-import fs from 'fs';
+import fs from 'fs/promises';
 
 describe('DuplicateDetector', () => {
   let detector: DuplicateDetector;
@@ -166,14 +166,14 @@ describe('DuplicateDetector', () => {
 
     it('should handle fingerprint-based detection', async () => {
       // Mock file system operations
-      (fs.promises.access as any).mockResolvedValue(undefined);
-      (fs.promises.stat as any).mockResolvedValue({ size: 8421504 });
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.stat).mockResolvedValue({ size: 8421504 } as any);
       
       const mockFd = {
         read: vi.fn().mockResolvedValue({ bytesRead: 1024 * 1024 }),
         close: vi.fn().mockResolvedValue(undefined),
       };
-      (fs.promises.open as any).mockResolvedValue(mockFd);
+      vi.mocked(fs.open).mockResolvedValue(mockFd as any);
 
       // Mock music-metadata
       const { parseFile } = await import('music-metadata');

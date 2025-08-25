@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RekordboxParser } from '../../src/main/rekordboxParser';
 import { getFixturePath, loadFixture } from '../setup';
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs/promises';
 
 describe('RekordboxParser', () => {
   let parser: RekordboxParser;
@@ -16,7 +15,7 @@ describe('RekordboxParser', () => {
     it('should parse a basic library correctly', async () => {
       // Mock file reading
       const basicLibraryXML = loadFixture('basic-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(basicLibraryXML);
+      vi.mocked(fs.readFile).mockResolvedValue(basicLibraryXML);
       
       const library = await parser.parseLibrary('test-path.xml');
       
@@ -68,7 +67,7 @@ describe('RekordboxParser', () => {
 
     it('should handle empty library', async () => {
       const emptyLibraryXML = loadFixture('empty-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(emptyLibraryXML);
+      vi.mocked(fs.readFile).mockResolvedValue(emptyLibraryXML);
       
       const library = await parser.parseLibrary('empty.xml');
       
@@ -79,7 +78,7 @@ describe('RekordboxParser', () => {
 
     it('should parse complex library with special characters', async () => {
       const complexLibraryXML = loadFixture('complex-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(complexLibraryXML);
+      vi.mocked(fs.readFile).mockResolvedValue(complexLibraryXML);
       
       const library = await parser.parseLibrary('complex.xml');
       
@@ -102,7 +101,7 @@ describe('RekordboxParser', () => {
 
     it('should parse playlists correctly', async () => {
       const basicLibraryXML = loadFixture('basic-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(basicLibraryXML);
+      vi.mocked(fs.readFile).mockResolvedValue(basicLibraryXML);
       
       const library = await parser.parseLibrary('basic.xml');
       
@@ -126,7 +125,7 @@ describe('RekordboxParser', () => {
 
     it('should handle malformed XML gracefully', async () => {
       const malformedXML = loadFixture('malformed-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(malformedXML);
+      vi.mocked(fs.readFile).mockResolvedValue(malformedXML);
       
       // Should throw an error for malformed XML
       await expect(parser.parseLibrary('malformed.xml')).rejects.toThrow();
@@ -142,7 +141,7 @@ describe('RekordboxParser', () => {
   <PLAYLISTS/>
 </DJ_PLAYLISTS>`;
       
-      (fs.promises.readFile as any).mockResolvedValue(singleTrackXML);
+      vi.mocked(fs.readFile).mockResolvedValue(singleTrackXML);
       
       const library = await parser.parseLibrary('single.xml');
       
@@ -154,7 +153,7 @@ describe('RekordboxParser', () => {
 
     it('should decode file locations correctly', async () => {
       const basicLibraryXML = loadFixture('basic-library.xml');
-      (fs.promises.readFile as any).mockResolvedValue(basicLibraryXML);
+      vi.mocked(fs.readFile).mockResolvedValue(basicLibraryXML);
       
       const library = await parser.parseLibrary('basic.xml');
       
@@ -167,7 +166,7 @@ describe('RekordboxParser', () => {
   describe('saveLibrary', () => {
     it('should generate valid XML for a simple library', async () => {
       let savedXML = '';
-      (fs.promises.writeFile as any).mockImplementation(async (path: string, content: string) => {
+      vi.mocked(fs.writeFile).mockImplementation(async (path: string, content: string) => {
         savedXML = content;
       });
       
@@ -200,7 +199,7 @@ describe('RekordboxParser', () => {
       
       await parser.saveLibrary(library, 'output.xml');
       
-      expect(fs.promises.writeFile).toHaveBeenCalledWith('output.xml', expect.any(String), 'utf-8');
+      expect(vi.mocked(fs.writeFile)).toHaveBeenCalledWith('output.xml', expect.any(String), 'utf-8');
       expect(savedXML).toContain('DJ_PLAYLISTS');
       expect(savedXML).toContain('Test Track');
       expect(savedXML).toContain('Test Artist');
@@ -210,7 +209,7 @@ describe('RekordboxParser', () => {
 
     it('should handle tracks with special characters in XML output', async () => {
       let savedXML = '';
-      (fs.promises.writeFile as any).mockImplementation(async (path: string, content: string) => {
+      vi.mocked(fs.writeFile).mockImplementation(async (path: string, content: string) => {
         savedXML = content;
       });
       

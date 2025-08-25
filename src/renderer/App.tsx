@@ -78,8 +78,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-rekordbox-dark">
-      {/* Header */}
-      <div className="app-header bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-4">
+      {/* Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 app-header bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Music className="w-8 h-8 text-white" />
@@ -93,8 +93,8 @@ const App: React.FC = () => {
             {libraryPath && (
               <div className="text-right">
                 <p className="text-purple-100 text-xs">Current Library</p>
-                <p className="text-white text-sm font-medium truncate max-w-xs">
-                  {libraryPath.split('/').pop()}
+                <p className="text-white text-sm font-medium max-w-xs" title={libraryPath}>
+                  {libraryPath.length > 40 ? '...' + libraryPath.slice(-37) : libraryPath.split('/').pop()}
                 </p>
               </div>
             )}
@@ -113,10 +113,13 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Header Spacer */}
+      <div className="h-24"></div>
 
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-20 right-6 z-50 p-4 rounded-lg shadow-xl flex items-center space-x-3 ${
+        <div className={`fixed top-28 right-6 z-40 p-4 rounded-lg shadow-xl flex items-center space-x-3 ${
           notification.type === 'success' ? 'bg-green-600' :
           notification.type === 'error' ? 'bg-red-600' :
           'bg-blue-600'
@@ -155,7 +158,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 pb-20">
         {!libraryData ? (
           <div className="card text-center py-20">
             <Music className="w-20 h-20 mx-auto text-zinc-600 mb-4" />

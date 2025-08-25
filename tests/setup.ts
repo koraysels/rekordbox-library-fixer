@@ -2,18 +2,36 @@ import { beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
+// Mock fs promises for tests
+vi.mock('fs/promises', () => ({
+  default: {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    access: vi.fn(),
+    stat: vi.fn(),
+    open: vi.fn(),
+  },
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  access: vi.fn(),
+  stat: vi.fn(),
+  open: vi.fn(),
+}));
+
 // Mock fs for tests that don't need real file access
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();
   return {
     ...actual,
     promises: {
+      ...actual.promises,
       readFile: vi.fn(),
       writeFile: vi.fn(),
       access: vi.fn(),
       stat: vi.fn(),
       open: vi.fn(),
     },
+    readFileSync: actual.readFileSync, // Keep real readFileSync for fixtures
   };
 });
 

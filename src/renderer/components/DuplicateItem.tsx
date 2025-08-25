@@ -179,8 +179,19 @@ const DuplicateItem: React.FC<DuplicateItemProps> = ({
                       </div>
                     </div>
 
-                    <div className="mt-2 text-xs text-zinc-500 truncate">
-                      {track.location}
+                    <div className="mt-2 text-xs text-zinc-500">
+                      <div className="flex items-center space-x-1">
+                        <span className="text-zinc-600">Path:</span>
+                        <span 
+                          className="font-mono break-all" 
+                          title={track.location}
+                        >
+                          {track.location.length > 60 
+                            ? '...' + track.location.slice(-57) 
+                            : track.location
+                          }
+                        </span>
+                      </div>
                     </div>
 
                     {track.cues && track.cues.length > 0 && (

@@ -1,6 +1,6 @@
 {
   "name": "rekordbox-library-manager",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
