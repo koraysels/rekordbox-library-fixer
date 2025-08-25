@@ -10,7 +10,12 @@
     "build:vite": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "dist": "npm run build && electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui",
+    "test:unit:watch": "vitest --watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "keywords": [
     "rekordbox",
@@ -18,21 +23,27 @@
     "library",
     "management"
   ],
-  "author": "",
+  "author": "Koray Sels",
   "license": "ISC",
   "description": "A powerful tool for managing and fixing Rekordbox libraries",
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/crypto-js": "^4.2.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@types/xml2js": "^0.4.14",
     "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/ui": "^3.2.4",
     "concurrently": "^8.2.2",
     "electron": "^32.0.1",
     "electron-builder": "^24.13.3",
+    "happy-dom": "^17.6.1",
+    "playwright": "^1.55.0",
     "typescript": "^5.5.4",
-    "vite": "^5.4.2"
+    "vite": "^5.4.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "autoprefixer": "^10.4.20",

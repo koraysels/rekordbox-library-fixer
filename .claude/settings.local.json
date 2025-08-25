@@ -13,7 +13,11 @@
       "mcp__serena__find_file",
       "mcp__serena__find_symbol",
       "Bash(mkdir:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "mcp__serena__list_dir",
+      "mcp__serena__get_symbols_overview",
+      "Bash(npm install:*)",
+      "Bash(npm run test:unit:*)"
     ],
     "deny": [],
     "ask": []

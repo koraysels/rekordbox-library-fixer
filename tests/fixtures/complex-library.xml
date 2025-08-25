@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DJ_PLAYLISTS Version="1.0.0">
+  <PRODUCT Name="rekordbox" Version="6.0.0" Company="Pioneer DJ"/>
+  <COLLECTION Entries="4">
+    <!-- Track with extensive cues and loops -->
+    <TRACK TrackID="1" Name="Complex House Track" Artist="DJ Complex" Album="Advanced Mixing" Genre="House" AverageBpm="128.00" Tonality="Am" Location="file://localhost/Users/test/Music/complex/house-track.mp3" Size="12345678" BitRate="320" TotalTime="300.0" PlayCount="25" Rating="5" Comments="Great for mixing">
+      <POSITION_MARK Type="CUE" Start="0.0" Name="Intro"/>
+      <POSITION_MARK Type="CUE" Start="16.0" Name="Vocal In" Num="1"/>
+      <POSITION_MARK Type="CUE" Start="32.0" Name="Breakdown" Num="2"/>
+      <POSITION_MARK Type="CUE" Start="64.0" Name="Drop" Num="3"/>
+      <POSITION_MARK Type="CUE" Start="128.0" Name="Break" Num="4"/>
+      <POSITION_MARK Type="CUE" Start="192.0" Name="Final Drop" Num="5"/>
+      <POSITION_MARK Type="CUE" Start="256.0" Name="Outro" Num="6"/>
+      <POSITION_MARK Type="LOOP" Start="64.0" End="96.0" Name="Main Loop"/>
+      <POSITION_MARK Type="LOOP" Start="128.0" End="144.0" Name="Break Loop"/>
+      <POSITION_MARK Type="LOOP" Start="192.0" End="224.0" Name="Final Loop"/>
+      <TEMPO Bpm="128.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Track with special characters and unicode -->
+    <TRACK TrackID="2" Name="Café Dançante (Remix)" Artist="Müller &amp; Schmidt" Album="Spëcial Chàracters" Genre="Deep House" AverageBpm="124.50" Tonality="F#m" Location="file://localhost/Users/test/Music/special/café-dançante.mp3" Size="8765432" BitRate="320" TotalTime="420.75" PlayCount="8" Rating="4" Comments="Unicode test: 音楽 🎵">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <POSITION_MARK Type="CUE" Start="60.0" Num="1"/>
+      <POSITION_MARK Type="LOOP" Start="120.0" End="180.0" Name="Café Loop"/>
+      <TEMPO Bpm="124.50" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Track with minimal metadata -->
+    <TRACK TrackID="3" Name="Minimal Track" Artist="Unknown" Location="file://localhost/Users/test/Music/minimal.mp3"/>
+    
+    <!-- Track with extreme values -->
+    <TRACK TrackID="4" Name="Extreme BPM Track" Artist="Speed Demon" AverageBpm="200.00" Tonality="C" Location="file://localhost/Users/test/Music/extreme/speed-track.mp3" Size="999999999" BitRate="1411" TotalTime="60.0" PlayCount="999" Rating="5">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <POSITION_MARK Type="CUE" Start="5.0" Num="1"/>
+      <POSITION_MARK Type="CUE" Start="10.0" Num="2"/>
+      <POSITION_MARK Type="CUE" Start="15.0" Num="3"/>
+      <POSITION_MARK Type="CUE" Start="20.0" Num="4"/>
+      <POSITION_MARK Type="CUE" Start="25.0" Num="5"/>
+      <POSITION_MARK Type="CUE" Start="30.0" Num="6"/>
+      <POSITION_MARK Type="CUE" Start="35.0" Num="7"/>
+      <POSITION_MARK Type="CUE" Start="40.0" Num="8"/>
+      <POSITION_MARK Type="LOOP" Start="20.0" End="40.0" Name="Speed Loop"/>
+      <TEMPO Bpm="200.00" Inizio="0.0"/>
+    </TRACK>
+  </COLLECTION>
+  <PLAYLISTS>
+    <NODE Type="0" Name="Complex Structure" Entries="3">
+      <NODE Type="0" Name="By Genre" Entries="2">
+        <NODE Type="1" Name="House" Entries="2">
+          <TRACK Key="1"/>
+          <TRACK Key="2"/>
+        </NODE>
+        <NODE Type="1" Name="Extreme" Entries="1">
+          <TRACK Key="4"/>
+        </NODE>
+      </NODE>
+      <NODE Type="0" Name="By Rating" Entries="2">
+        <NODE Type="1" Name="5 Stars" Entries="2">
+          <TRACK Key="1"/>
+          <TRACK Key="4"/>
+        </NODE>
+        <NODE Type="1" Name="4 Stars" Entries="1">
+          <TRACK Key="2"/>
+        </NODE>
+      </NODE>
+      <NODE Type="1" Name="All Tracks" Entries="4">
+        <TRACK Key="1"/>
+        <TRACK Key="2"/>
+        <TRACK Key="3"/>
+        <TRACK Key="4"/>
+      </NODE>
+    </NODE>
+  </PLAYLISTS>
+</DJ_PLAYLISTS>

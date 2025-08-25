@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DJ_PLAYLISTS Version="1.0.0">
+  <PRODUCT Name="rekordbox" Version="6.0.0" Company="Pioneer DJ"/>
+  <COLLECTION Entries="3">
+    <TRACK TrackID="1" Name="House Track" Artist="DJ Test" Album="Test Album" Genre="House" AverageBpm="128.00" Tonality="Am" Location="file://localhost/Users/test/Music/house-track.mp3" Size="8421504" BitRate="320" TotalTime="240.5" PlayCount="5" Rating="4">
+      <POSITION_MARK Type="CUE" Start="0.0" Name="Intro"/>
+      <POSITION_MARK Type="CUE" Start="32.0" Name="Drop" Num="1"/>
+      <POSITION_MARK Type="LOOP" Start="64.0" End="96.0" Name="Loop 1"/>
+      <TEMPO Bpm="128.00" Inizio="0.0"/>
+    </TRACK>
+    <TRACK TrackID="2" Name="Techno Beat" Artist="Producer X" Album="Underground EP" Genre="Techno" AverageBpm="132.50" Tonality="Dm" Location="file://localhost/Users/test/Music/techno-beat.mp3" Size="9876543" BitRate="320" TotalTime="180.2" PlayCount="12" Rating="5">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <POSITION_MARK Type="CUE" Start="45.0" Num="1"/>
+      <POSITION_MARK Type="CUE" Start="90.0" Num="2"/>
+      <TEMPO Bpm="132.50" Inizio="0.0"/>
+    </TRACK>
+    <TRACK TrackID="3" Name="Ambient Sound" Artist="Chill Artist" Genre="Ambient" AverageBpm="70.00" Location="file://localhost/Users/test/Music/ambient-sound.mp3" Size="12345678" BitRate="192" TotalTime="360.0" PlayCount="2">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <TEMPO Bpm="70.00" Inizio="0.0"/>
+    </TRACK>
+  </COLLECTION>
+  <PLAYLISTS>
+    <NODE Type="0" Name="My Playlists" Entries="2">
+      <NODE Type="1" Name="House Mix" Entries="1">
+        <TRACK Key="1"/>
+      </NODE>
+      <NODE Type="1" Name="Techno Set" Entries="1">
+        <TRACK Key="2"/>
+      </NODE>
+    </NODE>
+  </PLAYLISTS>
+</DJ_PLAYLISTS>

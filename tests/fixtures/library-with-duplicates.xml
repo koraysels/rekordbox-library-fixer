@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DJ_PLAYLISTS Version="1.0.0">
+  <PRODUCT Name="rekordbox" Version="6.0.0" Company="Pioneer DJ"/>
+  <COLLECTION Entries="6">
+    <!-- Original track -->
+    <TRACK TrackID="1" Name="Duplicate Track" Artist="Test Artist" Album="Test Album" Genre="House" AverageBpm="128.00" Tonality="Am" Location="file://localhost/Users/test/Music/original/duplicate-track.mp3" Size="8421504" BitRate="320" TotalTime="240.5" PlayCount="10" Rating="5">
+      <POSITION_MARK Type="CUE" Start="0.0" Name="Intro"/>
+      <POSITION_MARK Type="CUE" Start="32.0" Name="Drop" Num="1"/>
+      <POSITION_MARK Type="LOOP" Start="64.0" End="96.0" Name="Main Loop"/>
+      <TEMPO Bpm="128.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Exact duplicate (same metadata, different location) -->
+    <TRACK TrackID="2" Name="Duplicate Track" Artist="Test Artist" Album="Test Album" Genre="House" AverageBpm="128.00" Tonality="Am" Location="file://localhost/Users/test/Music/backup/duplicate-track.mp3" Size="8421504" BitRate="320" TotalTime="240.5" PlayCount="3" Rating="4">
+      <POSITION_MARK Type="CUE" Start="0.0" Name="Intro"/>
+      <TEMPO Bpm="128.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Lower quality duplicate -->
+    <TRACK TrackID="3" Name="Duplicate Track" Artist="Test Artist" Album="Test Album" Genre="House" AverageBpm="128.00" Location="file://localhost/Users/test/Music/low-quality/duplicate-track.mp3" Size="4210752" BitRate="128" TotalTime="240.8" PlayCount="1" Rating="3">
+      <TEMPO Bpm="128.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Another set of duplicates -->
+    <TRACK TrackID="4" Name="Another Song" Artist="Different Artist" Album="Another Album" Genre="Techno" AverageBpm="132.00" Location="file://localhost/Users/test/Music/techno/another-song.mp3" Size="9876543" BitRate="320" TotalTime="180.0" PlayCount="8" Rating="5">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <POSITION_MARK Type="CUE" Start="45.0" Num="1"/>
+      <POSITION_MARK Type="CUE" Start="90.0" Num="2"/>
+      <TEMPO Bpm="132.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Duplicate with different case -->
+    <TRACK TrackID="5" Name="another song" Artist="different artist" Album="Another Album" Genre="Techno" AverageBpm="132.00" Location="file://localhost/Users/test/Music/downloads/another-song.mp3" Size="9876543" BitRate="320" TotalTime="180.2" PlayCount="2" Rating="4">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <TEMPO Bpm="132.00" Inizio="0.0"/>
+    </TRACK>
+    
+    <!-- Unique track (no duplicates) -->
+    <TRACK TrackID="6" Name="Unique Track" Artist="Solo Artist" Album="Solo Album" Genre="Ambient" AverageBpm="85.00" Location="file://localhost/Users/test/Music/ambient/unique-track.mp3" Size="15432876" BitRate="320" TotalTime="420.0" PlayCount="15" Rating="5">
+      <POSITION_MARK Type="CUE" Start="0.0"/>
+      <POSITION_MARK Type="LOOP" Start="120.0" End="180.0" Name="Ambient Loop"/>
+      <TEMPO Bpm="85.00" Inizio="0.0"/>
+    </TRACK>
+  </COLLECTION>
+  <PLAYLISTS>
+    <NODE Type="0" Name="Test Playlists" Entries="3">
+      <NODE Type="1" Name="Main Mix" Entries="3">
+        <TRACK Key="1"/>
+        <TRACK Key="4"/>
+        <TRACK Key="6"/>
+      </NODE>
+      <NODE Type="1" Name="Backup Mix" Entries="2">
+        <TRACK Key="2"/>
+        <TRACK Key="5"/>
+      </NODE>
+      <NODE Type="1" Name="All Tracks" Entries="6">
+        <TRACK Key="1"/>
+        <TRACK Key="2"/>
+        <TRACK Key="3"/>
+        <TRACK Key="4"/>
+        <TRACK Key="5"/>
+        <TRACK Key="6"/>
+      </NODE>
+    </NODE>
+  </PLAYLISTS>
+</DJ_PLAYLISTS>
