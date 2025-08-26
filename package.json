@@ -1,6 +1,6 @@
 {
   "name": "rekordbox-library-manager",
-  "version": "0.0.2-alpha",
+  "version": "0.0.2",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
@@ -27,7 +27,10 @@
     "library",
     "management"
   ],
-  "author": "Koray Sels",
+  "author": {
+    "name": "Koray Sels",
+    "email": "koray@example.com"
+  },
   "license": "SEE LICENSE IN LICENSE",
   "description": "A powerful tool for managing and fixing Rekordbox libraries",
   "devDependencies": {
@@ -128,10 +131,10 @@
     },
     "linux": {
       "icon": "assets/icons",
+      "category": "AudioVideo",
       "target": [
         "AppImage",
-        "deb",
-        "flatpak"
+        "deb"
       ]
     },
     "nsis": {
