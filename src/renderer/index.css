@@ -58,11 +58,12 @@
 }
 
 /* App header drag region */
-.app-header {
+.app-drag-region {
   -webkit-app-region: drag;
 }
 
-.app-header button,
-.app-header a {
+.no-drag,
+.no-drag button,
+.no-drag a {
   -webkit-app-region: no-drag;
 }

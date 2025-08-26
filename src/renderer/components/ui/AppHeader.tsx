@@ -13,34 +13,36 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectLibrary
 }) => {
   return (
-    <header className="bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-3 shadow-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Music className="w-6 h-6 text-white" />
+    <header className="bg-gradient-to-r from-rekordbox-purple to-purple-700 shadow-lg app-drag-region">
+      <div className="flex items-center justify-between px-6 py-2" style={{ paddingLeft: '90px' }}>
+        {/* Left side with logo and title */}
+        <div className="flex items-center space-x-2 no-drag">
+          <Music className="w-5 h-5 text-white" />
           <div>
-            <h1 className="text-lg font-bold text-white">Rekordbox Library Manager</h1>
-            <p className="text-purple-100 text-xs">Fix and optimize your DJ library</p>
+            <h1 className="text-sm font-bold text-white">Rekordbox Library Manager</h1>
+            <p className="text-purple-100 text-xs leading-tight">Fix and optimize your DJ library</p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Right side with library info and button */}
+        <div className="flex items-center space-x-3 no-drag" style={{ paddingRight: '20px' }}>
           {libraryPath && (
             <div className="text-right">
               <p className="text-purple-100 text-xs">Current Library</p>
-              <p className="text-white text-sm font-medium max-w-xs" title={libraryPath}>
-                {libraryPath.length > 40 ? '...' + libraryPath.slice(-37) : libraryPath.split('/').pop()}
+              <p className="text-white text-xs font-medium max-w-xs truncate" title={libraryPath}>
+                {libraryPath.length > 35 ? '...' + libraryPath.slice(-32) : libraryPath.split('/').pop()}
               </p>
             </div>
           )}
           <button
             onClick={onSelectLibrary}
-            className="btn-primary flex items-center space-x-2 text-sm px-3 py-2"
+            className="btn-primary flex items-center space-x-1 text-xs px-2 py-1.5"
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-3 h-3 animate-spin" data-testid="loader-icon" />
             ) : (
-              <FolderOpen className="w-4 h-4" />
+              <FolderOpen className="w-3 h-3" />
             )}
             <span>{libraryPath ? 'Change Library' : 'Select Library'}</span>
           </button>

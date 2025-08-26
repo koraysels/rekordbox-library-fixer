@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
@@ -40,7 +40,74 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+// Create the application menu
+function createMenu() {
+  const template = [
+    {
+      label: 'Rekordbox Library Manager',
+      submenu: [
+        {
+          label: 'About Rekordbox Library Manager',
+          click: () => {
+            mainWindow?.webContents.send('show-about');
+          }
+        },
+        { type: 'separator' },
+        { role: 'services', submenu: [] },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideothers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' }
+      ]
+    }
+  ] as Electron.MenuItemConstructorOptions[];
+
+  // Don't show developer menu in production
+  if (process.env.NODE_ENV === 'development') {
+    template.push({
+      label: 'Developer',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    });
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+app.whenReady().then(async () => {
+  // Enable context menu with copy/paste support using eval to bypass TypeScript compilation
+  try {
+    const contextMenuModule = await eval('import("electron-context-menu")');
+    const contextMenu = contextMenuModule.default;
+    contextMenu({
+      showLookUpSelection: false,
+      showSearchWithGoogle: false,
+      showCopyImage: false,
+      showCopyImageAddress: false,
+      showSaveImage: false,
+      showSaveImageAs: false,
+      showServices: false
+    });
+    console.log('✅ Context menu initialized');
+  } catch (error) {
+    console.warn('⚠️ Failed to load context menu:', error);
+  }
+
+  // Create application menu
+  createMenu();
+
   logger = new Logger();
   rekordboxParser = new RekordboxParser();
   duplicateDetector = new DuplicateDetector();

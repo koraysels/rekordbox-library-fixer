@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('get-duplicate-results', libraryPath),
   deleteDuplicateResults: (libraryPath: string) => 
     ipcRenderer.invoke('delete-duplicate-results', libraryPath),
+  
+  // Event listeners for menu actions
+  onShowAbout: (callback: () => void) => {
+    ipcRenderer.on('show-about', callback);
+    return () => ipcRenderer.removeListener('show-about', callback);
+  }
 });
 
 export {};
