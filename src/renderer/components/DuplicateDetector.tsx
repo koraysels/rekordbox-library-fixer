@@ -3,8 +3,6 @@ import {
   Search,
   Settings,
   Trash2,
-  ChevronDown,
-  ChevronUp,
   Loader2,
   CheckCircle2,
   Sparkles
@@ -30,7 +28,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   showNotification
 }) => {
   console.log('🏗️ DuplicateDetector render - libraryPath:', libraryPath);
-  
+
   // Use the custom duplicates hook
   const {
     duplicates,
@@ -56,13 +54,13 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     isSearching,
     filteredDuplicates
   } = useDuplicates(libraryPath, showNotification);
-  
+
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
-  
+
   const [showSettings, setShowSettings] = useState(false);
   const [pathPreferenceInput, setPathPreferenceInput] = useState('');
   const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
-  
+
   // Zustand actions for path preferences
   const addPathPreference = useSettingsStore((state) => state.addPathPreference);
   const removePathPreference = useSettingsStore((state) => state.removePathPreference);
@@ -73,7 +71,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   useEffect(() => {
     const loadStoredResults = async () => {
       console.log(`🔄 DuplicateDetector effect triggered - Current: "${currentLibraryPath}", New: "${libraryPath}"`);
-      
+
       // Always load when component first mounts (currentLibraryPath is empty)
       // Or when library actually changes
       if (currentLibraryPath === libraryPath && currentLibraryPath !== '') {
@@ -82,7 +80,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       }
 
       console.log(`📚 Library loading: "${libraryPath}"`);
-      
+
       if (libraryPath) {
         setIsLoadingDuplicates(true);
         try {
@@ -93,7 +91,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             console.log(`   - ${stored.duplicates.length} duplicate sets`);
             console.log(`   - ${stored.selectedDuplicates.length} selected`);
             console.log(`   - Has scanned: ${stored.hasScanned}`);
-            
+
             setDuplicates(stored.duplicates || []);
             setSelections(stored.selectedDuplicates || []);
             setHasScanned(stored.hasScanned || false);
@@ -137,15 +135,15 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
   // Debounced save function to reduce database writes
   const debouncedSaveRef = React.useRef<NodeJS.Timeout>();
-  
+
   const saveDuplicateResults = useCallback(async () => {
     if (!libraryPath) return;
-    
+
     // Clear existing timeout
     if (debouncedSaveRef.current) {
       clearTimeout(debouncedSaveRef.current);
     }
-    
+
     // Debounce saves by 1 second
     debouncedSaveRef.current = setTimeout(async () => {
       try {
@@ -156,7 +154,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           hasScanned,
           scanOptions
         });
-        
+
         if (result.success) {
           console.log(`💾 Saved results to SQLite for: ${libraryPath}`);
         } else {
@@ -184,25 +182,25 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         tracks,
         ...scanOptions
       });
-      
+
       if (result.success) {
         const duplicatesFound = result.data;
-        
+
         // Enhance duplicates with path preferences for resolution strategy
         const enhancedDuplicates = duplicatesFound.map((duplicate: any) => ({
           ...duplicate,
           pathPreferences: scanOptions.pathPreferences
         }));
-        
+
         setDuplicates(enhancedDuplicates);
         setHasScanned(true);
-        
+
         // Immediately save scan results to SQLite
         // (The auto-save effect will handle this, but this ensures immediate save)
-        
+
         showNotification(
           duplicatesFound.length > 0 ? 'info' : 'success',
-          duplicatesFound.length > 0 
+          duplicatesFound.length > 0
             ? `Found ${duplicatesFound.length} duplicate sets`
             : 'No duplicates found in your library!'
         );
@@ -228,7 +226,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       return;
     }
 
-    const selectedDuplicateSets = duplicates.filter(d => 
+    const selectedDuplicateSets = duplicates.filter(d =>
       selectedDuplicates.has(d.id)
     );
 
@@ -248,13 +246,13 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         const remainingDuplicates = duplicates.filter(d => !selectedDuplicates.has(d.id));
         setDuplicates(remainingDuplicates);
         setSelections([]);
-        
-        showNotification('success', 
+
+        showNotification('success',
           `✅ Successfully resolved ${selectedDuplicates.size} duplicate sets!\n` +
           `📁 Backup created: ${result.backupPath}\n` +
           `📝 XML updated with ${result.tracksRemoved} tracks removed`
         );
-        
+
         // Update library data with the new version
         if (result.updatedLibrary) {
           // The onUpdate callback should refresh the main library data
@@ -308,18 +306,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Library Info */}
-      {libraryPath && (
-        <div className="flex-shrink-0 px-6 py-3 bg-blue-900/10 border-b border-blue-500/20">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-            <p className="text-xs text-blue-300 font-mono truncate">
-              {libraryPath.length > 60 ? '...' + libraryPath.slice(-57) : libraryPath}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -387,7 +373,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
                 </>
               )}
             </div>
-            
+
             {duplicates.length > 0 && (
               <PopoverButton
                 onClick={resolveDuplicates}

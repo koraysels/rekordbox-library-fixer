@@ -34,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <div className="text-right">
               <p className="text-purple-100 text-xs">Current Library</p>
               <p className="text-white text-xs font-medium max-w-xs truncate" title={libraryPath}>
-                {libraryPath.length > 35 ? '...' + libraryPath.slice(-32) : libraryPath.split('/').pop()}
+                {libraryPath}
               </p>
             </div>
           )}

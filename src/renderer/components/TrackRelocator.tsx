@@ -19,9 +19,9 @@ import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
 import { SettingsSlideout, PopoverButton } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
-import type { 
-  LibraryData, 
-  NotificationType, 
+import type {
+  LibraryData,
+  NotificationType,
   RelocationCandidate
 } from '../types';
 
@@ -47,7 +47,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
     isRelocating,
     searchOptions,
     stats,
-    
+
     // Actions
     scanForMissingTracks,
     findRelocationCandidates,
@@ -64,7 +64,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   const [newSearchPath, setNewSearchPath] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
-  
+
   // Get settings store
   const relocationOptions = useSettingsStore((state) => state.relocationOptions);
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
@@ -133,10 +133,10 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
 
   // Auto relocate selected tracks
   const autoRelocateSelected = async () => {
-    const selectedTracks = filteredMissingTracks.filter(track => 
+    const selectedTracks = filteredMissingTracks.filter(track =>
       selectedMissingTracks.has(track.id)
     );
-    
+
     if (selectedTracks.length === 0) {
       showNotification('error', 'Please select tracks to auto-relocate');
       return;
@@ -152,7 +152,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
       const result = await window.electronAPI.autoRelocateTracks(selectedTracks, searchOptions);
       if (result.success) {
         const { successfulRelocations, totalTracks } = result.data;
-        showNotification('success', 
+        showNotification('success',
           `Auto-relocated ${successfulRelocations}/${totalTracks} tracks`);
         clearSelection();
         // Refresh the missing tracks list
@@ -219,7 +219,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
               <h1 className="text-xl font-bold text-white">Track Relocator</h1>
             </div>
             <div className="text-sm text-gray-400">
-              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • 
+              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured •
               {selectedMissingTracks.size} selected
             </div>
           </div>
@@ -249,7 +249,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          
+
           {/* Actions Bar */}
           <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
@@ -270,8 +270,8 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 <PopoverButton
                   onClick={autoRelocateSelected}
                   disabled={
-                    isAutoRelocating || 
-                    selectedMissingTracks.size === 0 || 
+                    isAutoRelocating ||
+                    selectedMissingTracks.size === 0 ||
                     searchOptions.searchPaths.length === 0
                   }
                   loading={isAutoRelocating}
@@ -286,7 +286,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 >
                   Auto Relocate ({selectedMissingTracks.size})
                 </PopoverButton>
-                
+
                 <PopoverButton
                   onClick={resetSelectedTracks}
                   disabled={isResetting || selectedMissingTracks.size === 0}
@@ -302,7 +302,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 >
                   Reset Locations ({selectedMissingTracks.size})
                 </PopoverButton>
-                
+
                 <PopoverButton
                   onClick={executeRelocations}
                   disabled={isRelocating || relocations.size === 0}
@@ -348,7 +348,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   Clear Selection
                 </button>
               </div>
-              
+
               {!stats.hasSearchPaths && (
                 <div className="flex items-center space-x-2 text-yellow-400 text-sm">
                   <AlertTriangle size={16} />
@@ -414,7 +414,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                         )}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <PopoverButton
                         onClick={(e) => {
@@ -430,7 +430,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                       >
                         Find
                       </PopoverButton>
-                      
+
                       {relocations.has(track.id) && (
                         <PopoverButton
                           onClick={(e) => {
@@ -502,7 +502,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                         <p className="text-white text-sm font-medium truncate">
                           {candidate.path.split('/').pop()}
                         </p>
-                        <p className="text-gray-400 text-xs font-mono truncate">
+                        <p className="text-gray-400 text-xs font-mono">
                           {candidate.path}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
