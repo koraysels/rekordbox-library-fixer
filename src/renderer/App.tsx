@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLibrary, useNotifications } from './hooks';
 import { AppHeader, NotificationToast, NavigationTabs, EmptyLibraryState, AppFooter, SplashScreen, AboutModal } from './components/ui';
 import DuplicateDetector from './components/DuplicateDetector';
+import { TrackRelocator } from './components/TrackRelocator';
 import type { TabType } from './types';
 
 const App: React.FC = () => {
@@ -93,11 +94,11 @@ const App: React.FC = () => {
             )}
 
             {activeTab === 'relocate' && (
-              <div className="card">
-                <h2 className="text-xl font-bold mb-4">Track Relocation</h2>
-                <p className="text-zinc-400">
-                  Feature coming soon: Fix missing tracks and relocate audio files
-                </p>
+              <div className="h-full flex flex-col">
+                <TrackRelocator
+                  libraryData={libraryData}
+                  showNotification={showNotification}
+                />
               </div>
             )}
 

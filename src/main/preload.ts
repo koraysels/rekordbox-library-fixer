@@ -22,6 +22,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteDuplicateResults: (libraryPath: string) => 
     ipcRenderer.invoke('delete-duplicate-results', libraryPath),
   
+  // Track Relocation APIs
+  findMissingTracks: (tracks: any) => 
+    ipcRenderer.invoke('find-missing-tracks', tracks),
+  findRelocationCandidates: (track: any, options: any) => 
+    ipcRenderer.invoke('find-relocation-candidates', track, options),
+  relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => 
+    ipcRenderer.invoke('relocate-track', trackId, oldLocation, newLocation),
+  batchRelocateTracks: (relocations: any[]) => 
+    ipcRenderer.invoke('batch-relocate-tracks', relocations),
+  
+  // Cloud Sync APIs
+  detectCloudSyncIssues: (tracks: any) => 
+    ipcRenderer.invoke('detect-cloud-sync-issues', tracks),
+  fixCloudSyncIssue: (issue: any) => 
+    ipcRenderer.invoke('fix-cloud-sync-issue', issue),
+  batchFixCloudSyncIssues: (issues: any[]) => 
+    ipcRenderer.invoke('batch-fix-cloud-sync-issues', issues),
+  initializeDropboxAPI: (config: any) => 
+    ipcRenderer.invoke('initialize-dropbox-api', config),
+  
+  // Track Ownership APIs
+  detectOwnershipIssues: (tracks: any, computers: any) => 
+    ipcRenderer.invoke('detect-ownership-issues', tracks, computers),
+  fixTrackOwnership: (issue: any) => 
+    ipcRenderer.invoke('fix-track-ownership', issue),
+  batchFixOwnership: (issues: any[]) => 
+    ipcRenderer.invoke('batch-fix-ownership', issues),
+  updateLibraryOwnership: (library: any, fixes: any[]) => 
+    ipcRenderer.invoke('update-library-ownership', library, fixes),
+  
   // Event listeners for menu actions
   onShowAbout: (callback: () => void) => {
     ipcRenderer.on('show-about', callback);
