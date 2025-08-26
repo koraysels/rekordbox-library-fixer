@@ -146,9 +146,6 @@ declare global {
       resolveDuplicates: (resolution: any) => Promise<any>;
       saveRekordboxXML: (data: any) => Promise<any>;
       showFileInFolder: (filePath: string) => Promise<any>;
-      saveDuplicateResults: (data: any) => Promise<any>;
-      getDuplicateResults: (libraryPath: string) => Promise<any>;
-      deleteDuplicateResults: (libraryPath: string) => Promise<any>;
       // Track Relocation APIs
       findMissingTracks: (tracks: any) => Promise<any>;
       resetTrackLocations: (trackIds: string[]) => Promise<any>;

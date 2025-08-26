@@ -12,6 +12,7 @@ import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 import { useSettingsStore } from '../stores/settingsStore';
+import { duplicateStorage } from '../db/duplicatesDb';
 import type { LibraryData, NotificationType } from '../types';
 
 
@@ -84,10 +85,9 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       if (libraryPath) {
         setIsLoadingDuplicates(true);
         try {
-          const result = await window.electronAPI.getDuplicateResults(libraryPath);
-          if (result.success && result.data) {
-            const stored = result.data;
-            console.log(`✅ Loaded stored results from SQLite for: ${libraryPath}`);
+          const stored = await duplicateStorage.getDuplicateResult(libraryPath);
+          if (stored) {
+            console.log(`✅ Loaded stored results from Dexie for: ${libraryPath}`);
             console.log(`   - ${stored.duplicates.length} duplicate sets`);
             console.log(`   - ${stored.selectedDuplicates.length} selected`);
             console.log(`   - Has scanned: ${stored.hasScanned}`);
@@ -101,13 +101,13 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             }
           } else {
             // No stored results for this library, reset to default state
-            console.log(`🆕 No stored results in SQLite for: ${libraryPath} - fresh start`);
+            console.log(`🆕 No stored results in Dexie for: ${libraryPath} - fresh start`);
             setHasScanned(false);
             setDuplicates([]);
             setSelections([]);
           }
         } catch (error) {
-          console.error('❌ Failed to load stored duplicate results from SQLite:', error);
+          console.error('❌ Failed to load stored duplicate results from Dexie:', error);
           // Reset to default state on error
           setHasScanned(false);
           setDuplicates([]);
@@ -147,21 +147,16 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     // Debounce saves by 1 second
     debouncedSaveRef.current = setTimeout(async () => {
       try {
-        const result = await window.electronAPI.saveDuplicateResults({
+        await duplicateStorage.saveDuplicateResult({
           libraryPath,
           duplicates,
           selectedDuplicates: Array.from(selectedDuplicates),
           hasScanned,
           scanOptions
         });
-
-        if (result.success) {
-          console.log(`💾 Saved results to SQLite for: ${libraryPath}`);
-        } else {
-          console.error('Failed to save duplicate results to SQLite:', result.error);
-        }
+        console.log(`💾 Saved results to Dexie for: ${libraryPath}`);
       } catch (error) {
-        console.error('Failed to save duplicate results to SQLite:', error);
+        console.error('Failed to save duplicate results to Dexie:', error);
       }
     }, 1000);
   }, [libraryPath, duplicates, selectedDuplicates, hasScanned, scanOptions]);
@@ -195,7 +190,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         setDuplicates(enhancedDuplicates);
         setHasScanned(true);
 
-        // Immediately save scan results to SQLite
+        // Immediately save scan results to Dexie
         // (The auto-save effect will handle this, but this ensures immediate save)
 
         showNotification(

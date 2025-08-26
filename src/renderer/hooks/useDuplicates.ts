@@ -1,5 +1,6 @@
 import {useState, useCallback, useMemo, useRef, useEffect} from 'react';
 import {useSettingsStore} from '../stores/settingsStore';
+import {duplicateStorage} from '../db/duplicatesDb';
 import type {DuplicateItem} from '../types';
 
 export const useDuplicates = (
@@ -122,7 +123,7 @@ export const useDuplicates = (
         }));
     }, [visibleDuplicates, scanOptions.pathPreferences]);
 
-    // Debounced save function
+    // Debounced save function using Dexie
     const saveDuplicateResults = useCallback(async () => {
         if (!libraryPath) return;
 
@@ -134,20 +135,17 @@ export const useDuplicates = (
         // Debounce saves by 1 second
         debouncedSaveRef.current = setTimeout(async () => {
             try {
-                console.log(`💾 Saving duplicate results to SQLite: ${duplicates.length} duplicates, ${selectedDuplicates.size} selected`);
-                const result = await window.electronAPI.saveDuplicateResults({
+                console.log(`💾 Saving duplicate results to Dexie: ${duplicates.length} duplicates, ${selectedDuplicates.size} selected`);
+                await duplicateStorage.saveDuplicateResult({
                     libraryPath,
                     duplicates,
                     selectedDuplicates: Array.from(selectedDuplicates),
                     hasScanned,
                     scanOptions
                 });
-
-                if (!result.success) {
-                    console.error('❌ Failed to save duplicate results:', result.error);
-                }
+                console.log('✅ Successfully saved to Dexie');
             } catch (error) {
-                console.error('❌ Error saving duplicate results:', error);
+                console.error('❌ Error saving duplicate results to Dexie:', error);
             }
         }, 1000);
     }, [libraryPath, duplicates, selectedDuplicates, hasScanned, scanOptions]);

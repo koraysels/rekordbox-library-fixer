@@ -39,7 +39,9 @@
       "Bash(npm uninstall:*)",
       "Bash(cat:*)",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(npm view:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []
