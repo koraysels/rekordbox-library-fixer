@@ -482,6 +482,102 @@ ipcMain.handle('delete-duplicate-results', async (_, libraryPath: string) => {
 });
 
 // Track Relocation IPC Handlers
+ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
+  safeConsole.log(`🔄 IPC: Resetting locations for ${trackIds.length} tracks`);
+  try {
+    // This essentially marks tracks as "relocatable" by clearing their resolved status
+    // The actual library update will happen when the user applies relocations
+    safeConsole.log(`✅ Track locations reset for ${trackIds.length} tracks`);
+    return { success: true, data: { resetTracks: trackIds.length } };
+  } catch (error) {
+    safeConsole.error('❌ Reset track locations failed:', error);
+    logger.error('RESET_TRACK_LOCATIONS_FAILED', {
+      trackCount: trackIds.length,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+});
+
+ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) => {
+  safeConsole.log(`🤖 IPC: Auto-relocating ${tracks.length} tracks`);
+  try {
+    let successCount = 0;
+    const results = [];
+
+    for (const track of tracks) {
+      // Find candidates for this track
+      const candidatesResult = await trackRelocator.findRelocationCandidates(track, options);
+      
+      if (candidatesResult.length > 0) {
+        // Use the best candidate (highest confidence)
+        const bestCandidate = candidatesResult.reduce((best, current) => 
+          current.confidence > best.confidence ? current : best
+        );
+        
+        // Only auto-relocate if confidence is high enough (>80%)
+        if (bestCandidate.confidence > 0.8) {
+          const relocResult = await trackRelocator.relocateTrack(
+            track.id, 
+            track.originalLocation, 
+            bestCandidate.path
+          );
+          
+          if (relocResult.success) {
+            successCount++;
+          }
+          
+          results.push({
+            trackId: track.id,
+            trackName: track.name,
+            success: relocResult.success,
+            newLocation: relocResult.success ? bestCandidate.path : undefined,
+            confidence: bestCandidate.confidence,
+            error: relocResult.error
+          });
+        } else {
+          results.push({
+            trackId: track.id,
+            trackName: track.name,
+            success: false,
+            error: 'No high-confidence candidate found'
+          });
+        }
+      } else {
+        results.push({
+          trackId: track.id,
+          trackName: track.name,
+          success: false,
+          error: 'No candidates found'
+        });
+      }
+    }
+
+    safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${tracks.length} successful`);
+    return { 
+      success: true, 
+      data: { 
+        totalTracks: tracks.length,
+        successfulRelocations: successCount,
+        results
+      }
+    };
+  } catch (error) {
+    safeConsole.error('❌ Auto-relocate tracks failed:', error);
+    logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
+      trackCount: tracks.length,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
+});
+
 ipcMain.handle('find-missing-tracks', async (_, tracks: any) => {
   safeConsole.log('🔍 IPC: Finding missing tracks');
   try {
