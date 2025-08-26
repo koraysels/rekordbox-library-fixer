@@ -27,7 +27,7 @@
     "management"
   ],
   "author": "Koray Sels",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE",
   "description": "A powerful tool for managing and fixing Rekordbox libraries",
   "devDependencies": {
     "@playwright/test": "^1.55.0",

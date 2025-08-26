@@ -5,7 +5,7 @@
 ![Rekordbox Library Manager](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
 ![Version](https://img.shields.io/badge/version-0.0.2--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
 **🤞 Just trying to make DJs' lives a bit easier, one library at a time**
 
@@ -299,7 +299,7 @@ We welcome contributions from the DJ community! Whether you're a developer or ju
 Currently supports Rekordbox XML format. Serato and VirtualDJ support is planned for future releases.
 
 ### ❓ **Is this really free?**
-**100% free and open source!** No ads, no subscriptions, no limits. MIT licensed.
+**100% free for personal use!** No ads, no subscriptions, no limits. Open source but protected against commercial repackaging.
 
 ---
 
@@ -354,14 +354,15 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ support is planned
 
 ## 📜 **License**
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under a **custom non-commercial license** - see the [LICENSE](LICENSE) file for details.
 
 **What this means for you:**
-- ✅ Use it commercially
-- ✅ Modify the source code  
-- ✅ Distribute copies
-- ✅ Use it privately
-- ✅ No attribution required (but appreciated!)
+- ✅ **Free personal use** - use it for your own music libraries
+- ✅ **Study the code** - learn from it, contribute improvements  
+- ✅ **Internal business use** - use it within your organization
+- ✅ **Share with friends** - distribute freely for non-commercial use
+- ❌ **No commercial repackaging** - can't sell it or offer as paid service
+- ❌ **No proprietary versions** - modifications must stay open source
 
 ---
 

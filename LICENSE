@@ -1,0 +1,84 @@
+REKORDBOX LIBRARY MANAGER LICENSE
+
+Copyright (c) 2024 Koray Sels and contributors
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. PERMITTED USES
+
+   a) Personal Use: You may use this software for personal, non-commercial purposes
+      including managing your own music libraries.
+
+   b) Study and Learning: You may study the source code, learn from it, and use
+      it for educational purposes.
+
+   c) Contributions: You may contribute improvements, bug fixes, and new features
+      back to the original project via pull requests.
+
+   d) Internal Business Use: Organizations may use this software internally for
+      their own library management needs without charge.
+
+2. PROHIBITED USES
+
+   a) Commercial Distribution: You may NOT sell, license, or distribute this
+      software or any modified version for commercial purposes.
+
+   b) Commercial Repackaging: You may NOT repackage, rebrand, or redistribute
+      this software as a commercial product or service.
+
+   c) SaaS/Hosting: You may NOT offer this software as a paid service, SaaS
+      platform, or hosted solution.
+
+   d) Bundling for Sale: You may NOT include this software in commercial
+      software packages, hardware bundles, or paid distributions.
+
+3. DISTRIBUTION CONDITIONS
+
+   a) If you distribute this software, you must:
+      - Include this license file
+      - Include the copyright notice
+      - Clearly indicate any changes you made
+      - Make the source code available
+      - Distribute under the same license terms
+
+   b) You may NOT remove or alter any copyright, patent, trademark, or
+      attribution notices.
+
+4. MODIFICATION AND DERIVATIVE WORKS
+
+   a) You may modify the source code for personal use or to contribute back
+      to the project.
+
+   b) Any distributed modifications must be clearly marked as such and must
+      be distributed under the same license terms.
+
+   c) You may NOT create proprietary derivatives or close-source versions
+      for commercial distribution.
+
+5. NO WARRANTY
+
+   THIS SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+
+6. ENFORCEMENT
+
+   Violations of these terms will result in immediate termination of your rights
+   to use this software. The authors reserve the right to seek legal remedies
+   for unauthorized commercial use.
+
+7. CONTACT
+
+   For questions about commercial licensing or permissions beyond this license,
+   please contact the project maintainers through the official repository.
+
+---
+
+This license allows free personal and educational use while protecting against
+commercial exploitation. It ensures the software remains free for the DJ
+community while preventing others from profiting from the contributors' work
+without permission.
