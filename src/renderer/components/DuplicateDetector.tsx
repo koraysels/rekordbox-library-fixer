@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Settings,
@@ -15,6 +16,109 @@ import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsPanel } from './SettingsPanel';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { LibraryData, NotificationType } from '../types';
+
+interface PopoverButtonProps {
+  onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  title: string;
+  description: string;
+  variant?: 'primary' | 'secondary' | 'danger' | 'success';
+  className?: string;
+  children: React.ReactNode;
+}
+
+const PopoverButton: React.FC<PopoverButtonProps> = ({
+  onClick,
+  disabled = false,
+  loading = false,
+  icon: Icon,
+  title,
+  description,
+  variant = 'secondary',
+  className = '',
+  children
+}) => {
+  const [showPopover, setShowPopover] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const variantClasses = {
+    primary: 'btn-primary',
+    secondary: 'btn-secondary', 
+    danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors',
+    success: 'btn-primary bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500'
+  };
+
+  const updatePopoverPosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPopoverPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10
+      });
+    }
+  };
+
+  const handleMouseEnter = () => {
+    updatePopoverPosition();
+    setShowPopover(true);
+  };
+
+  const handleMouseLeave = () => {
+    setShowPopover(false);
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={onClick}
+        disabled={disabled || loading}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={`${variantClasses[variant]} ${className} flex items-center space-x-2`}
+      >
+        {loading ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          <Icon size={16} />
+        )}
+        <span>{children}</span>
+      </button>
+
+      {showPopover && createPortal(
+        <div 
+          className="fixed w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl pointer-events-none"
+          style={{
+            left: popoverPosition.x,
+            top: popoverPosition.y,
+            transform: 'translate(-50%, -100%)',
+            zIndex: 10000
+          }}
+        >
+          <div className="flex items-start space-x-2">
+            <Icon size={16} className="text-rekordbox-purple mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-medium text-white text-sm">{title}</h3>
+              <p className="text-gray-300 text-xs mt-1">{description}</p>
+            </div>
+          </div>
+          <div 
+            className="absolute w-2 h-2 bg-gray-900 border-r border-b border-gray-700 transform rotate-45"
+            style={{
+              left: '50%',
+              top: '100%',
+              transform: 'translateX(-50%) translateY(-50%) rotate(45deg)'
+            }}
+          ></div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
 
 interface DuplicateDetectorProps {
   libraryData: LibraryData;
@@ -301,31 +405,35 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       <div className="card mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <button
+            <PopoverButton
               onClick={scanForDuplicates}
               disabled={isScanning}
-              className="btn-primary flex items-center space-x-2"
+              loading={isScanning}
+              icon={Search}
+              title="Scan for Duplicates"
+              description="Analyze your library to find duplicate tracks using advanced algorithms. Uses fingerprinting, metadata matching, and path analysis to identify duplicates with high accuracy."
+              variant="primary"
             >
-              {isScanning ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-              <span>{isScanning ? 'Scanning...' : 'Scan for Duplicates'}</span>
-            </button>
+              {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
+            </PopoverButton>
             
-            <button
+            <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
-              className="btn-secondary flex items-center space-x-2"
+              icon={Settings}
+              title="Scan Settings"
+              description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy. Fine-tune the scan to match your needs."
+              variant="secondary"
+              className={showSettings ? "border-rekordbox-purple" : ""}
             >
-              <Settings className="w-4 h-4" />
-              <span>Settings</span>
-              {showSettings ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
+              <span className="flex items-center">
+                Settings 
+                {showSettings ? (
+                  <ChevronUp className="w-4 h-4 ml-1" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                )}
+              </span>
+            </PopoverButton>
           </div>
 
           {duplicates.length > 0 && (
@@ -333,18 +441,24 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               <span className="text-sm text-zinc-400">
                 {selectedDuplicates.size} of {duplicates.length} selected
               </span>
-              <button
+              <PopoverButton
                 onClick={selectAll}
-                className="text-sm text-rekordbox-purple hover:text-purple-400"
+                icon={CheckCircle2}
+                title="Select All Duplicates"
+                description="Select all duplicate sets for bulk resolution. This will mark every duplicate set found in your library for processing."
+                className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1"
               >
                 Select All
-              </button>
-              <button
+              </PopoverButton>
+              <PopoverButton
                 onClick={clearAll}
-                className="text-sm text-rekordbox-purple hover:text-purple-400"
+                icon={Trash2}
+                title="Deselect All"
+                description="Clear all selections and start fresh. Use this to uncheck all duplicate sets if you want to manually choose which ones to resolve."
+                className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1"
               >
                 Deselect All
-              </button>
+              </PopoverButton>
             </div>
           )}
         </div>
@@ -362,24 +476,17 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
                 {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
               </p>
             </div>
-            <button
+            <PopoverButton
               onClick={resolveDuplicates}
               disabled={isResolveDisabled}
-              className="btn-primary flex items-center space-x-2 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500"
+              loading={isScanning}
+              icon={Sparkles}
+              title="Resolve Selected Duplicates"
+              description="Apply resolution strategy to selected duplicate sets. Creates a backup, removes duplicate tracks based on your settings, and updates your library. This action cannot be undone without restoring the backup."
+              variant="success"
             >
-              {isScanning ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Resolving...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <Shield className="w-3 h-3" />
-                  <span>Resolve Selected</span>
-                </>
-              )}
-            </button>
+              {isScanning ? 'Resolving...' : 'Resolve Selected'}
+            </PopoverButton>
           </div>
 
           {/* Search Filter */}
@@ -458,13 +565,16 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           <p className="text-zinc-400 mb-4">
             Click "Find Duplicates" to scan your library for duplicate tracks.
           </p>
-          <button
+          <PopoverButton
             onClick={scanForDuplicates}
-            className="btn-primary flex items-center space-x-2 mx-auto"
+            icon={Search}
+            title="Find Duplicates"
+            description="Start scanning your library for duplicate tracks. This process analyzes track metadata, file paths, and optionally audio fingerprints to identify potential duplicates."
+            variant="primary"
+            className="mx-auto"
           >
-            <Search className="w-4 h-4" />
-            <span>Find Duplicates</span>
-          </button>
+            Find Duplicates
+          </PopoverButton>
         </div>
       )}
 

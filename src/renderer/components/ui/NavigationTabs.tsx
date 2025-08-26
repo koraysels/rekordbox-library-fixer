@@ -10,8 +10,8 @@ interface NavigationTabsProps {
 
 const tabs = [
   { id: 'duplicates' as TabType, label: 'Duplicate Detection', icon: Search },
-  { id: 'import' as TabType, label: 'Auto Import', icon: FolderOpen },
   { id: 'relocate' as TabType, label: 'Track Relocation', icon: Disc3 },
+  { id: 'import' as TabType, label: 'Auto Import', icon: FolderOpen },
   { id: 'maintenance' as TabType, label: 'Maintenance', icon: Settings },
 ];
 

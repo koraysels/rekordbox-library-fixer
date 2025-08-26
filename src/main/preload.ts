@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Track Relocation APIs
   findMissingTracks: (tracks: any) => 
     ipcRenderer.invoke('find-missing-tracks', tracks),
+  resetTrackLocations: (trackIds: string[]) =>
+    ipcRenderer.invoke('reset-track-locations', trackIds),
+  autoRelocateTracks: (tracks: any[], options: any) =>
+    ipcRenderer.invoke('auto-relocate-tracks', tracks, options),
   findRelocationCandidates: (track: any, options: any) => 
     ipcRenderer.invoke('find-relocation-candidates', track, options),
   relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => 
