@@ -15,15 +15,28 @@ export interface StoredDuplicateResult {
 export class DuplicateStorage {
   private db: Database.Database;
   private userDataPath: string;
+  private ownsDatabase: boolean;
 
-  constructor() {
-    this.userDataPath = app.getPath('userData');
-    const dbPath = path.join(this.userDataPath, 'duplicates.sqlite');
+  constructor(database?: Database.Database) {
+    if (database) {
+      // Use provided database instance (from PersistenceManager)
+      this.db = database;
+      this.ownsDatabase = false;
+      this.userDataPath = app.getPath('userData');
+    } else {
+      // Create own database instance (legacy compatibility)
+      this.userDataPath = app.getPath('userData');
+      const dbPath = path.join(this.userDataPath, 'duplicates.sqlite');
 
-    console.log(`📁 SQLite database location: ${dbPath}`);
-    this.db = new Database(dbPath);
+      console.log(`📁 SQLite database location: ${dbPath}`);
+      this.db = new Database(dbPath);
+      this.ownsDatabase = true;
+    }
+    
     this.initializeDatabase();
-    console.log('🗄️ SQLite database initialized successfully');
+    if (this.ownsDatabase) {
+      console.log('🗄️ SQLite database initialized successfully');
+    }
   }
 
   private initializeDatabase() {

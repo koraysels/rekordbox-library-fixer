@@ -3,7 +3,7 @@ import * as path from 'path';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
-import { DuplicateStorage } from './duplicateStorage';
+import { PersistenceManager } from './persistenceManager';
 import { TrackRelocator } from './trackRelocator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
@@ -37,7 +37,7 @@ let mainWindow: BrowserWindow | null = null;
 let rekordboxParser: RekordboxParser;
 let duplicateDetector: DuplicateDetector;
 let logger: Logger;
-let duplicateStorage: DuplicateStorage;
+let persistenceManager: PersistenceManager;
 let trackRelocator: TrackRelocator;
 let cloudSyncFixer: CloudSyncFixer;
 let trackOwnershipFixer: TrackOwnershipFixer;
@@ -147,10 +147,10 @@ app.whenReady().then(async () => {
   trackOwnershipFixer = new TrackOwnershipFixer();
 
   try {
-    duplicateStorage = new DuplicateStorage();
-    safeConsole.log('✅ SQLite storage initialized');
+    persistenceManager = new PersistenceManager();
+    safeConsole.log('✅ TanStack DB storage initialized');
   } catch (error) {
-    safeConsole.error('❌ Failed to initialize SQLite storage:', error);
+    safeConsole.error('❌ Failed to initialize TanStack DB storage:', error);
     // Continue without storage for now - could fallback to localStorage
   }
 
@@ -425,11 +425,11 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
 }) => {
   safeConsole.log(`💾 IPC: Saving duplicate results for ${data.libraryPath}`);
   try {
-    if (!duplicateStorage) {
+    if (!persistenceManager) {
       safeConsole.error('❌ Database not initialized yet');
       return { success: false, error: 'Database not initialized yet' };
     }
-    duplicateStorage.saveDuplicateResult({
+    persistenceManager.saveDuplicateResult({
       libraryPath: data.libraryPath,
       duplicates: data.duplicates,
       selectedDuplicates: data.selectedDuplicates,
@@ -454,11 +454,11 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
 ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
   safeConsole.log(`📖 IPC: Loading duplicate results for ${libraryPath}`);
   try {
-    if (!duplicateStorage) {
+    if (!persistenceManager) {
       safeConsole.log('⏳ Database not ready yet, returning null');
       return { success: true, data: null }; // Return null if not ready yet
     }
-    const result = duplicateStorage.getDuplicateResult(libraryPath);
+    const result = persistenceManager.getDuplicateResult(libraryPath);
     if (result) {
       safeConsole.log(`✅ Found stored results: ${result.duplicates.length} duplicates, ${result.selectedDuplicates.length} selected`);
     } else {
@@ -480,10 +480,10 @@ ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
 
 ipcMain.handle('delete-duplicate-results', async (_, libraryPath: string) => {
   try {
-    if (!duplicateStorage) {
+    if (!persistenceManager) {
       return { success: false, error: 'Database not initialized yet' };
     }
-    duplicateStorage.deleteDuplicateResult(libraryPath);
+    persistenceManager.deleteDuplicateResult(libraryPath);
     return { success: true };
   } catch (error) {
     logger.error('DELETE_DUPLICATE_RESULTS_FAILED', {
