@@ -22,7 +22,10 @@
       "mcp__serena__search_for_pattern",
       "Bash(npm run dist:mac:*)",
       "Bash(node:*)",
-      "Bash(npx electron:*)"
+      "Bash(npx electron:*)",
+      "mcp__playwright__browser_snapshot",
+      "Bash(grep:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

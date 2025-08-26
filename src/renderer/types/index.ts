@@ -9,9 +9,16 @@ export interface Notification {
   message: string;
 }
 
+export interface Playlist {
+  name: string;
+  tracks: string[]; // Track IDs
+  type: 'FOLDER' | 'PLAYLIST';
+  children?: Playlist[];
+}
+
 export interface LibraryData {
   tracks: Map<string, any>;
-  playlists: any[];
+  playlists: Playlist[];
 }
 
 export interface DuplicateItem {

@@ -44,7 +44,10 @@ const App: React.FC = () => {
         ) : (
           <>
             {/* Keep DuplicateDetector always mounted to preserve state */}
-            <div style={{ display: activeTab === 'duplicates' ? 'block' : 'none' }}>
+            <div 
+              className="h-full flex flex-col"
+              style={{ display: activeTab === 'duplicates' ? 'flex' : 'none' }}
+            >
               <DuplicateDetector
                 libraryData={libraryData}
                 libraryPath={libraryPath}

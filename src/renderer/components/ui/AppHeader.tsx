@@ -13,13 +13,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onSelectLibrary
 }) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 app-header bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-4 shadow-lg">
+    <header className="bg-gradient-to-r from-rekordbox-purple to-purple-700 px-6 py-3 shadow-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Music className="w-8 h-8 text-white" />
+          <Music className="w-6 h-6 text-white" />
           <div>
-            <h1 className="text-2xl font-bold text-white">Rekordbox Library Manager</h1>
-            <p className="text-purple-100 text-sm">Fix and optimize your DJ library</p>
+            <h1 className="text-lg font-bold text-white">Rekordbox Library Manager</h1>
+            <p className="text-purple-100 text-xs">Fix and optimize your DJ library</p>
           </div>
         </div>
 
@@ -34,7 +34,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
           <button
             onClick={onSelectLibrary}
-            className="btn-primary flex items-center space-x-2"
+            className="btn-primary flex items-center space-x-2 text-sm px-3 py-2"
             disabled={isLoading}
           >
             {isLoading ? (

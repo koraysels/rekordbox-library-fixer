@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
+import { SettingsPanel } from './SettingsPanel';
+import { useSettingsStore } from '../stores/settingsStore';
 import type { LibraryData, NotificationType } from '../types';
 
 interface DuplicateDetectorProps {
@@ -49,6 +51,10 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     setSelections,
     selectedCount,
     isResolveDisabled,
+    searchFilter,
+    setSearchFilter,
+    isSearching,
+    filteredDuplicates,
     memoizedVisibleDuplicates
   } = useDuplicates(libraryPath, showNotification);
   
@@ -56,21 +62,13 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   
   const [showSettings, setShowSettings] = useState(false);
   const [pathPreferenceInput, setPathPreferenceInput] = useState('');
+  const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
+  
+  // Zustand actions for path preferences
+  const addPathPreference = useSettingsStore((state) => state.addPathPreference);
+  const removePathPreference = useSettingsStore((state) => state.removePathPreference);
 
-  // Load preferences from localStorage
-  useEffect(() => {
-    const savedPreferences = localStorage.getItem('duplicateDetectorPreferences');
-    if (savedPreferences) {
-      try {
-        const prefs = JSON.parse(savedPreferences);
-        setScanOptions(prefs.scanOptions || scanOptions);
-        setResolutionStrategy(prefs.resolutionStrategy || resolutionStrategy);
-        // Don't restore hasScanned - it should always start false for new sessions
-      } catch (error) {
-        console.warn('Failed to load preferences:', error);
-      }
-    }
-  }, []);
+  // Preferences are now loaded in the useDuplicates hook
 
   // Load stored duplicate results when library changes OR when component mounts
   useEffect(() => {
@@ -87,6 +85,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       console.log(`📚 Library loading: "${libraryPath}"`);
       
       if (libraryPath) {
+        setIsLoadingDuplicates(true);
         try {
           const result = await window.electronAPI.getDuplicateResults(libraryPath);
           if (result.success && result.data) {
@@ -101,7 +100,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             setHasScanned(stored.hasScanned || false);
             // Merge stored scan options with current preferences
             if (stored.scanOptions) {
-              setScanOptions(prev => ({...prev, ...stored.scanOptions}));
+              setScanOptions({...scanOptions, ...stored.scanOptions});
             }
           } else {
             // No stored results for this library, reset to default state
@@ -116,6 +115,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           setHasScanned(false);
           setDuplicates([]);
           setSelections([]);
+        } finally {
+          setIsLoadingDuplicates(false);
         }
       } else {
         // No library loaded, reset state
@@ -123,6 +124,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         setHasScanned(false);
         setDuplicates([]);
         setSelections([]);
+        setIsLoadingDuplicates(false);
       }
 
       // Update the current library path tracker
@@ -132,15 +134,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     loadStoredResults();
   }, [libraryPath]);
 
-  // Save preferences to localStorage whenever they change
-  useEffect(() => {
-    const preferences = {
-      scanOptions,
-      resolutionStrategy
-      // Note: hasScanned is NOT saved in localStorage - now saved in SQLite
-    };
-    localStorage.setItem('duplicateDetectorPreferences', JSON.stringify(preferences));
-  }, [scanOptions, resolutionStrategy]);
+  // Preferences are now saved in the useDuplicates hook
 
   // Debounced save function to reduce database writes
   const debouncedSaveRef = React.useRef<NodeJS.Timeout>();
@@ -194,7 +188,14 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       
       if (result.success) {
         const duplicatesFound = result.data;
-        setDuplicates(duplicatesFound);
+        
+        // Enhance duplicates with path preferences for resolution strategy
+        const enhancedDuplicates = duplicatesFound.map((duplicate: any) => ({
+          ...duplicate,
+          pathPreferences: scanOptions.pathPreferences
+        }));
+        
+        setDuplicates(enhancedDuplicates);
         setHasScanned(true);
         
         // Immediately save scan results to SQLite
@@ -272,38 +273,26 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   };
 
 
-  const addPathPreference = useCallback(() => {
-    if (pathPreferenceInput.trim() && !scanOptions.pathPreferences.includes(pathPreferenceInput.trim())) {
-      setScanOptions(prev => ({
-        ...prev,
-        pathPreferences: [...prev.pathPreferences, pathPreferenceInput.trim()]
-      }));
+  // Path preference functions now use Zustand store
+  const handleAddPathPreference = useCallback(() => {
+    if (pathPreferenceInput.trim()) {
+      addPathPreference(pathPreferenceInput.trim());
       setPathPreferenceInput('');
     }
-  }, [pathPreferenceInput, scanOptions.pathPreferences]);
-
-  const removePathPreference = useCallback((index: number) => {
-    setScanOptions(prev => ({
-      ...prev,
-      pathPreferences: prev.pathPreferences.filter((_, i) => i !== index)
-    }));
-  }, []);
+  }, [pathPreferenceInput, addPathPreference]);
 
   // Memoize expensive calculations
 
   return (
     <div className="h-full flex flex-col">
-      {/* Library Info */}
+      {/* Library Info - Compact */}
       {libraryPath && (
-        <div className="card mb-4 bg-blue-900/20 border-blue-500/30">
-          <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
-            <div>
-              <p className="text-sm text-blue-200 font-medium">Active Library</p>
-              <p className="text-xs text-blue-300 font-mono break-all">
-                {libraryPath.length > 80 ? '...' + libraryPath.slice(-77) : libraryPath}
-              </p>
-            </div>
+        <div className="mb-3 px-3 py-2 bg-blue-900/10 border border-blue-500/20 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+            <p className="text-xs text-blue-300 font-mono truncate">
+              {libraryPath.length > 60 ? '...' + libraryPath.slice(-57) : libraryPath}
+            </p>
           </div>
         </div>
       )}
@@ -360,256 +349,19 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           )}
         </div>
 
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="border-t border-zinc-700 pt-4">
-            <div className="grid grid-cols-3 gap-6">
-              <div>
-                <h3 className="font-semibold mb-3">Detection Methods</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={scanOptions.useFingerprint}
-                      onChange={(e) => setScanOptions({
-                        ...scanOptions,
-                        useFingerprint: e.target.checked
-                      })}
-                      className="checkbox"
-                    />
-                    <span>Audio Fingerprinting (Most Accurate)</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={scanOptions.useMetadata}
-                      onChange={(e) => setScanOptions({
-                        ...scanOptions,
-                        useMetadata: e.target.checked
-                      })}
-                      className="checkbox"
-                    />
-                    <span>Metadata Matching</span>
-                  </label>
-                </div>
-
-                {scanOptions.useMetadata && (
-                  <div className="mt-3 ml-6 space-y-2">
-                    <p className="text-sm text-zinc-400">Match by:</p>
-                    {['artist', 'title', 'album', 'duration', 'bpm'].map(field => (
-                      <label key={field} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={scanOptions.metadataFields.includes(field)}
-                          onChange={(e) => {
-                            const fields = e.target.checked
-                              ? [...scanOptions.metadataFields, field]
-                              : scanOptions.metadataFields.filter(f => f !== field);
-                            setScanOptions({
-                              ...scanOptions,
-                              metadataFields: fields
-                            });
-                          }}
-                          className="checkbox"
-                        />
-                        <span className="capitalize text-sm">{field}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-3">Resolution Strategy</h3>
-                <div className="space-y-3">
-                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
-                    <input
-                      type="radio"
-                      name="strategy"
-                      value="keep-highest-quality"
-                      checked={resolutionStrategy === 'keep-highest-quality'}
-                      onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="mt-1 text-rekordbox-purple"
-                    />
-                    <div>
-                      <span className="font-medium">Keep Highest Quality</span>
-                      <p className="text-sm text-zinc-400">Keeps tracks with higher bitrate and file size</p>
-                    </div>
-                  </label>
-                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
-                    <input
-                      type="radio"
-                      name="strategy"
-                      value="keep-newest"
-                      checked={resolutionStrategy === 'keep-newest'}
-                      onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="mt-1 text-rekordbox-purple"
-                    />
-                    <div>
-                      <span className="font-medium">Keep Newest</span>
-                      <p className="text-sm text-zinc-400">Keeps tracks with most recent modification date</p>
-                    </div>
-                  </label>
-                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
-                    <input
-                      type="radio"
-                      name="strategy"
-                      value="keep-oldest"
-                      checked={resolutionStrategy === 'keep-oldest'}
-                      onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="mt-1 text-rekordbox-purple"
-                    />
-                    <div>
-                      <span className="font-medium">Keep Oldest</span>
-                      <p className="text-sm text-zinc-400">Keeps tracks that were added to library first</p>
-                    </div>
-                  </label>
-                  <label className={`flex items-start space-x-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    resolutionStrategy === 'keep-preferred-path' 
-                      ? 'border-rekordbox-purple bg-rekordbox-purple/10' 
-                      : 'border-zinc-700 hover:border-zinc-600'
-                  }`}>
-                    <input
-                      type="radio"
-                      name="strategy"
-                      value="keep-preferred-path"
-                      checked={resolutionStrategy === 'keep-preferred-path'}
-                      onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="mt-1 text-rekordbox-purple"
-                    />
-                    <div>
-                      <span className="font-medium">Keep Preferred Path</span>
-                      <p className="text-sm text-zinc-400">Keeps tracks from your preferred folders/locations</p>
-                    </div>
-                  </label>
-                  <label className="flex items-start space-x-3 p-3 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
-                    <input
-                      type="radio"
-                      name="strategy"
-                      value="manual"
-                      checked={resolutionStrategy === 'manual'}
-                      onChange={(e) => setResolutionStrategy(e.target.value as any)}
-                      className="mt-1 text-rekordbox-purple"
-                    />
-                    <div>
-                      <span className="font-medium">Manual Selection</span>
-                      <p className="text-sm text-zinc-400">Let you choose which track to keep for each duplicate</p>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-3">Path Preferences</h3>
-                <p className="text-sm text-zinc-400 mb-3">
-                  Preferred paths/folders when using "Keep Preferred Path" strategy. Higher priority paths should be listed first.
-                </p>
-                
-                <div className="flex space-x-2 mb-3">
-                  <input
-                    type="text"
-                    value={pathPreferenceInput}
-                    onChange={(e) => setPathPreferenceInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
-                    placeholder="/Users/dj/Music"
-                    className="flex-1 px-3 py-1 bg-zinc-800 border border-zinc-600 rounded text-sm"
-                  />
-                  <button
-                    onClick={addPathPreference}
-                    className="px-3 py-1 bg-rekordbox-purple hover:bg-purple-600 rounded text-sm"
-                  >
-                    Add
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {scanOptions.pathPreferences.map((path, index) => (
-                    <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-2 rounded">
-                      <span className="text-sm text-zinc-300">{index + 1}. {path}</span>
-                      <button
-                        onClick={() => removePathPreference(index)}
-                        className="text-red-400 hover:text-red-300 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  {scanOptions.pathPreferences.length === 0 && (
-                    <div className="text-sm text-zinc-500 text-center py-2">
-                      No path preferences set
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Path Preferences - Always visible when strategy is selected */}
-        {resolutionStrategy === 'keep-preferred-path' && (
-          <div className="card mt-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">📁 Path Preferences</h3>
-              <span className="text-sm text-zinc-400">Priority order (drag to reorder)</span>
-            </div>
-            
-            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-200">
-                <strong>How it works:</strong> When duplicates are found, tracks in paths listed here will be kept over others. 
-                Higher priority paths (listed first) take precedence.
-              </p>
-            </div>
-
-            <div className="flex space-x-2 mb-4">
-              <input
-                type="text"
-                value={pathPreferenceInput}
-                onChange={(e) => setPathPreferenceInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
-                placeholder="e.g., /Users/DJ/Main Library, C:\Music\Master"
-                className="flex-1 input"
-              />
-              <button
-                onClick={addPathPreference}
-                disabled={!pathPreferenceInput.trim()}
-                className="btn-primary px-4"
-              >
-                Add Path
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {scanOptions.pathPreferences.map((path, index) => (
-                <div key={index} className="flex items-center justify-between bg-zinc-800 px-4 py-3 rounded-lg border border-zinc-700">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
-                    <span className="font-mono text-sm text-zinc-200">{path}</span>
-                  </div>
-                  <button
-                    onClick={() => removePathPreference(index)}
-                    className="text-red-400 hover:text-red-300 text-sm hover:bg-red-900/20 px-2 py-1 rounded"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              {scanOptions.pathPreferences.length === 0 && (
-                <div className="text-center py-8 text-zinc-500">
-                  <div className="text-4xl mb-2">📂</div>
-                  <p>No preferred paths set</p>
-                  <p className="text-sm">Add folder paths that should be prioritized when resolving duplicates</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Settings moved to slideout panel */}
       </div>
 
       {/* Results */}
       {duplicates.length > 0 && (
         <div className="flex flex-col flex-1 min-h-0">
           <div className="mb-4 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
+            <div>
+              <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
+              <p className="text-sm text-zinc-400 mt-1">
+                {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
+              </p>
+            </div>
             <button
               onClick={resolveDuplicates}
               disabled={isResolveDisabled}
@@ -630,20 +382,65 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             </button>
           </div>
 
-          <div className="flex-1 min-h-0">
+          {/* Search Filter */}
+          <div className="mb-4 flex-shrink-0">
+            <div className="relative">
+              {isSearching ? (
+                <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-rekordbox-purple animate-spin" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+              )}
+              <input
+                type="text"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                placeholder="Search duplicates by title, artist, album, or path..."
+                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="text-xs text-rekordbox-purple">Searching...</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 relative">
             <VirtualizedDuplicateList
-              duplicates={duplicates}
+              duplicates={filteredDuplicates}
               selectedDuplicates={selectedDuplicates}
               onToggleSelection={toggleDuplicateSelection}
               resolutionStrategy={resolutionStrategy}
             />
+            {isSearching && (
+              <div className="absolute inset-0 bg-rekordbox-dark/30 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
+                <div className="bg-zinc-800/90 px-4 py-2 rounded-lg border border-rekordbox-purple/30 shadow-lg">
+                  <div className="flex items-center space-x-3">
+                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin" />
+                    <span className="text-sm text-rekordbox-purple">Filtering duplicates...</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* Loading State - Loading duplicates from database */}
+      {isLoadingDuplicates && (
+        <div className="card text-center py-12">
+          <div className="flex flex-col items-center">
+            <Loader2 className="w-16 h-16 mx-auto text-rekordbox-purple mb-4 animate-spin" />
+            <h3 className="text-lg font-semibold mb-2 text-rekordbox-purple">Loading Duplicates</h3>
+            <p className="text-zinc-400">
+              Reading duplicate results from database...
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Empty State - After Scan */}
-      {!isScanning && duplicates.length === 0 && hasScanned && (
+      {!isScanning && !isLoadingDuplicates && duplicates.length === 0 && hasScanned && (
         <div className="card text-center py-12">
           <CheckCircle2 className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2">No Duplicates Found</h3>
@@ -654,7 +451,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       )}
 
       {/* Initial State - Before Any Scan */}
-      {!isScanning && duplicates.length === 0 && !hasScanned && (
+      {!isScanning && !isLoadingDuplicates && duplicates.length === 0 && !hasScanned && (
         <div className="card text-center py-12">
           <Search className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2">Ready to Scan</h3>
@@ -670,6 +467,20 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           </button>
         </div>
       )}
+
+      {/* Settings Slideout Panel */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        scanOptions={scanOptions}
+        setScanOptions={setScanOptions}
+        resolutionStrategy={resolutionStrategy}
+        setResolutionStrategy={setResolutionStrategy}
+        pathPreferenceInput={pathPreferenceInput}
+        setPathPreferenceInput={setPathPreferenceInput}
+        addPathPreference={handleAddPathPreference}
+        removePathPreference={removePathPreference}
+      />
     </div>
   );
 };

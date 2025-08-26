@@ -1,6 +1,7 @@
 import { beforeEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import '@testing-library/jest-dom';
 
 // Mock fs promises for tests
 vi.mock('fs/promises', () => ({
@@ -70,6 +71,21 @@ export const getFixturePath = (filename: string): string => {
 export const loadFixture = (filename: string): string => {
   return fs.readFileSync(getFixturePath(filename), 'utf-8');
 };
+
+// Mock window.electronAPI for renderer tests
+Object.defineProperty(window, 'electronAPI', {
+  value: {
+    selectRekordboxXML: vi.fn(),
+    parseRekordboxLibrary: vi.fn(),
+    findDuplicates: vi.fn(),
+    resolveDuplicates: vi.fn(),
+    saveRekordboxXML: vi.fn(),
+    showFileInFolder: vi.fn(),
+    saveDuplicateResults: vi.fn(),
+    getDuplicateResults: vi.fn(),
+    deleteDuplicateResults: vi.fn(),
+  }
+});
 
 beforeEach(() => {
   vi.clearAllMocks();

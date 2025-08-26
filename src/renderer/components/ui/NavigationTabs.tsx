@@ -20,8 +20,10 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   onTabChange,
   libraryData
 }) => {
+  console.log('🔍 NavigationTabs render:', { activeTab, hasLibraryData: !!libraryData });
+  
   return (
-    <div className="border-b border-zinc-800">
+    <div className="border-b border-zinc-800 bg-zinc-900">
       <div className="px-6 flex space-x-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
