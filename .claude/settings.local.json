@@ -27,7 +27,8 @@
       "Bash(grep:*)",
       "Bash(git add:*)",
       "Bash(npm ls:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
