@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
 import type { 
   MissingTrack, 
   RelocationCandidate, 
@@ -78,6 +79,55 @@ export function useTrackRelocator(
     searchOptions: { ...defaultSearchOptions },
     dropboxConnected: false
   });
+  
+  const [relocationCandidatesCache, setRelocationCandidatesCache] = useState<Map<string, RelocationCandidate[]>>(new Map());
+
+  // Load cached results when library data changes
+  useEffect(() => {
+    if (!libraryData?.libraryPath) return;
+    
+    const loadCachedResults = async () => {
+      try {
+        // Load relocation results
+        const relocationResult = await relocationStorage.getRelocationResult(libraryData.libraryPath);
+        if (relocationResult) {
+          setState(prev => ({
+            ...prev,
+            missingTracks: relocationResult.missingTracks || [],
+            relocations: relocationResult.relocations || new Map(),
+            relocationResults: relocationResult.relocationResults || [],
+            searchOptions: relocationResult.searchOptions || { ...defaultSearchOptions },
+            hasScanCompleted: relocationResult.hasScanCompleted || false
+          }));
+          setRelocationCandidatesCache(relocationResult.relocationCandidates || new Map());
+        }
+        
+        // Load cloud sync results
+        const cloudResult = await cloudSyncStorage.getCloudSyncResult(libraryData.libraryPath);
+        if (cloudResult) {
+          setState(prev => ({
+            ...prev,
+            cloudSyncIssues: cloudResult.issues || [],
+            cloudSyncResults: cloudResult.fixes || []
+          }));
+        }
+        
+        // Load ownership results
+        const ownershipResult = await ownershipStorage.getOwnershipResult(libraryData.libraryPath);
+        if (ownershipResult) {
+          setState(prev => ({
+            ...prev,
+            ownershipIssues: ownershipResult.issues || [],
+            ownershipResults: ownershipResult.fixes || []
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load cached results:', error);
+      }
+    };
+    
+    loadCachedResults();
+  }, [libraryData?.libraryPath]);
 
   // Find missing tracks
   const scanForMissingTracks = useCallback(async () => {
@@ -99,6 +149,24 @@ export function useTrackRelocator(
           isScanning: false,
           hasScanCompleted: true
         }));
+        
+        // Save to cache
+        if (libraryData?.libraryPath) {
+          try {
+            await relocationStorage.saveRelocationResult({
+              libraryPath: libraryData.libraryPath,
+              missingTracks: result.data,
+              relocationCandidates: relocationCandidatesCache,
+              relocations: state.relocations,
+              relocationResults: state.relocationResults,
+              searchOptions: state.searchOptions,
+              hasScanCompleted: true
+            });
+          } catch (cacheError) {
+            console.error('Failed to cache scan results:', cacheError);
+          }
+        }
+        
         showNotification('success', `Found ${result.data.length} missing tracks`);
       } else {
         setState(prev => ({ ...prev, isScanning: false }));
@@ -117,6 +185,19 @@ export function useTrackRelocator(
       return;
     }
 
+    // Check cache first
+    const cachedCandidates = relocationCandidatesCache.get(track.id);
+    if (cachedCandidates) {
+      setState(prev => ({
+        ...prev,
+        selectedTrack: track,
+        candidates: cachedCandidates,
+        isFindingCandidates: false
+      }));
+      showNotification('info', `Loaded ${cachedCandidates.length} cached candidates`);
+      return;
+    }
+
     setState(prev => ({
       ...prev,
       selectedTrack: track,
@@ -128,6 +209,28 @@ export function useTrackRelocator(
       const result = await window.electronAPI.findRelocationCandidates(track, state.searchOptions);
 
       if (result.success) {
+        // Cache the candidates
+        const newCandidatesCache = new Map(relocationCandidatesCache);
+        newCandidatesCache.set(track.id, result.data);
+        setRelocationCandidatesCache(newCandidatesCache);
+        
+        // Save to database
+        if (libraryData?.libraryPath) {
+          try {
+            await relocationStorage.saveRelocationResult({
+              libraryPath: libraryData.libraryPath,
+              missingTracks: state.missingTracks,
+              relocationCandidates: newCandidatesCache,
+              relocations: state.relocations,
+              relocationResults: state.relocationResults,
+              searchOptions: state.searchOptions,
+              hasScanCompleted: state.hasScanCompleted
+            });
+          } catch (cacheError) {
+            console.error('Failed to cache candidates:', cacheError);
+          }
+        }
+        
         setState(prev => ({
           ...prev,
           candidates: result.data,
@@ -142,7 +245,7 @@ export function useTrackRelocator(
       setState(prev => ({ ...prev, isFindingCandidates: false }));
       showNotification('error', 'Failed to find relocation candidates');
     }
-  }, [state.searchOptions, showNotification]);
+  }, [state.searchOptions, state.missingTracks, state.relocations, state.relocationResults, state.hasScanCompleted, relocationCandidatesCache, libraryData?.libraryPath, showNotification]);
 
   // Add a relocation mapping
   const addRelocation = useCallback((trackId: string, newLocation: string) => {
@@ -220,6 +323,20 @@ export function useTrackRelocator(
           cloudSyncIssues: result.data,
           isDetectingCloudIssues: false
         }));
+        
+        // Save to cache
+        if (libraryData?.libraryPath) {
+          try {
+            await cloudSyncStorage.saveCloudSyncResult({
+              libraryPath: libraryData.libraryPath,
+              issues: result.data,
+              fixes: state.cloudSyncResults
+            });
+          } catch (cacheError) {
+            console.error('Failed to cache cloud sync issues:', cacheError);
+          }
+        }
+        
         showNotification('success', `Found ${result.data.length} cloud sync issues`);
       } else {
         setState(prev => ({ ...prev, isDetectingCloudIssues: false }));
@@ -293,6 +410,20 @@ export function useTrackRelocator(
           ownershipIssues: result.data,
           isDetectingOwnershipIssues: false
         }));
+        
+        // Save to cache
+        if (libraryData?.libraryPath) {
+          try {
+            await ownershipStorage.saveOwnershipResult({
+              libraryPath: libraryData.libraryPath,
+              issues: result.data,
+              fixes: state.ownershipResults
+            });
+          } catch (cacheError) {
+            console.error('Failed to cache ownership issues:', cacheError);
+          }
+        }
+        
         showNotification('success', `Found ${result.data.length} ownership issues`);
       } else {
         setState(prev => ({ ...prev, isDetectingOwnershipIssues: false }));
@@ -339,7 +470,7 @@ export function useTrackRelocator(
   }, []);
 
   // Clear all results
-  const clearResults = useCallback(() => {
+  const clearResults = useCallback(async () => {
     setState(prev => ({
       ...prev,
       missingTracks: [],
@@ -353,7 +484,20 @@ export function useTrackRelocator(
       ownershipIssues: [],
       ownershipResults: []
     }));
-  }, []);
+    
+    setRelocationCandidatesCache(new Map());
+    
+    // Clear cache from database
+    if (libraryData?.libraryPath) {
+      try {
+        await relocationStorage.deleteRelocationResult(libraryData.libraryPath);
+        await cloudSyncStorage.deleteCloudSyncResult(libraryData.libraryPath);
+        await ownershipStorage.deleteOwnershipResult(libraryData.libraryPath);
+      } catch (error) {
+        console.error('Failed to clear cached results:', error);
+      }
+    }
+  }, [libraryData?.libraryPath]);
 
   // Computed values
   const stats = useMemo(() => ({
