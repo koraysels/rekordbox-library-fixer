@@ -18,7 +18,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <img 
               src="/icons/48x48.png" 
               alt="Rekordbox Library Manager" 
-              className="w-8 h-8"
+              className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
             <h2 className="text-xl font-bold text-white">About</h2>
           </div>

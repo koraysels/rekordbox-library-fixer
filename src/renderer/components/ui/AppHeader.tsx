@@ -17,10 +17,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="flex items-center justify-between px-6 py-2" style={{ paddingLeft: '90px' }}>
         {/* Left side with logo and title */}
         <div className="flex items-center space-x-2 no-drag">
-          <img 
-            src="/icons/32x32.png" 
-            alt="Rekordbox Library Manager" 
-            className="w-5 h-5"
+          <img
+            src="/icons/48x48.png"
+            alt="Rekordbox Library Manager"
+            className="w-10 h-10 bg-white rounded-lg p-1 shadow-lg"
           />
           <div>
             <h1 className="text-sm font-bold text-white">Rekordbox Library Manager</h1>

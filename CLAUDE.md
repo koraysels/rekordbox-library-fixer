@@ -27,10 +27,25 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 ### Key Components
 - `RekordboxParser`: Handles XML parsing and track data extraction from Rekordbox library files
 - `DuplicateDetector`: Implements duplicate track detection algorithms
-- `DuplicateDetector.tsx`: Main UI component for managing duplicate resolution
+- `DuplicateDetector.tsx`: Main UI component for managing duplicate resolution with informative popovers
+- `TrackRelocator.tsx`: Core relocation functionality with enhanced UX and tooltips
 - `useDuplicates`: Custom hook managing duplicate detection state and operations
+- `useTrackRelocator`: State management for track relocation operations
 - `SettingsPanel`: Configuration UI with Zustand store integration
 - Path aliases configured: `@/`, `@renderer/`, `@main/`, `@shared/`
+
+### Recent Enhancements
+- **Track Relocation Feature**: Complete implementation of core relocation workflow
+  - Reset track locations and auto-relocate functionality
+  - Smart file matching with confidence scoring
+  - Streamlined UI focused on primary use cases
+- **Enhanced UX**: Portal-based popovers with detailed button descriptions
+- **Logo Integration**: Replaced generic icons with actual application logo throughout UI
+- **Improved Navigation**: Reordered tabs for optimal workflow (Duplicates → Relocate → Import → Maintenance)
+- **Responsive Design**: Enhanced mobile and smaller screen compatibility
+  - Flexible button layouts that stack vertically on smaller screens
+  - Improved touch targets and spacing for mobile interaction
+  - Consistent button behavior across different screen sizes
 
 ## Development Commands
 
