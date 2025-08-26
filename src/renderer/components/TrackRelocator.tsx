@@ -64,10 +64,10 @@ const PopoverButton: React.FC<PopoverButtonProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const variantClasses = {
-    primary: 'bg-rekordbox-purple hover:bg-purple-600 disabled:bg-gray-600',
-    secondary: 'bg-gray-700 hover:bg-gray-600 disabled:bg-gray-600',
-    danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600',
-    success: 'bg-green-600 hover:bg-green-700 disabled:bg-gray-600'
+    primary: 'btn-primary',
+    secondary: 'btn-secondary', 
+    danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors',
+    success: 'btn-primary bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500'
   };
 
   const updatePopoverPosition = () => {
@@ -97,7 +97,7 @@ const PopoverButton: React.FC<PopoverButtonProps> = ({
         disabled={disabled || loading}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className={`flex items-center space-x-2 px-4 py-2 ${variantClasses[variant]} text-white rounded-lg transition-colors`}
+        className={`${variantClasses[variant]} flex items-center space-x-2`}
       >
         {loading ? (
           <Loader2 size={16} className="animate-spin" />
