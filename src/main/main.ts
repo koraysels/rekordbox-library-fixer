@@ -5,6 +5,31 @@ import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
 import { DuplicateStorage } from './duplicateStorage';
 
+// Safe console logging to prevent EPIPE errors
+const safeConsole = {
+  log: (...args: any[]) => {
+    try {
+      console.log(...args);
+    } catch (error) {
+      // Silently ignore EPIPE errors during logging
+    }
+  },
+  error: (...args: any[]) => {
+    try {
+      console.error(...args);
+    } catch (error) {
+      // Silently ignore EPIPE errors during logging
+    }
+  },
+  warn: (...args: any[]) => {
+    try {
+      console.warn(...args);
+    } catch (error) {
+      // Silently ignore EPIPE errors during logging
+    }
+  }
+};
+
 let mainWindow: BrowserWindow | null = null;
 let rekordboxParser: RekordboxParser;
 let duplicateDetector: DuplicateDetector;
@@ -100,9 +125,9 @@ app.whenReady().then(async () => {
       showSaveImageAs: false,
       showServices: false
     });
-    console.log('✅ Context menu initialized');
+    safeConsole.log('✅ Context menu initialized');
   } catch (error) {
-    console.warn('⚠️ Failed to load context menu:', error);
+    safeConsole.warn('⚠️ Failed to load context menu:', error);
   }
 
   // Create application menu
@@ -114,9 +139,9 @@ app.whenReady().then(async () => {
 
   try {
     duplicateStorage = new DuplicateStorage();
-    console.log('✅ SQLite storage initialized');
+    safeConsole.log('✅ SQLite storage initialized');
   } catch (error) {
-    console.error('❌ Failed to initialize SQLite storage:', error);
+    safeConsole.error('❌ Failed to initialize SQLite storage:', error);
     // Continue without storage for now - could fallback to localStorage
   }
 
@@ -206,7 +231,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
   strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
   pathPreferences: string[];
 }) => {
-  console.log(`🔧 IPC: Resolving ${resolution.duplicates.length} duplicate sets`);
+  safeConsole.log(`🔧 IPC: Resolving ${resolution.duplicates.length} duplicate sets`);
   try {
     // Step 1: Create backup of original XML
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -214,7 +239,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
     const fs = require('fs');
     fs.copyFileSync(resolution.libraryPath, backupPath);
-    console.log(`📁 Backup created: ${backupPath}`);
+    safeConsole.log(`📁 Backup created: ${backupPath}`);
 
     // Step 2: Parse current library
     const library = await rekordboxParser.parseLibrary(resolution.libraryPath);
@@ -273,11 +298,11 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
       tracksToRemove.push(...tracksToRemoveFromSet);
 
-      console.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
+      safeConsole.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
     }
 
     // Step 4: Remove tracks from library
-    console.log(`🗑️ Removing ${tracksToRemove.length} duplicate tracks from library`);
+    safeConsole.log(`🗑️ Removing ${tracksToRemove.length} duplicate tracks from library`);
 
     // Remove from tracks Map
     tracksToRemove.forEach(trackId => {
@@ -296,7 +321,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     // Step 5: Save updated library
     await rekordboxParser.saveLibrary(library, resolution.libraryPath);
 
-    console.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
+    safeConsole.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
     logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
 
     return {
@@ -307,7 +332,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     };
 
   } catch (error) {
-    console.error('❌ Resolution failed:', error);
+    safeConsole.error('❌ Resolution failed:', error);
     logger.error('DUPLICATE_RESOLUTION_FAILED', {
       strategy: resolution.strategy,
       duplicateSetsCount: resolution.duplicates.length,
@@ -373,10 +398,10 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
   hasScanned: boolean;
   scanOptions: any;
 }) => {
-  console.log(`💾 IPC: Saving duplicate results for ${data.libraryPath}`);
+  safeConsole.log(`💾 IPC: Saving duplicate results for ${data.libraryPath}`);
   try {
     if (!duplicateStorage) {
-      console.error('❌ Database not initialized yet');
+      safeConsole.error('❌ Database not initialized yet');
       return { success: false, error: 'Database not initialized yet' };
     }
     duplicateStorage.saveDuplicateResult({
@@ -386,10 +411,10 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
       hasScanned: data.hasScanned,
       scanOptions: data.scanOptions
     });
-    console.log(`✅ Successfully saved duplicate results for ${data.libraryPath}`);
+    safeConsole.log(`✅ Successfully saved duplicate results for ${data.libraryPath}`);
     return { success: true };
   } catch (error) {
-    console.error('❌ Save failed:', error);
+    safeConsole.error('❌ Save failed:', error);
     logger.error('SAVE_DUPLICATE_RESULTS_FAILED', {
       libraryPath: data.libraryPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -402,21 +427,21 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
 });
 
 ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
-  console.log(`📖 IPC: Loading duplicate results for ${libraryPath}`);
+  safeConsole.log(`📖 IPC: Loading duplicate results for ${libraryPath}`);
   try {
     if (!duplicateStorage) {
-      console.log('⏳ Database not ready yet, returning null');
+      safeConsole.log('⏳ Database not ready yet, returning null');
       return { success: true, data: null }; // Return null if not ready yet
     }
     const result = duplicateStorage.getDuplicateResult(libraryPath);
     if (result) {
-      console.log(`✅ Found stored results: ${result.duplicates.length} duplicates, ${result.selectedDuplicates.length} selected`);
+      safeConsole.log(`✅ Found stored results: ${result.duplicates.length} duplicates, ${result.selectedDuplicates.length} selected`);
     } else {
-      console.log('🆕 No stored results found for this library');
+      safeConsole.log('🆕 No stored results found for this library');
     }
     return { success: true, data: result };
   } catch (error) {
-    console.error('❌ Load failed:', error);
+    safeConsole.error('❌ Load failed:', error);
     logger.error('GET_DUPLICATE_RESULTS_FAILED', {
       libraryPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
