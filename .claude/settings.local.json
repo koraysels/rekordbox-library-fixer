@@ -28,7 +28,10 @@
       "Bash(git add:*)",
       "Bash(npm ls:*)",
       "Bash(git commit:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__write_memory",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
-  FolderOpen,
   Settings,
   RefreshCw,
   MapPin,
@@ -12,24 +10,18 @@ import {
   Loader2,
   ExternalLink,
   Trash2,
-  Plus,
-  X,
   RotateCcw,
   Zap,
-  HelpCircle,
   Target,
-  FileSearch,
-  FolderPlus,
-  ChevronRight
+  FileSearch
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
-import { SettingsSlideout } from './ui/SettingsSlideout';
+import { SettingsSlideout, PopoverButton } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import type { 
   LibraryData, 
   NotificationType, 
-  MissingTrack, 
   RelocationCandidate
 } from '../types';
 
@@ -38,106 +30,6 @@ interface TrackRelocatorProps {
   showNotification: (type: NotificationType, message: string) => void;
 }
 
-interface PopoverButtonProps {
-  onClick: (e?: React.MouseEvent) => void;
-  disabled?: boolean;
-  loading?: boolean;
-  icon: React.ComponentType<any>;
-  title: string;
-  description: string;
-  variant?: 'primary' | 'secondary' | 'danger' | 'success';
-  children: React.ReactNode;
-}
-
-const PopoverButton: React.FC<PopoverButtonProps> = ({
-  onClick,
-  disabled = false,
-  loading = false,
-  icon: Icon,
-  title,
-  description,
-  variant = 'secondary',
-  children
-}) => {
-  const [showPopover, setShowPopover] = useState(false);
-  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const variantClasses = {
-    primary: 'btn-primary',
-    secondary: 'btn-secondary', 
-    danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors',
-    success: 'btn-primary bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500'
-  };
-
-  const updatePopoverPosition = () => {
-    if (buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setPopoverPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 10
-      });
-    }
-  };
-
-  const handleMouseEnter = () => {
-    updatePopoverPosition();
-    setShowPopover(true);
-  };
-
-  const handleMouseLeave = () => {
-    setShowPopover(false);
-  };
-
-  return (
-    <>
-      <button
-        ref={buttonRef}
-        onClick={onClick}
-        disabled={disabled || loading}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`${variantClasses[variant]} flex items-center space-x-2`}
-      >
-        {loading ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <Icon size={16} />
-        )}
-        <span>{children}</span>
-      </button>
-
-      {showPopover && createPortal(
-        <div 
-          className="fixed w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl pointer-events-none"
-          style={{
-            left: popoverPosition.x,
-            top: popoverPosition.y,
-            transform: 'translate(-50%, -100%)',
-            zIndex: 10000
-          }}
-        >
-          <div className="flex items-start space-x-2">
-            <Icon size={16} className="text-rekordbox-purple mt-0.5 flex-shrink-0" />
-            <div>
-              <h3 className="font-medium text-white text-sm">{title}</h3>
-              <p className="text-gray-300 text-xs mt-1">{description}</p>
-            </div>
-          </div>
-          <div 
-            className="absolute w-2 h-2 bg-gray-900 border-r border-b border-gray-700 transform rotate-45"
-            style={{
-              left: '50%',
-              top: '100%',
-              transform: 'translateX(-50%) translateY(-50%) rotate(45deg)'
-            }}
-          ></div>
-        </div>,
-        document.body
-      )}
-    </>
-  );
-};
 
 const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   libraryData,
@@ -153,7 +45,6 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
     isFindingCandidates,
     relocations,
     isRelocating,
-    relocationResults,
     searchOptions,
     stats,
     
@@ -176,7 +67,6 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   
   // Get settings store
   const relocationOptions = useSettingsStore((state) => state.relocationOptions);
-  const updateRelocationOption = useSettingsStore((state) => state.updateRelocationOption);
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
   const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
 
@@ -262,7 +152,8 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
       const result = await window.electronAPI.autoRelocateTracks(selectedTracks, searchOptions);
       if (result.success) {
         const { successfulRelocations, totalTracks } = result.data;
-        showNotification('success', `Auto-relocated ${successfulRelocations}/${totalTracks} tracks`);
+        showNotification('success', 
+          `Auto-relocated ${successfulRelocations}/${totalTracks} tracks`);
         clearSelection();
         // Refresh the missing tracks list
         setTimeout(() => scanForMissingTracks(), 1000);
@@ -328,7 +219,8 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
               <h1 className="text-xl font-bold text-white">Track Relocator</h1>
             </div>
             <div className="text-sm text-gray-400">
-              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • {selectedMissingTracks.size} selected
+              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • 
+              {selectedMissingTracks.size} selected
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -377,11 +269,18 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
 
                 <PopoverButton
                   onClick={autoRelocateSelected}
-                  disabled={isAutoRelocating || selectedMissingTracks.size === 0 || searchOptions.searchPaths.length === 0}
+                  disabled={
+                    isAutoRelocating || 
+                    selectedMissingTracks.size === 0 || 
+                    searchOptions.searchPaths.length === 0
+                  }
                   loading={isAutoRelocating}
                   icon={Zap}
                   title="Auto Relocate Tracks"
-                  description="Automatically find and relocate selected tracks using AI-powered matching (80%+ confidence required)"
+                  description={
+                    "Automatically find and relocate selected tracks using AI-powered matching " +
+                    "(80%+ confidence required)"
+                  }
                   variant="success"
                   className="w-full"
                 >
@@ -394,7 +293,10 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   loading={isResetting}
                   icon={RotateCcw}
                   title="Reset Track Locations"
-                  description="Reset selected tracks to make them relocatable again. Tracks stay in playlists but marked as needing relocation"
+                  description={
+                    "Reset selected tracks to make them relocatable again. Tracks stay in " +
+                    "playlists but marked as needing relocation"
+                  }
                   variant="secondary"
                   className="w-full"
                 >
@@ -438,7 +340,10 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 <button
                   onClick={clearSelection}
                   disabled={selectedMissingTracks.size === 0}
-                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 disabled:opacity-50 text-white rounded text-sm transition-colors"
+                  className={
+                    "px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 " +
+                    "disabled:opacity-50 text-white rounded text-sm transition-colors"
+                  }
                 >
                   Clear Selection
                 </button>
@@ -513,7 +418,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                     <div className="flex items-center space-x-2">
                       <PopoverButton
                         onClick={(e) => {
-                          e.stopPropagation();
+                          e?.stopPropagation();
                           findRelocationCandidates(track);
                         }}
                         disabled={isFindingCandidates}
@@ -529,7 +434,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                       {relocations.has(track.id) && (
                         <PopoverButton
                           onClick={(e) => {
-                            e.stopPropagation();
+                            e?.stopPropagation();
                             removeRelocation(track.id);
                           }}
                           icon={Trash2}
@@ -586,7 +491,10 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 candidates.map((candidate, index) => (
                   <div
                     key={index}
-                    className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 cursor-pointer transition-colors"
+                    className={
+                      "bg-gray-800 rounded-lg p-3 border border-gray-700 " +
+                      "hover:border-gray-600 cursor-pointer transition-colors"
+                    }
                     onClick={() => selectCandidate(candidate)}
                   >
                     <div className="flex items-start justify-between">

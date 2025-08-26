@@ -7,3 +7,7 @@ export { AppFooter } from './AppFooter';
 export { SplashScreen } from './SplashScreen';
 export { AboutModal } from './AboutModal';
 export { SettingsSlideout } from './SettingsSlideout';
+export { PopoverButton } from './PopoverButton';
+export type { PopoverButtonProps } from './PopoverButton';
+export { ConfidenceBadge } from './ConfidenceBadge';
+export type { ConfidenceBadgeProps } from './ConfidenceBadge';

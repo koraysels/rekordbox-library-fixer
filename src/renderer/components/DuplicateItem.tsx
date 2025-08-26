@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback, useMemo } from 'react';
+import React, { useState, memo, useMemo } from 'react';
 import {
   ChevronDown,
   ChevronUp,
@@ -10,6 +10,9 @@ import {
   CheckCircle,
   ExternalLink
 } from 'lucide-react';
+import { formatFileSize, formatDuration } from '../utils';
+import { useFileOperations } from '../hooks';
+import { ConfidenceBadge } from './ui';
 
 interface DuplicateItemProps {
   duplicate: any;
@@ -27,28 +30,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 
-  const getConfidenceBadge = useCallback((confidence: number) => {
-    if (confidence >= 90) {
-      return <span className="px-2 py-1 bg-green-600 text-white text-xs rounded-full">High</span>;
-    } else if (confidence >= 70) {
-      return <span className="px-2 py-1 bg-yellow-600 text-white text-xs rounded-full">Medium</span>;
-    } else {
-      return <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded-full">Low</span>;
-    }
-  }, []);
-
-  const formatFileSize = useCallback((bytes: number | undefined) => {
-    if (!bytes) return 'N/A';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(1)} MB`;
-  }, []);
-
-  const formatDuration = useCallback((seconds: number | undefined) => {
-    if (!seconds) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }, []);
+  const { openFileLocation } = useFileOperations();
 
   const recommendedTrack = useMemo(() => {
     if (resolutionStrategy === 'manual') return null;
@@ -105,21 +87,6 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     return recommended;
   }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
 
-  const openFileLocation = useCallback(async (filePath: string) => {
-    console.log('🗂️ Opening file location:', filePath);
-    try {
-      if (window.electronAPI?.showFileInFolder) {
-        const result = await window.electronAPI.showFileInFolder(filePath);
-        console.log('✅ File location opened:', result);
-      } else {
-        console.error('❌ showFileInFolder API not available');
-        alert('File manager integration not available');
-      }
-    } catch (error) {
-      console.error('❌ Failed to open file location:', error);
-      alert(`Failed to open file location: ${error}`);
-    }
-  }, []);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -151,7 +118,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400 capitalize">
                 {duplicate.matchType} match
               </span>
-              {getConfidenceBadge(duplicate.confidence)}
+              <ConfidenceBadge confidence={duplicate.confidence} />
             </div>
           </div>
         </div>

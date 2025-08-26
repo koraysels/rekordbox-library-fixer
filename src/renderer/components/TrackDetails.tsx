@@ -10,29 +10,13 @@ import {
   PlayCircle,
   Star
 } from 'lucide-react';
+import { formatFileSize, formatDuration, formatDate } from '../utils';
 
 interface TrackDetailsProps {
   track: any;
 }
 
 const TrackDetails: React.FC<TrackDetailsProps> = ({ track }) => {
-  const formatFileSize = (bytes: number | undefined) => {
-    if (!bytes) return 'N/A';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
-
-  const formatDuration = (seconds: number | undefined) => {
-    if (!seconds) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatDate = (date: Date | undefined) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString();
-  };
 
   return (
     <div className="space-y-4">
