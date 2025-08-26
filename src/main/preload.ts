@@ -5,61 +5,55 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
   selectRekordboxXML: () => ipcRenderer.invoke('select-rekordbox-xml'),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
-  parseRekordboxLibrary: (xmlPath: string) => 
+  parseRekordboxLibrary: (xmlPath: string) =>
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
-  findDuplicates: (options: any) => 
+  findDuplicates: (options: any) =>
     ipcRenderer.invoke('find-duplicates', options),
-  resolveDuplicates: (resolution: any) => 
+  resolveDuplicates: (resolution: any) =>
     ipcRenderer.invoke('resolve-duplicates', resolution),
-  saveRekordboxXML: (data: any) => 
+  saveRekordboxXML: (data: any) =>
     ipcRenderer.invoke('save-rekordbox-xml', data),
   getLogsInfo: () => ipcRenderer.invoke('get-logs-info'),
-  showFileInFolder: (filePath: string) => 
+  showFileInFolder: (filePath: string) =>
     ipcRenderer.invoke('show-file-in-folder', filePath),
-  saveDuplicateResults: (data: any) => 
-    ipcRenderer.invoke('save-duplicate-results', data),
-  getDuplicateResults: (libraryPath: string) => 
-    ipcRenderer.invoke('get-duplicate-results', libraryPath),
-  deleteDuplicateResults: (libraryPath: string) => 
-    ipcRenderer.invoke('delete-duplicate-results', libraryPath),
-  
+
   // Track Relocation APIs
-  findMissingTracks: (tracks: any) => 
+  findMissingTracks: (tracks: any) =>
     ipcRenderer.invoke('find-missing-tracks', tracks),
   resetTrackLocations: (trackIds: string[]) =>
     ipcRenderer.invoke('reset-track-locations', trackIds),
   autoRelocateTracks: (tracks: any[], options: any) =>
     ipcRenderer.invoke('auto-relocate-tracks', tracks, options),
-  findRelocationCandidates: (track: any, options: any) => 
+  findRelocationCandidates: (track: any, options: any) =>
     ipcRenderer.invoke('find-relocation-candidates', track, options),
-  relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => 
+  relocateTrack: (trackId: string, oldLocation: string, newLocation: string) =>
     ipcRenderer.invoke('relocate-track', trackId, oldLocation, newLocation),
-  batchRelocateTracks: (relocations: any[]) => 
+  batchRelocateTracks: (relocations: any[]) =>
     ipcRenderer.invoke('batch-relocate-tracks', relocations),
-  
+
   // Cloud Sync APIs
-  detectCloudSyncIssues: (tracks: any) => 
+  detectCloudSyncIssues: (tracks: any) =>
     ipcRenderer.invoke('detect-cloud-sync-issues', tracks),
-  fixCloudSyncIssue: (issue: any) => 
+  fixCloudSyncIssue: (issue: any) =>
     ipcRenderer.invoke('fix-cloud-sync-issue', issue),
-  batchFixCloudSyncIssues: (issues: any[]) => 
+  batchFixCloudSyncIssues: (issues: any[]) =>
     ipcRenderer.invoke('batch-fix-cloud-sync-issues', issues),
-  initializeDropboxAPI: (config: any) => 
+  initializeDropboxAPI: (config: any) =>
     ipcRenderer.invoke('initialize-dropbox-api', config),
-  
+
   // Track Ownership APIs
-  detectOwnershipIssues: (tracks: any, computers: any) => 
+  detectOwnershipIssues: (tracks: any, computers: any) =>
     ipcRenderer.invoke('detect-ownership-issues', tracks, computers),
-  fixTrackOwnership: (issue: any) => 
+  fixTrackOwnership: (issue: any) =>
     ipcRenderer.invoke('fix-track-ownership', issue),
-  batchFixOwnership: (issues: any[]) => 
+  batchFixOwnership: (issues: any[]) =>
     ipcRenderer.invoke('batch-fix-ownership', issues),
-  updateLibraryOwnership: (library: any, fixes: any[]) => 
+  updateLibraryOwnership: (library: any, fixes: any[]) =>
     ipcRenderer.invoke('update-library-ownership', library, fixes),
-  
+
   // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-  
+
   // Event listeners for menu actions
   onShowAbout: (callback: () => void) => {
     ipcRenderer.on('show-about', callback);

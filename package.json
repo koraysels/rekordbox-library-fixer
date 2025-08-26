@@ -18,7 +18,8 @@
     "test:unit:ui": "vitest --ui",
     "test:unit:watch": "vitest --watch",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "postinstall": "echo 'Post install complete'"
   },
   "keywords": [
     "rekordbox",
@@ -34,7 +35,6 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/crypto-js": "^4.2.2",
     "@types/fuzzy-search": "^2.1.5",
     "@types/jest": "^30.0.0",
@@ -47,6 +47,7 @@
     "concurrently": "^8.2.2",
     "electron": "^32.0.1",
     "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "happy-dom": "^17.6.1",
     "jsdom": "^26.1.0",
     "playwright": "^1.55.0",
@@ -58,7 +59,8 @@
     "@radix-ui/react-popover": "^1.1.15",
     "@tanstack/db": "^0.1.7",
     "autoprefixer": "^10.4.20",
-    "better-sqlite3": "^11.2.1",
+    "dexie": "^4.0.1",
+    "dexie-react-hooks": "^1.1.7",
     "crypto-js": "^4.2.0",
     "dropbox": "^10.34.0",
     "electron-context-menu": "^4.1.1",

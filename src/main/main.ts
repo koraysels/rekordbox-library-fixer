@@ -3,7 +3,6 @@ import * as path from 'path';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
-import { DuplicateStorage } from './duplicateStorage';
 import { TrackRelocator } from './trackRelocator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
@@ -37,7 +36,6 @@ let mainWindow: BrowserWindow | null = null;
 let rekordboxParser: RekordboxParser;
 let duplicateDetector: DuplicateDetector;
 let logger: Logger;
-let duplicateStorage: DuplicateStorage;
 let trackRelocator: TrackRelocator;
 let cloudSyncFixer: CloudSyncFixer;
 let trackOwnershipFixer: TrackOwnershipFixer;
@@ -146,13 +144,8 @@ app.whenReady().then(async () => {
   cloudSyncFixer = new CloudSyncFixer();
   trackOwnershipFixer = new TrackOwnershipFixer();
 
-  try {
-    duplicateStorage = new DuplicateStorage();
-    safeConsole.log('✅ SQLite storage initialized');
-  } catch (error) {
-    safeConsole.error('❌ Failed to initialize SQLite storage:', error);
-    // Continue without storage for now - could fallback to localStorage
-  }
+  // Database storage is now handled via Dexie in the renderer process
+  safeConsole.log('✅ Application initialized');
 
   createWindow();
 });
@@ -415,87 +408,7 @@ ipcMain.handle('show-file-in-folder', async (_, filePath: string) => {
   }
 });
 
-// Duplicate Storage IPC Handlers
-ipcMain.handle('save-duplicate-results', async (_, data: {
-  libraryPath: string;
-  duplicates: any[];
-  selectedDuplicates: string[];
-  hasScanned: boolean;
-  scanOptions: any;
-}) => {
-  safeConsole.log(`💾 IPC: Saving duplicate results for ${data.libraryPath}`);
-  try {
-    if (!duplicateStorage) {
-      safeConsole.error('❌ Database not initialized yet');
-      return { success: false, error: 'Database not initialized yet' };
-    }
-    duplicateStorage.saveDuplicateResult({
-      libraryPath: data.libraryPath,
-      duplicates: data.duplicates,
-      selectedDuplicates: data.selectedDuplicates,
-      hasScanned: data.hasScanned,
-      scanOptions: data.scanOptions
-    });
-    safeConsole.log(`✅ Successfully saved duplicate results for ${data.libraryPath}`);
-    return { success: true };
-  } catch (error) {
-    safeConsole.error('❌ Save failed:', error);
-    logger.error('SAVE_DUPLICATE_RESULTS_FAILED', {
-      libraryPath: data.libraryPath,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
-  safeConsole.log(`📖 IPC: Loading duplicate results for ${libraryPath}`);
-  try {
-    if (!duplicateStorage) {
-      safeConsole.log('⏳ Database not ready yet, returning null');
-      return { success: true, data: null }; // Return null if not ready yet
-    }
-    const result = duplicateStorage.getDuplicateResult(libraryPath);
-    if (result) {
-      safeConsole.log(`✅ Found stored results: ${result.duplicates.length} duplicates, ${result.selectedDuplicates.length} selected`);
-    } else {
-      safeConsole.log('🆕 No stored results found for this library');
-    }
-    return { success: true, data: result };
-  } catch (error) {
-    safeConsole.error('❌ Load failed:', error);
-    logger.error('GET_DUPLICATE_RESULTS_FAILED', {
-      libraryPath,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('delete-duplicate-results', async (_, libraryPath: string) => {
-  try {
-    if (!duplicateStorage) {
-      return { success: false, error: 'Database not initialized yet' };
-    }
-    duplicateStorage.deleteDuplicateResult(libraryPath);
-    return { success: true };
-  } catch (error) {
-    logger.error('DELETE_DUPLICATE_RESULTS_FAILED', {
-      libraryPath,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
+// Note: Duplicate storage is now handled via Dexie in the renderer process
 
 // Track Relocation IPC Handlers
 ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
@@ -527,25 +440,25 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
     for (const track of tracks) {
       // Find candidates for this track
       const candidatesResult = await trackRelocator.findRelocationCandidates(track, options);
-      
+
       if (candidatesResult.length > 0) {
         // Use the best candidate (highest confidence)
-        const bestCandidate = candidatesResult.reduce((best, current) => 
+        const bestCandidate = candidatesResult.reduce((best, current) =>
           current.confidence > best.confidence ? current : best
         );
-        
+
         // Only auto-relocate if confidence is high enough (>80%)
         if (bestCandidate.confidence > 0.8) {
           const relocResult = await trackRelocator.relocateTrack(
-            track.id, 
-            track.originalLocation, 
+            track.id,
+            track.originalLocation,
             bestCandidate.path
           );
-          
+
           if (relocResult.success) {
             successCount++;
           }
-          
+
           results.push({
             trackId: track.id,
             trackName: track.name,
@@ -573,9 +486,9 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
     }
 
     safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${tracks.length} successful`);
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         totalTracks: tracks.length,
         successfulRelocations: successCount,
         results
