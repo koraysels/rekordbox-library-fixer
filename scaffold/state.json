@@ -1,0 +1,68 @@
+{
+  "feature": "Feature 3: Track Relocation & Repair",
+  "startedAt": "2025-08-26T12:26:00.000Z",
+  "currentPhase": "scaffolding",
+  "totalFiles": 8,
+  "completedFiles": 0,
+  "files": [
+    {
+      "path": "src/main/trackRelocator.ts",
+      "type": "main-process",
+      "status": "pending",
+      "description": "Core track relocation logic with smart search algorithms"
+    },
+    {
+      "path": "src/main/cloudSyncFixer.ts", 
+      "type": "main-process",
+      "status": "pending",
+      "description": "Cloud sync repairs and Dropbox integration"
+    },
+    {
+      "path": "src/main/trackOwnershipFixer.ts",
+      "type": "main-process", 
+      "status": "pending",
+      "description": "Fix grey tracks ownership issues"
+    },
+    {
+      "path": "src/renderer/types/index.ts",
+      "type": "types",
+      "status": "pending", 
+      "description": "Add relocation type definitions"
+    },
+    {
+      "path": "src/main/preload.ts",
+      "type": "ipc",
+      "status": "pending",
+      "description": "Add relocation IPC channels"  
+    },
+    {
+      "path": "src/main/main.ts",
+      "type": "ipc",
+      "status": "pending",
+      "description": "Add IPC handlers for relocation features"
+    },
+    {
+      "path": "src/renderer/components/TrackRelocator.tsx",
+      "type": "component",
+      "status": "pending",
+      "description": "Main track relocation UI component"
+    },
+    {
+      "path": "src/renderer/hooks/useTrackRelocator.ts",
+      "type": "hook",
+      "status": "pending", 
+      "description": "Track relocation state management hook"
+    }
+  ],
+  "dependencies": {
+    "dropbox": "^10.34.0",
+    "fuzzy-search": "^3.2.1", 
+    "glob": "^10.3.10"
+  },
+  "notes": [
+    "Following existing patterns from duplicate detection feature",
+    "Using safe console logging to prevent EPIPE errors",
+    "Integrating with existing tab navigation system",
+    "Using consistent error handling and notification patterns"
+  ]
+}
