@@ -27,18 +27,28 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 ### Key Components
 - `RekordboxParser`: Handles XML parsing and track data extraction from Rekordbox library files
 - `DuplicateDetector`: Implements duplicate track detection algorithms
-- `DuplicateDetector.tsx`: Main UI component for managing duplicate resolution with informative popovers
-- `TrackRelocator.tsx`: Core relocation functionality with enhanced UX and tooltips
+- `DuplicateDetector.tsx`: Main UI component for managing duplicate resolution with shared PopoverButton components
+- `TrackRelocator.tsx`: Core relocation functionality with enhanced UX and shared UI components
 - `useDuplicates`: Custom hook managing duplicate detection state and operations
 - `useTrackRelocator`: State management for track relocation operations
 - `SettingsPanel`: Configuration UI with Zustand store integration
+- **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, and other UI elements
+- **Utility Functions**: Centralized formatters for file size, duration, dates, and other data
+- **Custom Hooks**: File operations and other reusable business logic
 - Path aliases configured: `@/`, `@renderer/`, `@main/`, `@shared/`
 
 ### Recent Enhancements
+- **Code Architecture Refactor** (2025-01-26): Major refactoring following React best practices
+  - **DRY Implementation**: Eliminated duplicate PopoverButton code (saved ~184 lines)
+  - **Modular Structure**: Clean ES module organization with barrel exports
+  - **Separation of Concerns**: Clear boundaries between UI, utilities, and business logic
+  - **Shared Components**: Reusable PopoverButton, ConfidenceBadge, formatting utilities
+  - **Type Safety**: Proper TypeScript interfaces for all shared components
 - **Track Relocation Feature**: Complete implementation of core relocation workflow
   - Reset track locations and auto-relocate functionality
   - Smart file matching with confidence scoring
   - Streamlined UI focused on primary use cases
+  - Visual folder browser for search path selection
 - **Enhanced UX**: Portal-based popovers with detailed button descriptions
 - **Logo Integration**: Replaced generic icons with actual application logo throughout UI
 - **Improved Navigation**: Reordered tabs for optimal workflow (Duplicates → Relocate → Import → Maintenance)
@@ -154,6 +164,35 @@ const addPathPreference = useSettingsStore((state) => state.addPathPreference);
 - **Debounced Loading**: Visual feedback during heavy operations
 - **Hover States**: Consistent interactive feedback
 
+## Code Organization
+
+### Modular Architecture (Following React Best Practices)
+```
+src/renderer/
+├── components/
+│   ├── ui/                     # Reusable UI components
+│   │   ├── PopoverButton.tsx   # Shared tooltip button component
+│   │   ├── ConfidenceBadge.tsx # Confidence level indicator
+│   │   └── index.ts           # Barrel exports
+│   ├── DuplicateDetector.tsx   # Feature components using shared UI
+│   └── TrackRelocator.tsx     
+├── hooks/                      # Custom business logic hooks
+│   ├── useFileOperations.ts   # File system operations
+│   ├── useDuplicates.ts       # Duplicate detection logic
+│   └── index.ts              # Barrel exports
+├── utils/                     # Pure utility functions
+│   ├── formatters.ts          # Data formatting (fileSize, duration, etc.)
+│   └── index.ts              # Barrel exports
+└── stores/                    # State management
+    └── settingsStore.ts       # Zustand store with persistence
+```
+
+### Component Patterns
+- **Feature Components**: Compose UI components with business logic hooks
+- **UI Components**: Pure presentation with minimal logic, TypeScript interfaces
+- **Utilities**: Pure functions with no side effects, easily testable
+- **Hooks**: Encapsulate stateful logic and side effects with clear interfaces
+
 ## Development Notes
 
 - Development mode loads from `http://localhost:3000` - ensure Electron listens on same port as Vite
@@ -163,3 +202,5 @@ const addPathPreference = useSettingsStore((state) => state.addPathPreference);
 - Path resolution configured for clean imports
 - Settings persist automatically across sessions via Zustand store
 - Avoid `position: fixed` on headers - use native app-style static positioning
+- Follow DRY, KISS, and SoC principles for all new code
+- Use barrel exports for clean import paths
