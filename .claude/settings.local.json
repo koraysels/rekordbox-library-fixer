@@ -25,7 +25,9 @@
       "Bash(npx electron:*)",
       "mcp__playwright__browser_snapshot",
       "Bash(grep:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm ls:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

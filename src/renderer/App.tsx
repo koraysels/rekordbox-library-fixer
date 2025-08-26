@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLibrary, useNotifications } from './hooks';
-import { AppHeader, NotificationToast, NavigationTabs, EmptyLibraryState, AppFooter } from './components/ui';
+import { AppHeader, NotificationToast, NavigationTabs, EmptyLibraryState, AppFooter, SplashScreen, AboutModal } from './components/ui';
 import DuplicateDetector from './components/DuplicateDetector';
 import type { TabType } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('duplicates');
+  const [showSplash, setShowSplash] = useState(true);
+  const [showAbout, setShowAbout] = useState(false);
   
   // Custom hooks
   const { notification, showNotification } = useNotifications();
@@ -17,6 +19,31 @@ const App: React.FC = () => {
     setLibraryData 
   } = useLibrary(showNotification);
 
+  // Hide splash screen after initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000); // Show splash for 2 seconds minimum
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Set up menu event listeners
+  useEffect(() => {
+    const removeAboutListener = window.electronAPI.onShowAbout(() => {
+      setShowAbout(true);
+    });
+
+    return () => {
+      removeAboutListener();
+    };
+  }, []);
+
+
+  // Show splash screen during initial load
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
@@ -88,6 +115,9 @@ const App: React.FC = () => {
 
       {/* Footer */}
       <AppFooter libraryData={libraryData} />
+
+      {/* About Modal */}
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
     </div>
   );
 };

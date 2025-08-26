@@ -59,6 +59,7 @@
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "^11.2.1",
     "crypto-js": "^4.2.0",
+    "electron-context-menu": "^4.1.1",
     "lucide-react": "^0.436.0",
     "music-metadata": "^10.4.0",
     "postcss": "^8.4.41",
