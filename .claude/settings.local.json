@@ -32,7 +32,9 @@
       "mcp__serena__replace_symbol_body",
       "mcp__serena__write_memory",
       "Bash(npm run lint)",
-      "Bash(npm run dist:win:*)"
+      "Bash(npm run dist:win:*)",
+      "Bash(curl:*)",
+      "Bash(npx playwright install:*)"
     ],
     "deny": [],
     "ask": []

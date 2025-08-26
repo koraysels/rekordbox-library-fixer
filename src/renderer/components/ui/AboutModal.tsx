@@ -15,9 +15,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <img 
-              src="/icons/48x48.png" 
-              alt="Rekordbox Library Manager" 
+            <img
+              src="./icons/48x48.png"
+              alt="Rekordbox Library Manager"
               className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
             <h2 className="text-xl font-bold text-white">About</h2>
@@ -35,7 +35,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           <h3 className="text-lg font-semibold text-white mb-2">Rekordbox Library Manager</h3>
           <p className="text-rekordbox-purple font-medium mb-4">Version 0.0.1</p>
           <p className="text-zinc-300 text-sm leading-relaxed mb-4">
-            A powerful tool for managing and fixing Rekordbox libraries. 
+            A powerful tool for managing and fixing Rekordbox libraries.
             Detect duplicates, optimize your library, and keep your DJ collection organized.
           </p>
         </div>
