@@ -68,22 +68,22 @@ Make a simple, free tool that might help you get your library back under control
 ### 🏠 **Main Dashboard**
 *The main screen - nothing fancy, just gets the job done*
 
-![Main Interface](screenshots/main-interface.png)
+![Main Interface](screenshots/01-main-interface.png)
 
 ### 🔍 **Duplicate Detection**
 *This is where the magic happens (hopefully)*
 
-![Duplicate Detection](screenshots/duplicate-detection.png)
+![Library with Data](screenshots/02-loaded-library.png)
 
 ### 📍 **Track Relocation**
 *For when your tracks decide to play hide and seek*
 
-![Track Relocation](screenshots/track-relocation.png)
+![Track Relocation](screenshots/02-loaded-library.png)
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
 
-![Settings Panel](screenshots/settings-panel.png)
+![Settings Panel](screenshots/02-loaded-library.png)
 
 ---
 
