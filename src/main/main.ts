@@ -20,10 +20,10 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
+    icon: path.join(__dirname, "../assets/icons/icon.png"), // works in dev + Linux
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#18181B',
   });
-
   // In development, load from localhost
   if (process.env.NODE_ENV === 'development') {
     // Fixed port to match Vite config
@@ -44,7 +44,7 @@ app.whenReady().then(() => {
   logger = new Logger();
   rekordboxParser = new RekordboxParser();
   duplicateDetector = new DuplicateDetector();
-  
+
   try {
     duplicateStorage = new DuplicateStorage();
     console.log('✅ SQLite storage initialized');
@@ -52,7 +52,7 @@ app.whenReady().then(() => {
     console.error('❌ Failed to initialize SQLite storage:', error);
     // Continue without storage for now - could fallback to localStorage
   }
-  
+
   createWindow();
 });
 
@@ -101,9 +101,9 @@ ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
       xmlPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -126,9 +126,9 @@ ipcMain.handle('find-duplicates', async (_, options: {
       options,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -144,21 +144,21 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     // Step 1: Create backup of original XML
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupPath = `${resolution.libraryPath}.backup.${timestamp}`;
-    
+
     const fs = require('fs');
     fs.copyFileSync(resolution.libraryPath, backupPath);
     console.log(`📁 Backup created: ${backupPath}`);
-    
+
     // Step 2: Parse current library
     const library = await rekordboxParser.parseLibrary(resolution.libraryPath);
-    
+
     // Step 3: Determine which tracks to remove for each duplicate set
     let tracksToRemove: string[] = [];
-    
+
     for (const duplicateSet of resolution.duplicates) {
       const tracksInSet = duplicateSet.tracks;
       let trackToKeep;
-      
+
       // Apply resolution strategy
       if (resolution.strategy === 'keep-highest-quality') {
         trackToKeep = tracksInSet.reduce((best: any, current: any) => {
@@ -181,13 +181,13 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       } else if (resolution.strategy === 'keep-preferred-path') {
         // Sort by path preference
         const sortedTracks = [...tracksInSet].sort((a: any, b: any) => {
-          const aMatch = resolution.pathPreferences.findIndex((pref: string) => 
+          const aMatch = resolution.pathPreferences.findIndex((pref: string) =>
             a.location && a.location.toLowerCase().includes(pref.toLowerCase())
           );
-          const bMatch = resolution.pathPreferences.findIndex((pref: string) => 
+          const bMatch = resolution.pathPreferences.findIndex((pref: string) =>
             b.location && b.location.toLowerCase().includes(pref.toLowerCase())
           );
-          
+
           if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
           if (aMatch !== -1) return -1;
           if (bMatch !== -1) return 1;
@@ -198,47 +198,47 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
         // Default: keep first track
         trackToKeep = tracksInSet[0];
       }
-      
+
       // Add all other tracks to removal list
       const tracksToRemoveFromSet = tracksInSet
         .filter((track: any) => track.id !== trackToKeep.id)
         .map((track: any) => track.id);
-      
+
       tracksToRemove.push(...tracksToRemoveFromSet);
-      
+
       console.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
     }
-    
+
     // Step 4: Remove tracks from library
     console.log(`🗑️ Removing ${tracksToRemove.length} duplicate tracks from library`);
-    
+
     // Remove from tracks Map
     tracksToRemove.forEach(trackId => {
       library.tracks.delete(trackId);
     });
-    
+
     // Remove from playlists
     library.playlists.forEach((playlist: any) => {
       if (playlist.tracks) {
-        playlist.tracks = playlist.tracks.filter((trackId: string) => 
+        playlist.tracks = playlist.tracks.filter((trackId: string) =>
           !tracksToRemove.includes(trackId)
         );
       }
     });
-    
+
     // Step 5: Save updated library
     await rekordboxParser.saveLibrary(library, resolution.libraryPath);
-    
+
     console.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
     logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       backupPath,
       tracksRemoved: tracksToRemove.length,
       updatedLibrary: library
     };
-    
+
   } catch (error) {
     console.error('❌ Resolution failed:', error);
     logger.error('DUPLICATE_RESOLUTION_FAILED', {
@@ -246,9 +246,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       duplicateSetsCount: resolution.duplicates.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -267,9 +267,9 @@ ipcMain.handle('save-rekordbox-xml', async (_, data: {
       trackCount: data.library.tracks ? data.library.tracks.size : 0,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -291,9 +291,9 @@ ipcMain.handle('show-file-in-folder', async (_, filePath: string) => {
       filePath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -327,9 +327,9 @@ ipcMain.handle('save-duplicate-results', async (_, data: {
       libraryPath: data.libraryPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -354,9 +354,9 @@ ipcMain.handle('get-duplicate-results', async (_, libraryPath: string) => {
       libraryPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
@@ -373,9 +373,9 @@ ipcMain.handle('delete-duplicate-results', async (_, libraryPath: string) => {
       libraryPath,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 });
