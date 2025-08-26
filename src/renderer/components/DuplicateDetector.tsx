@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Search,
@@ -8,11 +8,11 @@ import {
   ChevronUp,
   Loader2,
   CheckCircle2,
-  Sparkles,
-  Shield
+  Sparkles
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
+import { SettingsSlideout } from './ui/SettingsSlideout';
 import { SettingsPanel } from './SettingsPanel';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { LibraryData, NotificationType } from '../types';
@@ -21,7 +21,7 @@ interface PopoverButtonProps {
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<any>;
   title: string;
   description: string;
   variant?: 'primary' | 'secondary' | 'danger' | 'success';
@@ -153,13 +153,11 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
     selectAll,
     clearAll,
     setSelections,
-    selectedCount,
     isResolveDisabled,
     searchFilter,
     setSearchFilter,
     isSearching,
-    filteredDuplicates,
-    memoizedVisibleDuplicates
+    filteredDuplicates
   } = useDuplicates(libraryPath, showNotification);
   
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
@@ -388,10 +386,35 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   // Memoize expensive calculations
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Library Info - Compact */}
+    <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
+      {/* Header */}
+      <div className="flex-shrink-0 p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Search className="text-rekordbox-purple" size={24} />
+              <h1 className="text-xl font-bold text-white">Duplicate Detection</h1>
+            </div>
+            <div className="text-sm text-gray-400">
+              {duplicates.length} sets found • {selectedDuplicates.size} selected
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <PopoverButton
+              onClick={() => setShowSettings(!showSettings)}
+              icon={Settings}
+              title="Scan Settings"
+              description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy"
+            >
+              Settings
+            </PopoverButton>
+          </div>
+        </div>
+      </div>
+
+      {/* Library Info */}
       {libraryPath && (
-        <div className="mb-3 px-3 py-2 bg-blue-900/10 border border-blue-500/20 rounded-lg">
+        <div className="flex-shrink-0 px-6 py-3 bg-blue-900/10 border-b border-blue-500/20">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-blue-400"></div>
             <p className="text-xs text-blue-300 font-mono truncate">
@@ -401,200 +424,159 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         </div>
       )}
 
-      {/* Controls */}
-      <div className="card mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-            <PopoverButton
-              onClick={scanForDuplicates}
-              disabled={isScanning}
-              loading={isScanning}
-              icon={Search}
-              title="Scan for Duplicates"
-              description="Analyze your library to find duplicate tracks using advanced algorithms. Uses fingerprinting, metadata matching, and path analysis to identify duplicates with high accuracy."
-              variant="primary"
-              className="w-full sm:w-auto"
-            >
-              {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
-            </PopoverButton>
-            
-            <PopoverButton
-              onClick={() => setShowSettings(!showSettings)}
-              icon={Settings}
-              title="Scan Settings"
-              description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy. Fine-tune the scan to match your needs."
-              variant="secondary"
-              className={`w-full sm:w-auto ${showSettings ? "border-rekordbox-purple" : ""}`}
-            >
-              <span className="flex items-center justify-center sm:justify-start">
-                Settings 
-                {showSettings ? (
-                  <ChevronUp className="w-4 h-4 ml-1" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 ml-1" />
-                )}
-              </span>
-            </PopoverButton>
-          </div>
+      {/* Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Actions Bar */}
+        <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <PopoverButton
+                onClick={scanForDuplicates}
+                disabled={isScanning}
+                loading={isScanning}
+                icon={Search}
+                title="Scan for Duplicates"
+                description="Analyze your library to find duplicate tracks using advanced algorithms"
+                variant="primary"
+              >
+                {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
+              </PopoverButton>
 
-          {duplicates.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <span className="text-sm text-zinc-400 text-center sm:text-left">
-                {selectedDuplicates.size} of {duplicates.length} selected
-              </span>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                <PopoverButton
-                  onClick={selectAll}
-                  icon={CheckCircle2}
-                  title="Select All Duplicates"
-                  description="Select all duplicate sets for bulk resolution. This will mark every duplicate set found in your library for processing."
-                  className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1 w-full sm:w-auto"
-                >
-                  Select All
-                </PopoverButton>
-                <PopoverButton
-                  onClick={clearAll}
-                  icon={Trash2}
-                  title="Deselect All"
-                  description="Clear all selections and start fresh. Use this to uncheck all duplicate sets if you want to manually choose which ones to resolve."
-                  className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1 w-full sm:w-auto"
-                >
-                  Deselect All
-                </PopoverButton>
-              </div>
+              <PopoverButton
+                onClick={selectAll}
+                disabled={duplicates.length === 0}
+                icon={CheckCircle2}
+                title="Select All Duplicates"
+                description="Select all duplicate sets for bulk resolution"
+                variant="secondary"
+              >
+                Select All ({duplicates.length})
+              </PopoverButton>
+
+              <PopoverButton
+                onClick={clearAll}
+                disabled={selectedDuplicates.size === 0}
+                icon={Trash2}
+                title="Clear Selection"
+                description="Deselect all currently selected duplicate sets"
+                variant="secondary"
+              >
+                Clear Selection ({selectedDuplicates.size})
+              </PopoverButton>
             </div>
-          )}
-        </div>
 
-        {/* Settings moved to slideout panel */}
-      </div>
-
-      {/* Results */}
-      {duplicates.length > 0 && (
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
-              <p className="text-sm text-zinc-400 mt-1">
-                {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
-              </p>
-            </div>
-            <PopoverButton
-              onClick={resolveDuplicates}
-              disabled={isResolveDisabled}
-              loading={isScanning}
-              icon={Sparkles}
-              title="Resolve Selected Duplicates"
-              description="Apply resolution strategy to selected duplicate sets. Creates a backup, removes duplicate tracks based on your settings, and updates your library. This action cannot be undone without restoring the backup."
-              variant="success"
-              className="w-full sm:w-auto"
-            >
-              {isScanning ? 'Resolving...' : 'Resolve Selected'}
-            </PopoverButton>
-          </div>
-
-          {/* Search Filter */}
-          <div className="mb-4 flex-shrink-0">
-            <div className="relative">
-              {isSearching ? (
-                <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-rekordbox-purple animate-spin" />
-              ) : (
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              )}
+            <div className="flex items-center space-x-2">
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search duplicates by title, artist, album, or path..."
-                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-sm placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
+                placeholder="Search duplicates..."
+                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-64"
               />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="text-xs text-rekordbox-purple">Searching...</div>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="flex-1 min-h-0 relative">
-            <VirtualizedDuplicateList
-              duplicates={filteredDuplicates}
-              selectedDuplicates={selectedDuplicates}
-              onToggleSelection={toggleDuplicateSelection}
-              resolutionStrategy={resolutionStrategy}
-            />
-            {isSearching && (
-              <div className="absolute inset-0 bg-rekordbox-dark/30 backdrop-blur-[1px] flex items-center justify-center pointer-events-none">
-                <div className="bg-zinc-800/90 px-4 py-2 rounded-lg border border-rekordbox-purple/30 shadow-lg">
-                  <div className="flex items-center space-x-3">
-                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin" />
-                    <span className="text-sm text-rekordbox-purple">Filtering duplicates...</span>
-                  </div>
-                </div>
-              </div>
+          {/* Selection Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {duplicates.length > 0 && (
+                <>
+                  <span className="text-sm text-zinc-400">
+                    {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
+                  </span>
+                  <span className="text-sm text-zinc-400">
+                    {selectedDuplicates.size} selected
+                  </span>
+                </>
+              )}
+            </div>
+            
+            {duplicates.length > 0 && (
+              <PopoverButton
+                onClick={resolveDuplicates}
+                disabled={isResolveDisabled}
+                loading={isScanning}
+                icon={Sparkles}
+                title="Resolve Selected Duplicates"
+                description="Apply resolution strategy to selected duplicate sets"
+                variant="success"
+              >
+                {isScanning ? 'Resolving...' : 'Resolve Selected'}
+              </PopoverButton>
             )}
           </div>
         </div>
-      )}
 
-      {/* Loading State - Loading duplicates from database */}
-      {isLoadingDuplicates && (
-        <div className="card text-center py-12">
-          <div className="flex flex-col items-center">
-            <Loader2 className="w-16 h-16 mx-auto text-rekordbox-purple mb-4 animate-spin" />
-            <h3 className="text-lg font-semibold mb-2 text-rekordbox-purple">Loading Duplicates</h3>
-            <p className="text-zinc-400">
-              Reading duplicate results from database...
-            </p>
+        {/* Results List */}
+        {duplicates.length > 0 ? (
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="mb-4">
+              {isSearching ? (
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin" />
+                  </div>
+                  <div className="pl-10 text-sm text-rekordbox-purple">Filtering duplicates...</div>
+                </div>
+              ) : null}
+            </div>
+            <div className="relative">
+              <VirtualizedDuplicateList
+                duplicates={filteredDuplicates}
+                selectedDuplicates={selectedDuplicates}
+                onToggleSelection={toggleDuplicateSelection}
+                resolutionStrategy={resolutionStrategy}
+              />
+            </div>
           </div>
-        </div>
-      )}
-      
-      {/* Empty State - After Scan */}
-      {!isScanning && !isLoadingDuplicates && duplicates.length === 0 && hasScanned && (
-        <div className="card text-center py-12">
-          <CheckCircle2 className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Duplicates Found</h3>
-          <p className="text-zinc-400">
-            Your library appears to be clean! No duplicate tracks were detected.
-          </p>
-        </div>
-      )}
-
-      {/* Initial State - Before Any Scan */}
-      {!isScanning && !isLoadingDuplicates && duplicates.length === 0 && !hasScanned && (
-        <div className="card text-center py-12">
-          <Search className="w-16 h-16 mx-auto text-zinc-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Ready to Scan</h3>
-          <p className="text-zinc-400 mb-4">
-            Click "Find Duplicates" to scan your library for duplicate tracks.
-          </p>
-          <PopoverButton
-            onClick={scanForDuplicates}
-            icon={Search}
-            title="Find Duplicates"
-            description="Start scanning your library for duplicate tracks. This process analyzes track metadata, file paths, and optionally audio fingerprints to identify potential duplicates."
-            variant="primary"
-            className="mx-auto"
-          >
-            Find Duplicates
-          </PopoverButton>
-        </div>
-      )}
+        ) : hasScanned ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <CheckCircle2 size={48} className="mx-auto mb-4 text-green-500" />
+              <h3 className="text-lg font-medium mb-2">No Duplicates Found</h3>
+              <p>Your library appears to be clean! No duplicate tracks were detected.</p>
+            </div>
+          </div>
+        ) : isLoadingDuplicates ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <Loader2 size={48} className="mx-auto mb-4 text-rekordbox-purple animate-spin" />
+              <h3 className="text-lg font-medium mb-2 text-rekordbox-purple">Loading Duplicates</h3>
+              <p>Reading duplicate results from database...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <Search size={48} className="mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Ready to Scan</h3>
+              <p>Click "Scan for Duplicates" to analyze your library for duplicate tracks.</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Settings Slideout Panel */}
-      <SettingsPanel
+      <SettingsSlideout
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        scanOptions={scanOptions}
-        setScanOptions={setScanOptions}
-        resolutionStrategy={resolutionStrategy}
-        setResolutionStrategy={setResolutionStrategy}
-        pathPreferenceInput={pathPreferenceInput}
-        setPathPreferenceInput={setPathPreferenceInput}
-        addPathPreference={handleAddPathPreference}
-        removePathPreference={removePathPreference}
-      />
+        title="Duplicate Detection Settings"
+        subtitle="Configure scan options and resolution preferences"
+        width="xl"
+      >
+        <SettingsPanel
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          scanOptions={scanOptions}
+          setScanOptions={setScanOptions}
+          resolutionStrategy={resolutionStrategy}
+          setResolutionStrategy={setResolutionStrategy}
+          pathPreferenceInput={pathPreferenceInput}
+          setPathPreferenceInput={setPathPreferenceInput}
+          addPathPreference={handleAddPathPreference}
+          removePathPreference={removePathPreference}
+        />
+      </SettingsSlideout>
     </div>
   );
 };

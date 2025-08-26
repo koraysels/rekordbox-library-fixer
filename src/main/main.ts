@@ -192,6 +192,22 @@ ipcMain.handle('select-rekordbox-xml', async () => {
   return null;
 });
 
+ipcMain.handle('select-folder', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory'],
+    title: 'Select Music Folder',
+    defaultPath: path.join(
+      process.env.HOME || '',
+      'Music'
+    ),
+  });
+
+  if (!result.canceled && result.filePaths[0]) {
+    return result.filePaths[0];
+  }
+  return null;
+});
+
 ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
   try {
     const library = await rekordboxParser.parseLibrary(xmlPath);

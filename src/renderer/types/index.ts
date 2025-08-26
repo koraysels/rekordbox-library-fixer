@@ -140,6 +140,7 @@ declare global {
   interface Window {
     electronAPI: {
       selectRekordboxXML: () => Promise<string | null>;
+      selectFolder: () => Promise<string | null>;
       parseRekordboxLibrary: (xmlPath: string) => Promise<any>;
       findDuplicates: (options: any) => Promise<any>;
       resolveDuplicates: (resolution: any) => Promise<any>;

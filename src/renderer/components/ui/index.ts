@@ -6,3 +6,4 @@ export { EmptyLibraryState } from './EmptyLibraryState';
 export { AppFooter } from './AppFooter';
 export { SplashScreen } from './SplashScreen';
 export { AboutModal } from './AboutModal';
+export { SettingsSlideout } from './SettingsSlideout';

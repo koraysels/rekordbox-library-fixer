@@ -19,9 +19,13 @@ import {
   HelpCircle,
   Target,
   FileSearch,
-  FolderPlus
+  FolderPlus,
+  ChevronRight
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
+import { useSettingsStore } from '../stores/settingsStore';
+import { SettingsSlideout } from './ui/SettingsSlideout';
+import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import type { 
   LibraryData, 
   NotificationType, 
@@ -35,10 +39,10 @@ interface TrackRelocatorProps {
 }
 
 interface PopoverButtonProps {
-  onClick: () => void;
+  onClick: (e?: React.MouseEvent) => void;
   disabled?: boolean;
   loading?: boolean;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<any>;
   title: string;
   description: string;
   variant?: 'primary' | 'secondary' | 'danger' | 'success';
@@ -169,6 +173,17 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   const [newSearchPath, setNewSearchPath] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
+  
+  // Get settings store
+  const relocationOptions = useSettingsStore((state) => state.relocationOptions);
+  const updateRelocationOption = useSettingsStore((state) => state.updateRelocationOption);
+  const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
+  const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
+
+  // Sync search options with store
+  useEffect(() => {
+    updateSearchOptions(relocationOptions);
+  }, [relocationOptions]);
 
   // Filter missing tracks based on search term
   const filteredMissingTracks = missingTracks.filter(track =>
@@ -261,20 +276,16 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
     }
   };
 
-  // Add search path
+  // Functions for managing search paths
   const addSearchPath = () => {
     if (newSearchPath.trim()) {
-      updateSearchOptions({
-        searchPaths: [...searchOptions.searchPaths, newSearchPath.trim()]
-      });
+      addRelocationSearchPath(newSearchPath.trim());
       setNewSearchPath('');
     }
   };
 
-  // Remove search path
   const removeSearchPath = (index: number) => {
-    const newPaths = searchOptions.searchPaths.filter((_, i) => i !== index);
-    updateSearchOptions({ searchPaths: newPaths });
+    removeRelocationSearchPath(index);
   };
 
   // Handle candidate selection
@@ -341,75 +352,6 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
         </div>
       </div>
 
-      {/* Settings Panel */}
-      {showSettings && (
-        <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
-          <h3 className="font-medium text-white mb-3">Search Configuration</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Search Depth</label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                value={searchOptions.searchDepth}
-                onChange={(e) => updateSearchOptions({ searchDepth: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Match Threshold</label>
-              <input
-                type="range"
-                min="0.1"
-                max="1"
-                step="0.1"
-                value={searchOptions.matchThreshold}
-                onChange={(e) => updateSearchOptions({ matchThreshold: parseFloat(e.target.value) })}
-                className="w-full"
-              />
-              <span className="text-xs text-gray-400">{Math.round(searchOptions.matchThreshold * 100)}% similarity required</span>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm text-gray-300 mb-2">Search Paths</label>
-            <div className="flex space-x-2 mb-2">
-              <input
-                type="text"
-                value={newSearchPath}
-                onChange={(e) => setNewSearchPath(e.target.value)}
-                placeholder="Enter path where tracks might be located..."
-                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-                onKeyDown={(e) => e.key === 'Enter' && addSearchPath()}
-              />
-              <button
-                onClick={addSearchPath}
-                className="px-4 py-2 bg-rekordbox-purple hover:bg-purple-600 text-white rounded-lg transition-colors"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-            {searchOptions.searchPaths.length === 0 && (
-              <p className="text-yellow-400 text-sm mb-2">⚠️ No search paths configured. Add paths where your audio files might be located.</p>
-            )}
-            <div className="space-y-2">
-              {searchOptions.searchPaths.map((path, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-700 px-3 py-2 rounded-lg">
-                  <span className="text-white text-sm font-mono">{path}</span>
-                  <button
-                    onClick={() => removeSearchPath(index)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -688,6 +630,24 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
           </div>
         )}
       </div>
+
+      {/* Settings Slideout */}
+      <SettingsSlideout
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Track Relocator Settings"
+        subtitle="Configure search paths and matching criteria"
+        width="xl"
+      >
+        <TrackRelocatorSettings
+          searchOptions={searchOptions}
+          updateSearchOptions={updateSearchOptions}
+          newSearchPath={newSearchPath}
+          setNewSearchPath={setNewSearchPath}
+          addSearchPath={addSearchPath}
+          removeSearchPath={removeSearchPath}
+        />
+      </SettingsSlideout>
     </div>
   );
 };
