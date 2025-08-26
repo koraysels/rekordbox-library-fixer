@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { X } from 'lucide-react';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
 interface SettingsPanelProps {
@@ -28,34 +27,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   removePathPreference
 }) => {
   return (
-    <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={onClose}
-        />
-      )}
-      
-      {/* Slideout Panel */}
-      <div 
-        className={`fixed right-0 top-0 h-full w-96 bg-zinc-900 border-l border-zinc-700 transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-zinc-700">
-          <h2 className="text-xl font-semibold">Settings</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-zinc-700 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-8">
+    <div className="space-y-8">
           {/* Detection Methods */}
           <div>
             <h3 className="font-semibold mb-4 text-lg">Detection Methods</h3>
@@ -252,8 +224,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               )}
             </div>
           </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
