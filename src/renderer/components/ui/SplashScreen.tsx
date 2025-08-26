@@ -6,9 +6,9 @@ interface SplashScreenProps {
   message?: string;
 }
 
-export const SplashScreen: React.FC<SplashScreenProps> = ({ 
-  isLoading = true, 
-  message = 'Loading Rekordbox Library Manager...' 
+export const SplashScreen: React.FC<SplashScreenProps> = ({
+  isLoading = true,
+  message = 'Loading Rekordbox Library Manager...'
 }) => {
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-rekordbox-dark via-zinc-900 to-rekordbox-dark flex items-center justify-center z-50">
@@ -16,9 +16,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* Logo and title */}
         <div className="flex items-center justify-center space-x-3 mb-8">
           <div className="relative">
-            <img 
-              src="/logo.png" 
-              alt="Rekordbox Library Manager" 
+            <img
+              src="./logo.png"
+              alt="Rekordbox Library Manager"
               className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg"
             />
             <div className="absolute -inset-2 bg-rekordbox-purple/20 rounded-full blur-lg animate-pulse"></div>

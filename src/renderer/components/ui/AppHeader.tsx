@@ -18,12 +18,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         {/* Left side with logo and title */}
         <div className="flex items-center space-x-2 no-drag">
           <img
-            src="/icons/48x48.png"
+            src="./icons/48x48.png"
             alt="Rekordbox Library Manager"
             className="w-10 h-10 bg-white rounded-lg p-1 shadow-lg"
           />
           <div>
-            <h1 className="text-sm font-bold text-white">Rekordbox/upga Library Manager</h1>
+            <h1 className="text-sm font-bold text-white">Rekordbox Library Manager</h1>
             <p className="text-purple-100 text-xs leading-tight">Fix and optimize your DJ library</p>
           </div>
         </div>
