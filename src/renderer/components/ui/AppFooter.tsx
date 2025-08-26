@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { ChevronDown, Music, Folder, X } from 'lucide-react';
 import type { LibraryData, Playlist } from '../../types';
@@ -62,6 +62,8 @@ const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({
 };
 
 export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
+  const [version, setVersion] = useState('0.0.1');
+
   const playlistStats = useMemo(() => {
     if (!libraryData || !libraryData.playlists) {
       return { totalPlaylists: 0, folders: 0 };
@@ -72,6 +74,21 @@ export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
       folders: countFolders(libraryData.playlists)
     };
   }, [libraryData]);
+
+  useEffect(() => {
+    const loadVersion = async () => {
+      try {
+        const result = await window.electronAPI.getAppVersion();
+        if (result.success) {
+          setVersion(result.data.version);
+        }
+      } catch (error) {
+        console.error('Failed to load app version:', error);
+      }
+    };
+
+    loadVersion();
+  }, []);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 px-6 py-3">
@@ -145,7 +162,7 @@ export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
         </div>
         
         <div className="text-xs text-zinc-500">
-          Version 0.0.1 • Made with ❤️ for DJs
+          Version {version} • Made with ❤️ for DJs
         </div>
       </div>
     </div>

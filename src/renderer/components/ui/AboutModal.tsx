@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface AboutModalProps {
@@ -7,6 +7,25 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+  const [version, setVersion] = useState('0.0.1');
+
+  useEffect(() => {
+    const loadVersion = async () => {
+      try {
+        const result = await window.electronAPI.getAppVersion();
+        if (result.success) {
+          setVersion(result.data.version);
+        }
+      } catch (error) {
+        console.error('Failed to load app version:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadVersion();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -33,7 +52,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Content */}
         <div className="text-center mb-6">
           <h3 className="text-lg font-semibold text-white mb-2">Rekordbox Library Manager</h3>
-          <p className="text-rekordbox-purple font-medium mb-4">Version 0.0.1</p>
+          <p className="text-rekordbox-purple font-medium mb-4">Version {version}</p>
           <p className="text-zinc-300 text-sm leading-relaxed mb-4">
             A powerful tool for managing and fixing Rekordbox libraries.
             Detect duplicates, optimize your library, and keep your DJ collection organized.

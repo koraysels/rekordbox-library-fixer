@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
-    "@tanstack/react-virtual": "^3.13.12",
+    "@tanstack/db": "^0.1.7",
     "autoprefixer": "^10.4.20",
     "better-sqlite3": "^11.2.1",
     "crypto-js": "^4.2.0",
@@ -152,7 +152,6 @@
           "y": 200
         },
         {
-          "x": 450,
           "y": 200,
           "type": "link",
           "path": "/Applications"
