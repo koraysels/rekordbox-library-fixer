@@ -403,8 +403,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
       {/* Controls */}
       <div className="card mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <PopoverButton
               onClick={scanForDuplicates}
               disabled={isScanning}
@@ -413,6 +413,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               title="Scan for Duplicates"
               description="Analyze your library to find duplicate tracks using advanced algorithms. Uses fingerprinting, metadata matching, and path analysis to identify duplicates with high accuracy."
               variant="primary"
+              className="w-full sm:w-auto"
             >
               {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
             </PopoverButton>
@@ -423,9 +424,9 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               title="Scan Settings"
               description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy. Fine-tune the scan to match your needs."
               variant="secondary"
-              className={showSettings ? "border-rekordbox-purple" : ""}
+              className={`w-full sm:w-auto ${showSettings ? "border-rekordbox-purple" : ""}`}
             >
-              <span className="flex items-center">
+              <span className="flex items-center justify-center sm:justify-start">
                 Settings 
                 {showSettings ? (
                   <ChevronUp className="w-4 h-4 ml-1" />
@@ -437,28 +438,30 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           </div>
 
           {duplicates.length > 0 && (
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-zinc-400">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <span className="text-sm text-zinc-400 text-center sm:text-left">
                 {selectedDuplicates.size} of {duplicates.length} selected
               </span>
-              <PopoverButton
-                onClick={selectAll}
-                icon={CheckCircle2}
-                title="Select All Duplicates"
-                description="Select all duplicate sets for bulk resolution. This will mark every duplicate set found in your library for processing."
-                className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1"
-              >
-                Select All
-              </PopoverButton>
-              <PopoverButton
-                onClick={clearAll}
-                icon={Trash2}
-                title="Deselect All"
-                description="Clear all selections and start fresh. Use this to uncheck all duplicate sets if you want to manually choose which ones to resolve."
-                className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1"
-              >
-                Deselect All
-              </PopoverButton>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <PopoverButton
+                  onClick={selectAll}
+                  icon={CheckCircle2}
+                  title="Select All Duplicates"
+                  description="Select all duplicate sets for bulk resolution. This will mark every duplicate set found in your library for processing."
+                  className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1 w-full sm:w-auto"
+                >
+                  Select All
+                </PopoverButton>
+                <PopoverButton
+                  onClick={clearAll}
+                  icon={Trash2}
+                  title="Deselect All"
+                  description="Clear all selections and start fresh. Use this to uncheck all duplicate sets if you want to manually choose which ones to resolve."
+                  className="text-sm text-rekordbox-purple hover:text-purple-400 bg-transparent hover:bg-rekordbox-purple/10 px-3 py-1 w-full sm:w-auto"
+                >
+                  Deselect All
+                </PopoverButton>
+              </div>
             </div>
           )}
         </div>
@@ -469,8 +472,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       {/* Results */}
       {duplicates.length > 0 && (
         <div className="flex flex-col flex-1 min-h-0">
-          <div className="mb-4 flex items-center justify-between flex-shrink-0">
-            <div>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
+            <div className="text-center sm:text-left">
               <h2 className="text-xl font-semibold">Duplicate Sets Found</h2>
               <p className="text-sm text-zinc-400 mt-1">
                 {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
@@ -484,6 +487,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               title="Resolve Selected Duplicates"
               description="Apply resolution strategy to selected duplicate sets. Creates a backup, removes duplicate tracks based on your settings, and updates your library. This action cannot be undone without restoring the backup."
               variant="success"
+              className="w-full sm:w-auto"
             >
               {isScanning ? 'Resolving...' : 'Resolve Selected'}
             </PopoverButton>

@@ -19,7 +19,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
             <img 
               src="/logo.png" 
               alt="Rekordbox Library Manager" 
-              className="w-12 h-12"
+              className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg"
             />
             <div className="absolute -inset-2 bg-rekordbox-purple/20 rounded-full blur-lg animate-pulse"></div>
           </div>

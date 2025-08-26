@@ -418,8 +418,8 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
           
           {/* Actions Bar */}
           <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <PopoverButton
                   onClick={scanForMissingTracks}
                   disabled={isScanning}
@@ -428,6 +428,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   title="Scan for Missing Tracks"
                   description="Analyze your library to find tracks with broken file paths that need relocation"
                   variant="primary"
+                  className="w-full"
                 >
                   {isScanning ? 'Scanning...' : 'Scan for Missing'}
                 </PopoverButton>
@@ -440,6 +441,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   title="Auto Relocate Tracks"
                   description="Automatically find and relocate selected tracks using AI-powered matching (80%+ confidence required)"
                   variant="success"
+                  className="w-full"
                 >
                   Auto Relocate ({selectedMissingTracks.size})
                 </PopoverButton>
@@ -452,6 +454,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   title="Reset Track Locations"
                   description="Reset selected tracks to make them relocatable again. Tracks stay in playlists but marked as needing relocation"
                   variant="secondary"
+                  className="w-full"
                 >
                   Reset Locations ({selectedMissingTracks.size})
                 </PopoverButton>
@@ -464,6 +467,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   title="Apply Manual Relocations"
                   description="Apply all manually configured track relocations to update file paths in your library"
                   variant="success"
+                  className="w-full"
                 >
                   Apply Manual ({relocations.size})
                 </PopoverButton>
