@@ -1,5 +1,5 @@
 import React from 'react';
-import { Music, FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 
 interface EmptyLibraryStateProps {
   onSelectLibrary: () => void;
@@ -8,7 +8,11 @@ interface EmptyLibraryStateProps {
 export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({ onSelectLibrary }) => {
   return (
     <div className="card text-center py-20">
-      <Music className="w-20 h-20 mx-auto text-zinc-600 mb-4" />
+      <img 
+        src="/icons/64x64.png" 
+        alt="Rekordbox Library Manager" 
+        className="w-20 h-20 mx-auto mb-4 opacity-60"
+      />
       <h3 className="text-xl font-semibold mb-2">No Library Loaded</h3>
       <p className="text-zinc-400 mb-6">
         Select your Rekordbox XML library file to get started

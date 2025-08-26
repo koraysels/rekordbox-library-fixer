@@ -1,5 +1,5 @@
 import React from 'react';
-import { Music, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -15,7 +15,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <Music className="w-8 h-8 text-rekordbox-purple" />
+            <img 
+              src="/icons/48x48.png" 
+              alt="Rekordbox Library Manager" 
+              className="w-8 h-8"
+            />
             <h2 className="text-xl font-bold text-white">About</h2>
           </div>
           <button

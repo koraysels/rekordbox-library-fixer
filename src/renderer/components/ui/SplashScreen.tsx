@@ -1,5 +1,5 @@
 import React from 'react';
-import { Music, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface SplashScreenProps {
   isLoading?: boolean;
@@ -16,7 +16,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* Logo and title */}
         <div className="flex items-center justify-center space-x-3 mb-8">
           <div className="relative">
-            <Music className="w-12 h-12 text-rekordbox-purple" />
+            <img 
+              src="/logo.png" 
+              alt="Rekordbox Library Manager" 
+              className="w-12 h-12"
+            />
             <div className="absolute -inset-2 bg-rekordbox-purple/20 rounded-full blur-lg animate-pulse"></div>
           </div>
           <div>

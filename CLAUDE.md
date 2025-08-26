@@ -8,6 +8,8 @@ Update both this file and referenced files when making changes
 
 This is an Electron-based desktop application for managing Rekordbox DJ library files. The app provides duplicate detection, library import/export, and maintenance functionality for Rekordbox XML databases.
 
+> ! The processes this software offers, retains all essential DJ metadata, including cues, loops, beatgrids, and playlists.
+
 ## Architecture
 
 ### Core Structure
