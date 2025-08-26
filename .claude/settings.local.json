@@ -34,7 +34,12 @@
       "Bash(npm run lint)",
       "Bash(npm run dist:win:*)",
       "Bash(curl:*)",
-      "Bash(npx playwright install:*)"
+      "Bash(npx playwright install:*)",
+      "mcp__serena__insert_after_symbol",
+      "Bash(npm uninstall:*)",
+      "Bash(cat:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": [],
     "ask": []

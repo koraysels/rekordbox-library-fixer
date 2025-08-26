@@ -848,3 +848,16 @@ ipcMain.handle('update-library-ownership', async (_, library: any, fixes: any[])
     };
   }
 });
+
+// Get app version from package.json
+ipcMain.handle('get-app-version', async () => {
+  try {
+    const packageJsonPath = path.join(__dirname, '../../package.json');
+    const fs = require('fs');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    return { success: true, data: { version: packageJson.version } };
+  } catch (error) {
+    safeConsole.error('❌ Failed to read app version:', error);
+    return { success: false, error: 'Failed to read version' };
+  }
+});

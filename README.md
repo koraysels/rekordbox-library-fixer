@@ -73,12 +73,12 @@ Make a simple, free tool that might help you get your library back under control
 ### 🔍 **Duplicate Detection**
 *This is where the magic happens (hopefully)*
 
-![Library with Data](screenshots/02-loaded-library.png)
+![Library with Data](screenshots/03-duplicate-detection.png)
 
 ### 📍 **Track Relocation**
 *For when your tracks decide to play hide and seek*
 
-![Track Relocation](screenshots/02-loaded-library.png)
+![Track Relocation](screenshots/04-track-relocation.png)
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*

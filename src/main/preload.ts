@@ -57,6 +57,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateLibraryOwnership: (library: any, fixes: any[]) => 
     ipcRenderer.invoke('update-library-ownership', library, fixes),
   
+  // Get app version
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  
   // Event listeners for menu actions
   onShowAbout: (callback: () => void) => {
     ipcRenderer.on('show-about', callback);

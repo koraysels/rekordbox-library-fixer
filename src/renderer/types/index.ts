@@ -166,6 +166,10 @@ declare global {
       fixTrackOwnership: (issue: OwnershipIssue) => Promise<any>;
       batchFixOwnership: (issues: OwnershipIssue[]) => Promise<any>;
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
+      // App version
+      getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // Event listeners
+      onShowAbout: (callback: () => void) => () => void;
     };
   }
 }
