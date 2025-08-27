@@ -92,7 +92,7 @@ const AppWithRouter: React.FC = () => {
         {notification && <NotificationToast notification={notification} />}
 
         {/* Content with route-based animation */}
-        <div className="flex-1 p-4 overflow-hidden">
+        <div className="flex-1 py-4 overflow-hidden">
         {!libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (
