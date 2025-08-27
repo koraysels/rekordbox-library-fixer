@@ -353,9 +353,9 @@ const TrackRelocator: React.FC = () => {
                 <MissingTrackItem
                   track={track}
                   isSelected={selectedMissingTracks.has(track.id)}
-                  onToggleSelection={() => toggleTrackSelection(track.id)}
-                  onFindCandidates={() => findRelocationCandidates(track)}
-                  onRemoveRelocation={() => removeRelocation(track.id)}
+                  onToggleSelection={(track) => toggleTrackSelection(track.id)}
+                  onFindCandidates={(track) => findRelocationCandidates(track)}
+                  onRemoveRelocation={(track) => removeRelocation(track.id)}
                   hasRelocation={relocations.has(track.id)}
                   relocationPath={relocations.get(track.id)}
                   isFindingCandidates={isFindingCandidates}

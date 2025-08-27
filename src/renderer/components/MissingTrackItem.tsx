@@ -1,13 +1,14 @@
 import React from 'react';
 import { Search, Trash2 } from 'lucide-react';
 import { ListItem, PopoverButton } from './ui';
+import type { MissingTrack } from '../types';
 
 interface MissingTrackItemProps {
-  track: any; // TODO: Add proper type
+  track: MissingTrack;
   isSelected: boolean;
-  onToggleSelection: () => void;
-  onFindCandidates: () => void;
-  onRemoveRelocation?: () => void;
+  onToggleSelection: (track: MissingTrack) => void;
+  onFindCandidates: (track: MissingTrack) => void;
+  onRemoveRelocation?: (track: MissingTrack) => void;
   hasRelocation: boolean;
   relocationPath?: string;
   isFindingCandidates: boolean;
@@ -27,7 +28,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
 }) => {
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation(); // Prevent event bubbling
-    onToggleSelection();
+    onToggleSelection(track);
   };
 
   const handleItemClick = (e: React.MouseEvent) => {
@@ -36,7 +37,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
     const isInteractiveElement = target.closest('button, input, a, [role="button"]');
     
     if (!isInteractiveElement) {
-      onToggleSelection();
+      onToggleSelection(track);
     }
   };
 
@@ -75,7 +76,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
           <PopoverButton
             onClick={(e) => {
               e?.stopPropagation();
-              onFindCandidates();
+              onFindCandidates(track);
             }}
             disabled={isFindingCandidates}
             loading={isFindingCandidates && isLoadingThis}
@@ -91,7 +92,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             <PopoverButton
               onClick={(e) => {
                 e?.stopPropagation();
-                onRemoveRelocation();
+                onRemoveRelocation(track);
               }}
               icon={Trash2}
               title="Remove Relocation"
