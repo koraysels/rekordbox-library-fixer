@@ -33,7 +33,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
     }
   };
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Search Configuration */}
       <div>
         <h3 className="font-semibold mb-4 text-lg">Search Configuration</h3>
@@ -99,7 +99,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
         <p className="text-sm text-zinc-400 mb-4">
           Configure where to look for relocated audio files. Add directories where your music might be located.
         </p>
-        
+
         <div className="flex space-x-2 mb-4">
           <input
             type="text"

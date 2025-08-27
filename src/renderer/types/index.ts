@@ -150,7 +150,7 @@ declare global {
       // Track Relocation APIs
       findMissingTracks: (tracks: any) => Promise<any>;
       resetTrackLocations: (trackIds: string[]) => Promise<any>;
-      autoRelocateTracks: (tracks: any[], options: any) => Promise<any>;
+      autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) => Promise<any>;
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
       batchRelocateTracks: (data: { libraryPath: string; relocations: any[] }) => Promise<any>;
