@@ -13,21 +13,11 @@ import { SettingsSlideout, PopoverButton } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 import { useSettingsStore } from '../stores/settingsStore';
 import { duplicateStorage } from '../db/duplicatesDb';
+import { useAppContext } from '../AppWithRouter';
 import type { LibraryData, NotificationType } from '../types';
 
-
-interface DuplicateDetectorProps {
-  libraryData: LibraryData;
-  libraryPath: string;
-  onUpdate: (updatedLibrary: LibraryData) => void;
-  showNotification: (type: NotificationType, message: string) => void;
-}
-
-const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
-  libraryData,
-  libraryPath,
-  showNotification
-}) => {
+const DuplicateDetector: React.FC = () => {
+  const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
 
   // Use the custom duplicates hook
   const {

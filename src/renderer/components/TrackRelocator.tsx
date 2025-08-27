@@ -19,22 +19,13 @@ import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
 import { SettingsSlideout, PopoverButton } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
+import { useAppContext } from '../AppWithRouter';
 import type {
-  LibraryData,
-  NotificationType,
   RelocationCandidate
 } from '../types';
 
-interface TrackRelocatorProps {
-  libraryData: LibraryData | null;
-  showNotification: (type: NotificationType, message: string) => void;
-}
-
-
-const TrackRelocator: React.FC<TrackRelocatorProps> = ({
-  libraryData,
-  showNotification
-}) => {
+const TrackRelocator: React.FC = () => {
+  const { libraryData, showNotification } = useAppContext();
   const {
     // State
     missingTracks,
