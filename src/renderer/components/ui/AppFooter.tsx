@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { ChevronDown, Music, Folder, X } from 'lucide-react';
+import { useAppStore } from '../../stores/appStore';
 import type { LibraryData, Playlist } from '../../types';
 
 interface AppFooterProps {
@@ -61,8 +62,9 @@ const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({
   );
 };
 
-export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
-  const [version, setVersion] = useState('0.0.1');
+export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
+  const version = useAppStore((state) => state.version);
+  const loadVersion = useAppStore((state) => state.loadVersion);
 
   const playlistStats = useMemo(() => {
     if (!libraryData || !libraryData.playlists) {
@@ -76,19 +78,8 @@ export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
   }, [libraryData]);
 
   useEffect(() => {
-    const loadVersion = async () => {
-      try {
-        const result = await window.electronAPI.getAppVersion();
-        if (result.success) {
-          setVersion(result.data.version);
-        }
-      } catch (error) {
-        console.error('Failed to load app version:', error);
-      }
-    };
-
     loadVersion();
-  }, []);
+  }, [loadVersion]);
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 px-6 py-3">
@@ -167,4 +158,4 @@ export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
       </div>
     </div>
   );
-};
+});

@@ -85,7 +85,25 @@ Object.defineProperty(window, 'electronAPI', {
     saveDuplicateResults: vi.fn(),
     getDuplicateResults: vi.fn(),
     deleteDuplicateResults: vi.fn(),
-  }
+    // Track Relocation APIs
+    findMissingTracks: vi.fn(),
+    resetTrackLocations: vi.fn(),
+    autoRelocateTracks: vi.fn(),
+    findRelocationCandidates: vi.fn(),
+    relocateTrack: vi.fn(),
+    batchRelocateTracks: vi.fn(),
+    // Cloud Sync APIs
+    detectCloudSyncIssues: vi.fn(),
+    fixCloudSyncIssue: vi.fn(),
+    batchFixCloudSyncIssues: vi.fn(),
+    initializeDropboxAPI: vi.fn(),
+    // Track Ownership APIs
+    detectOwnershipIssues: vi.fn(),
+    fixTrackOwnership: vi.fn(),
+    batchFixOwnership: vi.fn(),
+    updateLibraryOwnership: vi.fn(),
+  },
+  configurable: true
 });
 
 beforeEach(() => {
