@@ -59,7 +59,9 @@
       "Bash(pkill:*)",
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_console_messages",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(git rm:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

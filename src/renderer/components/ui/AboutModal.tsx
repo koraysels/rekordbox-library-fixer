@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useAppStore } from '../../stores/appStore';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -7,24 +8,14 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
-  const [version, setVersion] = useState('0.0.1');
+  const version = useAppStore((state) => state.version);
+  const loadVersion = useAppStore((state) => state.loadVersion);
 
   useEffect(() => {
-    const loadVersion = async () => {
-      try {
-        const result = await window.electronAPI.getAppVersion();
-        if (result.success) {
-          setVersion(result.data.version);
-        }
-      } catch (error) {
-        console.error('Failed to load app version:', error);
-      }
-    };
-
     if (isOpen) {
       loadVersion();
     }
-  }, [isOpen]);
+  }, [isOpen, loadVersion]);
 
   if (!isOpen) return null;
 
@@ -65,7 +56,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             Developed by <span className="text-white font-medium">Koray Sels</span>
           </p>
           <p className="text-zinc-500 text-xs">
-            © 2024 Koray Sels. All rights reserved.
+            © 2025 Koray Sels. All rights reserved.
           </p>
         </div>
 

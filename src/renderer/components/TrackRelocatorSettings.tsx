@@ -1,10 +1,10 @@
 import React from 'react';
 import { Plus, X, FolderOpen } from 'lucide-react';
+import { useSettingsStore } from '../stores/settingsStore';
 import type { RelocationOptions } from '../types';
 
 interface TrackRelocatorSettingsProps {
   searchOptions: RelocationOptions;
-  updateSearchOptions: (options: Partial<RelocationOptions>) => void;
   newSearchPath: string;
   setNewSearchPath: (path: string) => void;
   addSearchPath: () => void;
@@ -13,12 +13,13 @@ interface TrackRelocatorSettingsProps {
 
 export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
   searchOptions,
-  updateSearchOptions,
   newSearchPath,
   setNewSearchPath,
   addSearchPath,
   removeSearchPath
 }) => {
+  // Get store functions for direct updates (avoid feedback loops)
+  const updateRelocationOption = useSettingsStore((state) => state.updateRelocationOption);
   const handleBrowseFolder = async () => {
     try {
       const folderPath = await window.electronAPI.selectFolder();
@@ -30,7 +31,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
     }
   };
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
       {/* Search Configuration */}
       <div>
         <h3 className="font-semibold mb-4 text-lg">Search Configuration</h3>
@@ -42,7 +43,10 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               min="1"
               max="10"
               value={searchOptions.searchDepth}
-              onChange={(e) => updateSearchOptions({ searchDepth: parseInt(e.target.value) })}
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value);
+                updateRelocationOption('searchDepth', newValue);
+              }}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:border-rekordbox-purple focus:outline-none"
             />
             <p className="text-xs text-zinc-400 mt-1">How many folder levels deep to search</p>
@@ -55,7 +59,10 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               max="1"
               step="0.1"
               value={searchOptions.matchThreshold}
-              onChange={(e) => updateSearchOptions({ matchThreshold: parseFloat(e.target.value) })}
+              onChange={(e) => {
+                const newValue = parseFloat(e.target.value);
+                updateRelocationOption('matchThreshold', newValue);
+              }}
               className="w-full accent-rekordbox-purple"
             />
             <div className="flex justify-between text-xs text-zinc-400 mt-1">
@@ -88,7 +95,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
         <p className="text-sm text-zinc-400 mb-4">
           Configure where to look for relocated audio files. Add directories where your music might be located.
         </p>
-        
+
         <div className="flex space-x-2 mb-4">
           <input
             type="text"
@@ -150,7 +157,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
             <input
               type="checkbox"
               checked={searchOptions.includeSubdirectories}
-              onChange={(e) => updateSearchOptions({ includeSubdirectories: e.target.checked })}
+              onChange={(e) => updateRelocationOption('includeSubdirectories', e.target.checked)}
               className="rounded border-zinc-600 text-rekordbox-purple focus:ring-purple-500"
             />
             <div>

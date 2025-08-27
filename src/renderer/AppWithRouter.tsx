@@ -1,13 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from '@tanstack/react-router';
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { useLocation, Outlet } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
-import { AppHeader, NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard } from './components/ui';
+import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard, NativeDropHandler } from './components/ui';
 import { Sidebar } from './components/Sidebar';
-import DuplicateDetector from './components/DuplicateDetector';
-import { TrackRelocator } from './components/TrackRelocator';
-import type { TabType } from './types';
+import type { TabType, LibraryData, NotificationType } from './types';
+
+// Context for route components to access app-wide data
+interface AppContextType {
+  libraryData: LibraryData | null;
+  libraryPath: string;
+  showNotification: (type: NotificationType, message: string) => void;
+  setLibraryData: (data: LibraryData) => void;
+}
+
+export const AppContext = createContext<AppContextType | null>(null);
+
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within AppContextProvider');
+  }
+  return context;
+};
 
 const pathToTab: Record<string, TabType> = {
   '/': 'duplicates',
@@ -31,6 +47,8 @@ const AppWithRouter: React.FC = () => {
     libraryData, 
     isLoading, 
     selectLibrary, 
+    loadLibrary,
+    clearStoredData,
     setLibraryData 
   } = useLibrary(showNotification);
   
@@ -80,81 +98,44 @@ const AppWithRouter: React.FC = () => {
         libraryPath={libraryPath}
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
+        onUnloadLibrary={clearStoredData}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <AppHeader
-          libraryPath={libraryPath}
-          isLoading={isLoading}
-          onSelectLibrary={selectLibrary}
-        />
-
         {/* Notification */}
         {notification && <NotificationToast notification={notification} />}
 
-        {/* Content with route-based animation */}
-        <div className="flex-1 p-6 overflow-hidden">
+        {/* Content with route-based rendering */}
+        <div className="flex-1 py-4 overflow-hidden">
         {!libraryData ? (
-          <EmptyLibraryState onSelectLibrary={selectLibrary} />
+          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.15, ease: 'easeInOut' }}
-              className="h-full"
-            >
-              {activeTab === 'duplicates' && (
+          <AppContext.Provider value={{
+            libraryData,
+            libraryPath,
+            showNotification,
+            setLibraryData
+          }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.15, ease: 'easeInOut' }}
+                className="h-full"
+              >
                 <div className="h-full flex flex-col">
                   {isLoadingCached ? (
                     <SkeletonCard />
                   ) : (
-                    <DuplicateDetector
-                      libraryData={libraryData}
-                      libraryPath={libraryPath}
-                      onUpdate={(updatedLibrary) => setLibraryData(updatedLibrary)}
-                      showNotification={showNotification}
-                    />
+                    <Outlet />
                   )}
                 </div>
-              )}
-
-              {activeTab === 'relocate' && (
-                <div className="h-full flex flex-col">
-                  {isLoadingCached ? (
-                    <SkeletonCard />
-                  ) : (
-                    <TrackRelocator
-                      libraryData={libraryData}
-                      showNotification={showNotification}
-                    />
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'import' && (
-                <div className="card">
-                  <h2 className="text-xl font-bold mb-4">Auto Import</h2>
-                  <p className="text-zinc-400">
-                    Feature coming soon: Automatically import new tracks while preventing duplicates
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'maintenance' && (
-                <div className="card">
-                  <h2 className="text-xl font-bold mb-4">Library Maintenance</h2>
-                  <p className="text-zinc-400">
-                    Feature coming soon: Find orphan tracks, repair files, and optimize your library
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
+              </motion.div>
+            </AnimatePresence>
+          </AppContext.Provider>
         )}
         </div>
 
@@ -165,6 +146,9 @@ const AppWithRouter: React.FC = () => {
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+      
+      {/* Native Drop Handler */}
+      <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />
     </div>
   );
 };
