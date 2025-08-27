@@ -13,4 +13,5 @@ export type { PopoverButtonProps } from './PopoverButton';
 export { ConfidenceBadge } from './ConfidenceBadge';
 export type { ConfidenceBadgeProps } from './ConfidenceBadge';
 export { PageHeader } from './PageHeader';
+export { ListItem } from './ListItem';
 export { Skeleton, SkeletonText, SkeletonCard } from './Skeleton';
