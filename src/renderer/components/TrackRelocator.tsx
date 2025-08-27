@@ -13,7 +13,8 @@ import {
   RotateCcw,
   Zap,
   Target,
-  FileSearch
+  FileSearch,
+  History
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -21,13 +22,15 @@ import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
+import { RelocationHistoryPanel } from './RelocationHistoryPanel';
 import { useAppContext } from '../AppWithRouter';
+import { relocationHistoryStorage } from '../db/relocationsDb';
 import type {
   RelocationCandidate
 } from '../types';
 
 const TrackRelocator: React.FC = () => {
-  const { libraryData, showNotification } = useAppContext();
+  const { libraryData, libraryPath, showNotification } = useAppContext();
   const {
     // State
     missingTracks,
@@ -49,11 +52,12 @@ const TrackRelocator: React.FC = () => {
     executeRelocations,
     updateSearchOptions,
     clearResults
-  } = useTrackRelocator(libraryData, showNotification);
+  } = useTrackRelocator(libraryData, libraryPath, showNotification);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMissingTracks, setSelectedMissingTracks] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [newSearchPath, setNewSearchPath] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
@@ -64,18 +68,10 @@ const TrackRelocator: React.FC = () => {
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
   const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
 
-  // Sync search options with store (FROM store TO hook)
+  // Sync search options with store (FROM store TO hook only)
   useEffect(() => {
     updateSearchOptions(relocationOptions);
   }, [relocationOptions, updateSearchOptions]);
-
-  // Sync search options to store (FROM hook TO store) whenever searchOptions change
-  useEffect(() => {
-    // Only update store if searchOptions have actually changed from store values
-    if (JSON.stringify(searchOptions) !== JSON.stringify(relocationOptions)) {
-      setRelocationOptions(searchOptions);
-    }
-  }, [searchOptions, relocationOptions, setRelocationOptions]);
 
   // Filter missing tracks based on search term
   const filteredMissingTracks = missingTracks.filter(track =>
@@ -219,6 +215,14 @@ const TrackRelocator: React.FC = () => {
         stats={`${stats.totalMissingTracks} missing • ${stats.configuredRelocations} configured • ${selectedMissingTracks.size} selected`}
         actions={
           <>
+            <PopoverButton
+              onClick={() => setShowHistory(!showHistory)}
+              icon={History}
+              title="Relocation History"
+              description="View log of all successful track relocations with timestamps and details"
+            >
+              History
+            </PopoverButton>
             <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
@@ -400,7 +404,15 @@ const TrackRelocator: React.FC = () => {
           <div className="w-96 bg-gray-850 border-l border-gray-700 flex flex-col">
             <div className="p-4 border-b border-gray-700">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-white">Relocation Candidates</h3>
+                <div>
+                  <h3 className="font-medium text-white">
+                    {isFindingCandidates ? 'Finding Candidates...' : 'Relocation Candidates'}
+                  </h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {isFindingCandidates ? 'Searching for:' : 'Found for:'} <span className="text-white">{selectedTrack.name}</span>
+                  </p>
+                  <p className="text-xs text-gray-500">by {selectedTrack.artist}</p>
+                </div>
                 <PopoverButton
                   onClick={() => findRelocationCandidates(selectedTrack)}
                   disabled={isFindingCandidates}
@@ -413,7 +425,6 @@ const TrackRelocator: React.FC = () => {
                   Refresh
                 </PopoverButton>
               </div>
-              <p className="text-sm text-gray-400 mt-1">{selectedTrack.name}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -496,6 +507,20 @@ const TrackRelocator: React.FC = () => {
           setNewSearchPath={setNewSearchPath}
           addSearchPath={addSearchPath}
           removeSearchPath={removeSearchPath}
+        />
+      </SettingsSlideout>
+
+      {/* History Slideout */}
+      <SettingsSlideout
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        title="Relocation History"
+        subtitle="Log of successful track relocations"
+        width="xl"
+      >
+        <RelocationHistoryPanel
+          libraryPath={libraryData?.libraryPath || null}
+          onShowFileInFolder={showInFolder}
         />
       </SettingsSlideout>
     </div>
