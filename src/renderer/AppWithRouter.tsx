@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
 import { AppHeader, NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard } from './components/ui';
-import { NavigationTabsRouted } from './components/ui/NavigationTabsRouted';
+import { Sidebar } from './components/Sidebar';
 import DuplicateDetector from './components/DuplicateDetector';
 import { TrackRelocator } from './components/TrackRelocator';
 import type { TabType } from './types';
@@ -69,25 +69,30 @@ const AppWithRouter: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
-      {/* Header */}
-      <AppHeader
+    <div className="h-screen bg-rekordbox-dark flex overflow-hidden">
+      {/* Sidebar Navigation */}
+      <Sidebar 
+        activeTab={activeTab}
+        libraryData={libraryData}
         libraryPath={libraryPath}
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
       />
 
-      {/* Notification */}
-      {notification && <NotificationToast notification={notification} />}
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <AppHeader
+          libraryPath={libraryPath}
+          isLoading={isLoading}
+          onSelectLibrary={selectLibrary}
+        />
 
-      {/* Navigation Tabs with Routing */}
-      <NavigationTabsRouted
-        activeTab={activeTab}
-        libraryData={libraryData}
-      />
+        {/* Notification */}
+        {notification && <NotificationToast notification={notification} />}
 
-      {/* Content with route-based animation */}
-      <div className="flex-1 p-6 pb-20 overflow-hidden">
+        {/* Content with route-based animation */}
+        <div className="flex-1 p-6 overflow-hidden">
         {!libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} />
         ) : (
@@ -150,10 +155,11 @@ const AppWithRouter: React.FC = () => {
             </motion.div>
           </AnimatePresence>
         )}
-      </div>
+        </div>
 
-      {/* Footer */}
-      <AppFooter libraryData={libraryData} />
+        {/* Footer */}
+        <AppFooter libraryData={libraryData} />
+      </div>
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />

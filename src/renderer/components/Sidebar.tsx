@@ -4,30 +4,36 @@ import {
   MapPin, 
   Download, 
   Wrench,
-  Copy
+  Copy,
+  FolderOpen
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { TabType, LibraryData } from '../types';
 
 const navItems = [
   {
+    id: 'duplicates' as TabType,
     path: '/',
     label: 'Duplicate Detection',
     icon: Copy,
     description: 'Find and resolve duplicate tracks'
   },
   {
+    id: 'relocate' as TabType,
     path: '/relocate',
     label: 'Track Relocation',
     icon: MapPin,
     description: 'Fix missing and moved tracks'
   },
   {
-    path: '/auto-import',
+    id: 'import' as TabType,
+    path: '/import',
     label: 'Auto Import',
     icon: Download,
     description: 'Automatic track importing'
   },
   {
+    id: 'maintenance' as TabType,
     path: '/maintenance',
     label: 'Maintenance',
     icon: Wrench,
@@ -35,7 +41,21 @@ const navItems = [
   }
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  activeTab: TabType;
+  libraryData: LibraryData | null;
+  libraryPath?: string;
+  isLoading: boolean;
+  onSelectLibrary: () => void;
+}
+
+export function Sidebar({ 
+  activeTab, 
+  libraryData, 
+  libraryPath,
+  isLoading,
+  onSelectLibrary 
+}: SidebarProps) {
   return (
     <nav className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
       {/* App Header */}
@@ -49,26 +69,50 @@ export function Sidebar() {
         </div>
       </div>
       
+      {/* Library Info */}
+      {libraryPath && (
+        <div className="p-4 border-b border-gray-700">
+          <p className="text-xs text-gray-500 mb-1">Current Library</p>
+          <p className="text-sm font-medium text-white truncate" title={libraryPath}>
+            {libraryPath.split('/').pop()}
+          </p>
+        </div>
+      )}
+      
       {/* Navigation Links */}
       <div className="flex-1 p-4">
         <ul className="space-y-2">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <Link
-                to={item.path}
-                className="group"
-                activeProps={{
-                  className: 'bg-rekordbox-purple/20'
-                }}
-              >
-                {({ isActive }) => (
+          {navItems.map((item) => {
+            const isDisabled = !libraryData && item.id !== 'duplicates';
+            
+            if (isDisabled) {
+              return (
+                <li key={item.path}>
+                  <div className="flex items-center gap-3 p-3 rounded-lg text-gray-600 cursor-not-allowed opacity-50">
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">
+                        {item.label}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              );
+            }
+            
+            return (
+              <li key={item.path}>
+                <Link to={item.path} preload="intent">
                   <motion.div
                     whileHover={{ x: 4 }}
                     whileTap={{ scale: 0.98 }}
                     className={`
                       flex items-center gap-3 p-3 rounded-lg
                       transition-colors duration-200
-                      ${isActive 
+                      ${activeTab === item.id
                         ? 'bg-rekordbox-purple/20 text-rekordbox-purple' 
                         : 'hover:bg-gray-700 text-gray-300 hover:text-white'
                       }
@@ -83,7 +127,7 @@ export function Sidebar() {
                         {item.description}
                       </p>
                     </div>
-                    {isActive && (
+                    {activeTab === item.id && (
                       <motion.div
                         layoutId="activeIndicator"
                         className="w-1 h-8 bg-rekordbox-purple rounded-full"
@@ -96,12 +140,26 @@ export function Sidebar() {
                       />
                     )}
                   </motion.div>
-                )}
-              </Link>
-            </li>
-          ))}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
+      
+      {/* Quick Actions */}
+      {!libraryPath && (
+        <div className="p-4 border-t border-gray-700">
+          <button
+            onClick={onSelectLibrary}
+            className="w-full flex items-center gap-3 p-3 bg-rekordbox-purple/20 hover:bg-rekordbox-purple/30 
+                     text-rekordbox-purple rounded-lg transition-colors"
+          >
+            <FolderOpen className="w-5 h-5" />
+            <span className="font-medium text-sm">Open Library</span>
+          </button>
+        </div>
+      )}
       
       {/* Footer */}
       <div className="p-4 border-t border-gray-700">
