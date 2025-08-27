@@ -1,7 +1,7 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import AppWithRouter from './AppWithRouter';
-import DuplicateDetector from './components/DuplicateDetector';
-import { TrackRelocator } from './components/TrackRelocator';
+import { DuplicatesPage } from './components/pages/DuplicatesPage';
+import { RelocatePage } from './components/pages/RelocatePage';
 import { ImportPage } from './components/pages/ImportPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
 
@@ -14,13 +14,13 @@ export const rootRoute = createRootRoute({
 export const duplicatesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: DuplicateDetector,
+  component: DuplicatesPage,
 });
 
 export const relocateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/relocate',
-  component: TrackRelocator,
+  component: RelocatePage,
 });
 
 export const importRoute = createRoute({

@@ -9,15 +9,14 @@ import {
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
-import { SettingsSlideout, PopoverButton } from './ui';
+import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 import { useSettingsStore } from '../stores/settingsStore';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
-import type { LibraryData, NotificationType } from '../types';
 
 const DuplicateDetector: React.FC = () => {
-  const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
+  const { libraryData, libraryPath, showNotification } = useAppContext();
 
   // Use the custom duplicates hook
   const {
@@ -261,29 +260,21 @@ const DuplicateDetector: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 py-4 px-0 border-b border-gray-700">
-        <div className="flex items-center justify-between mx-4">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <Search className="text-rekordbox-purple" size={24} />
-              <h1 className="text-2xl font-bold text-white">Duplicate Detection</h1>
-            </div>
-            <div className="text-sm text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full">
-              {duplicates.length} sets found • {selectedDuplicates.size} selected
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <PopoverButton
-              onClick={() => setShowSettings(!showSettings)}
-              icon={Settings}
-              title="Scan Settings"
-              description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy"
-            >
-              Settings
-            </PopoverButton>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Duplicate Detection"
+        icon={Search}
+        stats={`${duplicates.length} sets found • ${selectedDuplicates.size} selected`}
+        actions={
+          <PopoverButton
+            onClick={() => setShowSettings(!showSettings)}
+            icon={Settings}
+            title="Scan Settings"
+            description="Configure duplicate detection options including fingerprinting, metadata fields, path preferences, and resolution strategy"
+          >
+            Settings
+          </PopoverButton>
+        }
+      />
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -332,8 +323,8 @@ const DuplicateDetector: React.FC = () => {
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Search duplicates..."
-                className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72 
-                         focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50 
+                className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72
+                         focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50
                          transition-colors"
               />
             </div>
@@ -372,7 +363,7 @@ const DuplicateDetector: React.FC = () => {
 
         {/* Results List */}
         {duplicates.length > 0 ? (
-          <div className="flex-1 overflow-y-auto py-4 px-0">
+          <div className="flex-1 overflow-y-auto py-4 px-2">
             <div className="mb-4 mx-4">
               {isSearching ? (
                 <div className="relative">

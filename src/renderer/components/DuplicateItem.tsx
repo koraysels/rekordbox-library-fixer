@@ -34,9 +34,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
   const recommendedTrack = useMemo(() => {
     if (resolutionStrategy === 'manual') return null;
-    
+
     let recommended = duplicate.tracks[0];
-    
+
     if (resolutionStrategy === 'keep-highest-quality') {
       recommended = duplicate.tracks.reduce((best: any, current: any) => {
         const bestScore = (best.bitrate || 0) + (best.size || 0) / 1000000;
@@ -59,17 +59,17 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
       // Find track with path that matches any of the preferred paths
       const pathPreferences = duplicate.pathPreferences || [];
       console.log('🔍 Path preferences:', pathPreferences);
-      
+
       if (pathPreferences.length > 0) {
         // Sort tracks by preference priority (lower index = higher priority)
         const sortedTracks = [...duplicate.tracks].sort((a: any, b: any) => {
-          const aMatch = pathPreferences.findIndex((pref: string) => 
+          const aMatch = pathPreferences.findIndex((pref: string) =>
             a.location && a.location.toLowerCase().includes(pref.toLowerCase())
           );
-          const bMatch = pathPreferences.findIndex((pref: string) => 
+          const bMatch = pathPreferences.findIndex((pref: string) =>
             b.location && b.location.toLowerCase().includes(pref.toLowerCase())
           );
-          
+
           // If both match, return the one with lower index (higher priority)
           if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
           // If only one matches, prioritize the matching one
@@ -78,12 +78,12 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
           // If neither match, keep original order
           return 0;
         });
-        
+
         recommended = sortedTracks[0];
         console.log('📁 Recommended track by path preference:', recommended?.location);
       }
     }
-    
+
     return recommended;
   }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
 
@@ -97,7 +97,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   }, []);
 
   return (
-    <div className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'ring-2 ring-rekordbox-purple border-rekordbox-purple' : 'border-zinc-700'}`}>
+    <div className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'border-rekordbox-purple' : 'border-zinc-700'}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <input
@@ -141,7 +141,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
             console.log('🎵 Rendering track:', { id: track.id, location: track.location, name: track.name });
             const isRecommended = recommendedTrack && track.id === recommendedTrack.id;
             const isManuallySelected = resolutionStrategy === 'manual' && track.id === selectedTrackId;
-            
+
             return (
               <div
                 key={track.id}
@@ -164,7 +164,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         </span>
                       )}
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="space-y-0.5">
                         <div className="flex items-center space-x-1.5 text-zinc-400">
@@ -180,7 +180,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                           <span>{formatDuration(track.duration)}</span>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-0.5">
                         <div className="flex items-center space-x-1.5 text-zinc-400">
                           <HardDrive className="w-3 h-3" />
@@ -213,7 +213,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             <span className="font-medium">Go to File</span>
                           </button>
                         </div>
-                        <div 
+                        <div
                           className="font-mono text-xs bg-zinc-900 p-1.5 rounded border border-zinc-700 select-all whitespace-pre-wrap word-break-all"
                           title="Click to select full path"
                           style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}

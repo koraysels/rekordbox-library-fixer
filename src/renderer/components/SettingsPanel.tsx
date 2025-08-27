@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { FolderOpen, Plus, X } from 'lucide-react';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
 interface SettingsPanelProps {
@@ -26,6 +27,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   addPathPreference,
   removePathPreference
 }) => {
+  // Handle folder browsing for path preferences
+  const handleBrowseFolder = useCallback(async () => {
+    try {
+      const folderPath = await window.electronAPI.selectFolder();
+      if (folderPath) {
+        setPathPreferenceInput(folderPath);
+      }
+    } catch (error) {
+      console.error('Failed to select folder:', error);
+    }
+  }, [setPathPreferenceInput]);
   return (
     <div className="space-y-8">
           {/* Detection Methods */}
@@ -190,39 +202,50 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 onChange={(e) => setPathPreferenceInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
                 placeholder="e.g., /Users/DJ/Main Library"
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded text-sm"
+                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
               />
+              <button
+                onClick={handleBrowseFolder}
+                className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors flex items-center"
+                title="Browse for folder"
+              >
+                <FolderOpen size={16} />
+              </button>
               <button
                 onClick={addPathPreference}
                 disabled={!pathPreferenceInput.trim()}
-                className="px-4 py-2 bg-rekordbox-purple hover:bg-purple-600 disabled:bg-gray-600 rounded text-sm"
+                className="px-4 py-2 bg-rekordbox-purple hover:bg-purple-600 disabled:bg-zinc-600 text-white rounded-lg transition-colors flex items-center space-x-1"
               >
-                Add
+                <Plus size={16} />
+                <span>Add</span>
               </button>
             </div>
 
-            <div className="space-y-2">
-              {(scanOptions.pathPreferences || []).map((path, index) => (
-                <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-3 rounded border border-zinc-700">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
-                    <span className="font-mono text-sm text-zinc-200 truncate">{path}</span>
+            {(scanOptions.pathPreferences || []).length === 0 ? (
+              <div className="text-center py-8 border border-dashed border-zinc-600 rounded-lg">
+                <div className="text-4xl mb-2">📂</div>
+                <p className="text-zinc-400 text-sm mb-1">No preferred paths set</p>
+                <p className="text-zinc-500 text-xs">Add paths to prioritize when resolving duplicates</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {(scanOptions.pathPreferences || []).map((path, index) => (
+                  <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-3 rounded border border-zinc-700">
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
+                      <span className="font-mono text-sm text-zinc-200 truncate">{path}</span>
+                    </div>
+                    <button
+                      onClick={() => removePathPreference(index)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 px-2 py-1 rounded ml-2 transition-colors"
+                      title="Remove this path preference"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removePathPreference(index)}
-                    className="text-red-400 hover:text-red-300 text-sm hover:bg-red-900/20 px-2 py-1 rounded ml-2"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              {(scanOptions.pathPreferences || []).length === 0 && (
-                <div className="text-center py-6 text-zinc-500">
-                  <div className="text-2xl mb-2">📂</div>
-                  <p className="text-sm">No preferred paths set</p>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
     </div>
   );
