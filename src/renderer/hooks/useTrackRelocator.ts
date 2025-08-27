@@ -14,6 +14,23 @@ import type {
   NotificationType
 } from '../types';
 
+// Development logging utility
+const isDev = import.meta.env.DEV;
+const devLog = (...args: any[]) => {
+  if (isDev) {
+    console.log(...args);
+  }
+};
+
+// Helper function to get effective library path with consistent fallback logic
+const getEffectiveLibraryPath = (libraryData: LibraryData | null, libraryPath?: string): string => {
+  const effectivePath = libraryData?.libraryPath || libraryPath;
+  if (!effectivePath) {
+    throw new Error('Library path is not available. Please reload the library.');
+  }
+  return effectivePath;
+};
+
 interface UseTrackRelocatorState {
   // Missing tracks state
   missingTracks: MissingTrack[];
@@ -286,17 +303,12 @@ export function useTrackRelocator(
         };
       });
 
-      // Debug logging to understand the issue
-      console.log('🔍 executeRelocations - libraryData:', libraryData);
-      console.log('🔍 executeRelocations - libraryData.libraryPath:', libraryData?.libraryPath);
-      console.log('🔍 executeRelocations - libraryPath param:', libraryPath);
+      // Debug logging for development
+      devLog('🔍 executeRelocations - libraryData:', libraryData);
+      devLog('🔍 executeRelocations - libraryData.libraryPath:', libraryData?.libraryPath);
+      devLog('🔍 executeRelocations - libraryPath param:', libraryPath);
       
-      // Use libraryPath from libraryData if available, otherwise use the separate libraryPath parameter
-      const effectiveLibraryPath = libraryData?.libraryPath || libraryPath;
-      
-      if (!effectiveLibraryPath) {
-        throw new Error('Library path is not available. Please reload the library.');
-      }
+      const effectiveLibraryPath = getEffectiveLibraryPath(libraryData, libraryPath);
       
       const result = await window.electronAPI.batchRelocateTracks({
         libraryPath: effectiveLibraryPath,
@@ -330,7 +342,7 @@ export function useTrackRelocator(
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
           
-          console.log(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
+          devLog(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
         }
         
         // Update state to remove successfully relocated tracks from missing tracks list
@@ -368,11 +380,11 @@ export function useTrackRelocator(
         const successCount = result.data.filter((r: RelocationResult) => r.success).length;
         
         // Save successful relocations to history
-        console.log(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
+        devLog(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
         
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = result.data.filter((r: RelocationResult) => r.success);
-          console.log(`📝 Saving ${successfulRelocations.length} relocations to history`);
+          devLog(`📝 Saving ${successfulRelocations.length} relocations to history`);
           
           try {
             for (const relocation of successfulRelocations) {
@@ -392,12 +404,12 @@ export function useTrackRelocator(
                 });
               }
             }
-            console.log(`✅ History saved: ${successfulRelocations.length} entries`);
+            devLog(`✅ History saved: ${successfulRelocations.length} entries`);
           } catch (historyError) {
             console.error('❌ Failed to save relocation history:', historyError);
           }
         } else {
-          console.log(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
+          devLog(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
         }
         
         // Show success notification with XML update info
@@ -433,12 +445,7 @@ export function useTrackRelocator(
     setState(prev => ({ ...prev, isRelocating: true }));
 
     try {
-      // Use libraryPath from libraryData if available, otherwise use the separate libraryPath parameter
-      const effectiveLibraryPath = libraryData?.libraryPath || libraryPath;
-      
-      if (!effectiveLibraryPath) {
-        throw new Error('Library path is not available. Please reload the library.');
-      }
+      const effectiveLibraryPath = getEffectiveLibraryPath(libraryData, libraryPath);
 
       const result = await window.electronAPI.autoRelocateTracks({
         tracks,
@@ -446,7 +453,7 @@ export function useTrackRelocator(
         libraryPath: effectiveLibraryPath
       });
 
-      console.log('🔍 Auto-relocate result:', result);
+      devLog('🔍 Auto-relocate result:', result);
 
       if (result.success) {
         const { results, xmlUpdated, tracksUpdated, backupPath } = result.data;
@@ -477,7 +484,7 @@ export function useTrackRelocator(
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
           
-          console.log(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
+          devLog(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
         }
         
         // Update state to remove successfully relocated tracks from missing tracks list
@@ -516,7 +523,7 @@ export function useTrackRelocator(
         // Save successful relocations to history
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = results.filter((r: any) => r.success);
-          console.log(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
+          devLog(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
           
           try {
             for (const relocation of successfulRelocations) {
@@ -538,7 +545,7 @@ export function useTrackRelocator(
             }
             // Notify history panel to auto-refresh
             historyEvents.notifyHistoryUpdate(effectiveLibraryPath);
-            console.log(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
+            devLog(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
           } catch (historyError) {
             console.error('❌ Failed to save auto-relocation history:', historyError);
           }
