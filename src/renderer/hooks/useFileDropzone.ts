@@ -74,22 +74,12 @@ export const useFileDropzone = ({
 }: UseFileDropzoneOptions) => {
   
   const handleDrop = useCallback(async (acceptedFiles: FileWithPath[]) => {
-    console.log('handleDrop called with files:', acceptedFiles.length);
-    
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      
-      console.log('Dropzone: Processing file:', {
-        name: file.name,
-        path: file.path,
-        size: file.size,
-        type: file.type
-      });
       
       try {
         // Read the file content as text
         const content = await file.text();
-        console.log('File content read successfully, length:', content.length);
         
         // Save to a temporary file in the app data directory via Electron
         const result = await window.electronAPI.saveDroppedFile({
@@ -98,7 +88,6 @@ export const useFileDropzone = ({
         });
         
         if (result.success && result.data?.filePath) {
-          console.log('Dropped file saved to:', result.data.filePath);
           onDrop(result.data.filePath);
         } else {
           console.error('Failed to save dropped file:', result.error);

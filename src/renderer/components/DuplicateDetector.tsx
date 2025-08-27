@@ -28,7 +28,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   libraryPath,
   showNotification
 }) => {
-  console.log('🏗️ DuplicateDetector render - libraryPath:', libraryPath);
 
   // Use the custom duplicates hook
   const {
@@ -87,10 +86,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         try {
           const stored = await duplicateStorage.getDuplicateResult(libraryPath);
           if (stored) {
-            console.log(`✅ Loaded stored results from Dexie for: ${libraryPath}`);
-            console.log(`   - ${stored.duplicates.length} duplicate sets`);
-            console.log(`   - ${stored.selectedDuplicates.length} selected`);
-            console.log(`   - Has scanned: ${stored.hasScanned}`);
 
             setDuplicates(stored.duplicates || []);
             setSelections(stored.selectedDuplicates || []);
@@ -101,7 +96,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
             }
           } else {
             // No stored results for this library, reset to default state
-            console.log(`🆕 No stored results in Dexie for: ${libraryPath} - fresh start`);
             setHasScanned(false);
             setDuplicates([]);
             setSelections([]);
@@ -117,7 +111,6 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         }
       } else {
         // No library loaded, reset state
-        console.log('📭 No library loaded - clearing all state');
         setHasScanned(false);
         setDuplicates([]);
         setSelections([]);
@@ -278,8 +271,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-700">
-        <div className="flex items-center justify-between">
+      <div className="flex-shrink-0 py-4 px-0 border-b border-gray-700">
+        <div className="flex items-center justify-between mx-4">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
               <Search className="text-rekordbox-purple" size={24} />
@@ -305,8 +298,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Actions Bar */}
-        <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="flex-shrink-0 py-4 px-0 bg-gray-800 border-b border-gray-700">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <PopoverButton
                 onClick={scanForDuplicates}
@@ -357,7 +350,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
           </div>
 
           {/* Selection Controls */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mx-4">
             <div className="flex items-center space-x-4">
               {duplicates.length > 0 && (
                 <>
@@ -389,8 +382,8 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
 
         {/* Results List */}
         {duplicates.length > 0 ? (
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="mb-4">
+          <div className="flex-1 overflow-y-auto py-4 px-0">
+            <div className="mb-4 mx-4">
               {isSearching ? (
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">

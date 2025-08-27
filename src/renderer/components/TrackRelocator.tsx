@@ -211,7 +211,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-gray-700">
+      <div className="flex-shrink-0 py-4 px-1 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <div className="flex items-center space-x-3">
@@ -222,7 +222,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
               {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • {selectedMissingTracks.size} selected
             </div>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 px-1">
             <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
@@ -250,8 +250,8 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Actions Bar */}
-          <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <div className="flex-shrink-0 py-4 px-0 bg-gray-800 border-b border-gray-700">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <PopoverButton
                   onClick={scanForMissingTracks}
@@ -322,15 +322,15 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search tracks..."
-                  className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72 
-                           focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50 
+                  className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72
+                           focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50
                            transition-colors"
                 />
               </div>
             </div>
 
             {/* Selection Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mx-4">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={selectAllTracks}
@@ -360,7 +360,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
           </div>
 
           {/* Missing Tracks List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto py-4 px-0 space-y-3">
             {!hasScanCompleted ? (
               <div className="text-center text-gray-400 py-8">
                 <FileX size={48} className="mx-auto mb-4 opacity-50" />

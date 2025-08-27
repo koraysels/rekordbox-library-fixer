@@ -16,8 +16,6 @@ export const NativeDropHandler: React.FC<NativeDropHandlerProps> = ({
     }
 
     const handleNativeFileDrop = (filePaths: string[]) => {
-      console.log('🎯 Native file drop received:', filePaths);
-      
       // Filter for accepted file types
       const validFiles = filePaths.filter(filePath => {
         const extension = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
@@ -25,15 +23,13 @@ export const NativeDropHandler: React.FC<NativeDropHandlerProps> = ({
       });
 
       if (validFiles.length > 0) {
-        console.log('✅ Using native file path:', validFiles[0]);
         onFileDrop(validFiles[0]);
       } else {
-        console.warn('❌ No valid files found in native drop');
+        console.warn('No valid files found in native drop');
       }
     };
 
     const cleanup = window.electronAPI.onNativeFileDrop(handleNativeFileDrop);
-    console.log('✅ Native drop handler registered');
     
     return cleanup;
   }, [onFileDrop, acceptedExtensions]);
