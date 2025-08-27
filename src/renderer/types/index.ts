@@ -17,6 +17,7 @@ export interface Playlist {
 }
 
 export interface LibraryData {
+  libraryPath: string;
   tracks: Map<string, any>;
   playlists: Playlist[];
 }
@@ -152,7 +153,7 @@ declare global {
       autoRelocateTracks: (tracks: any[], options: any) => Promise<any>;
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
-      batchRelocateTracks: (relocations: any[]) => Promise<any>;
+      batchRelocateTracks: (data: { libraryPath: string; relocations: any[] }) => Promise<any>;
       // Cloud Sync APIs
       detectCloudSyncIssues: (tracks: any) => Promise<any>;
       fixCloudSyncIssue: (issue: CloudSyncIssue) => Promise<any>;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, X, FolderOpen } from 'lucide-react';
+import { useSettingsStore } from '../stores/settingsStore';
 import type { RelocationOptions } from '../types';
 
 interface TrackRelocatorSettingsProps {
@@ -19,6 +20,8 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
   addSearchPath,
   removeSearchPath
 }) => {
+  // Get store functions for direct updates (avoid feedback loops)
+  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
   const handleBrowseFolder = async () => {
     try {
       const folderPath = await window.electronAPI.selectFolder();
@@ -42,7 +45,11 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               min="1"
               max="10"
               value={searchOptions.searchDepth}
-              onChange={(e) => updateSearchOptions({ searchDepth: parseInt(e.target.value) })}
+              onChange={(e) => {
+                const newValue = parseInt(e.target.value);
+                const updatedOptions = { ...searchOptions, searchDepth: newValue };
+                setRelocationOptions(updatedOptions);
+              }}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:border-rekordbox-purple focus:outline-none"
             />
             <p className="text-xs text-zinc-400 mt-1">How many folder levels deep to search</p>
@@ -55,7 +62,11 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               max="1"
               step="0.1"
               value={searchOptions.matchThreshold}
-              onChange={(e) => updateSearchOptions({ matchThreshold: parseFloat(e.target.value) })}
+              onChange={(e) => {
+                const newValue = parseFloat(e.target.value);
+                const updatedOptions = { ...searchOptions, matchThreshold: newValue };
+                setRelocationOptions(updatedOptions);
+              }}
               className="w-full accent-rekordbox-purple"
             />
             <div className="flex justify-between text-xs text-zinc-400 mt-1">

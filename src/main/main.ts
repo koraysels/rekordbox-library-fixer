@@ -285,7 +285,14 @@ ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
   try {
     const library = await rekordboxParser.parseLibrary(xmlPath);
     logger.logLibraryParsing(xmlPath, library.tracks.size, library.playlists.length);
-    return { success: true, data: library };
+    
+    // Include the libraryPath in the returned data to match LibraryData interface
+    const libraryData = {
+      ...library,
+      libraryPath: xmlPath
+    };
+    
+    return { success: true, data: libraryData };
   } catch (error) {
     logger.error('LIBRARY_PARSING_FAILED', {
       xmlPath,
@@ -650,17 +657,74 @@ ipcMain.handle('relocate-track', async (_, trackId: string, oldLocation: string,
   }
 });
 
-ipcMain.handle('batch-relocate-tracks', async (_, relocations: any[]) => {
-  safeConsole.log(`📁 IPC: Batch relocating ${relocations.length} tracks`);
+ipcMain.handle('batch-relocate-tracks', async (_, data: {
+  libraryPath: string;
+  relocations: any[];
+}) => {
+  safeConsole.log(`📁 IPC: Batch relocating ${data.relocations.length} tracks`);
   try {
-    const results = await trackRelocator.batchRelocate(relocations);
-    const successCount = results.filter(r => r.success).length;
-    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${relocations.length} successful`);
-    return { success: true, data: results };
+    // Step 1: Verify relocations first (without XML update)
+    const verificationResults = await trackRelocator.batchRelocate(data.relocations);
+    const successfulRelocations = verificationResults.filter(r => r.success);
+    
+    if (successfulRelocations.length === 0) {
+      safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+      return { success: true, data: verificationResults };
+    }
+
+    // Step 2: Create backup of original XML
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+
+    const fs = require('fs');
+    fs.copyFileSync(data.libraryPath, backupPath);
+    safeConsole.log(`📄 Backup created: ${backupPath}`);
+
+    // Step 3: Parse current library
+    const library = await rekordboxParser.parseLibrary(data.libraryPath);
+    safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
+
+    // Step 4: Update track locations in the library (keep tracks in playlists)
+    let tracksUpdated = 0;
+    for (const relocation of successfulRelocations) {
+      const track = library.tracks.get(relocation.trackId);
+      if (track && relocation.newLocation) {
+        // Update the track location 
+        track.location = relocation.newLocation;
+        library.tracks.set(relocation.trackId, track);
+        tracksUpdated++;
+        safeConsole.log(`🎵 Updated track "${track.name}" location: ${relocation.oldLocation} -> ${relocation.newLocation}`);
+      } else {
+        if (!track) {
+          safeConsole.warn(`⚠️ Track ${relocation.trackId} not found in library`);
+        }
+        if (!relocation.newLocation) {
+          safeConsole.warn(`⚠️ No new location provided for track ${relocation.trackId}`);
+        }
+      }
+    }
+
+    // Step 5: Save updated library back to XML
+    if (tracksUpdated > 0) {
+      await rekordboxParser.saveLibrary(library, data.libraryPath);
+      safeConsole.log(`✅ Updated XML saved with ${tracksUpdated} track location changes`);
+      logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+    }
+
+    const successCount = verificationResults.filter(r => r.success).length;
+    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${data.relocations.length} successful, XML updated with ${tracksUpdated} changes`);
+    
+    return { 
+      success: true, 
+      data: verificationResults,
+      backupPath,
+      xmlUpdated: tracksUpdated > 0,
+      tracksUpdated
+    };
   } catch (error) {
     safeConsole.error('❌ Batch relocate tracks failed:', error);
     logger.error('BATCH_RELOCATE_TRACKS_FAILED', {
-      count: relocations.length,
+      count: data.relocations.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
     return {
