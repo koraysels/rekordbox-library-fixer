@@ -211,19 +211,18 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-gray-700">
+      <div className="flex-shrink-0 p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-3">
               <MapPin className="text-rekordbox-purple" size={24} />
-              <h1 className="text-xl font-bold text-white">Track Relocator</h1>
+              <h1 className="text-2xl font-bold text-white">Track Relocator</h1>
             </div>
-            <div className="text-sm text-gray-400">
-              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured •
-              {selectedMissingTracks.size} selected
+            <div className="text-sm text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full">
+              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • {selectedMissingTracks.size} selected
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
@@ -253,7 +252,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
           {/* Actions Bar */}
           <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <PopoverButton
                   onClick={scanForMissingTracks}
                   disabled={isScanning}
@@ -317,13 +316,15 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 </PopoverButton>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search tracks..."
-                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-64"
+                  className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72 
+                           focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50 
+                           transition-colors"
                 />
               </div>
             </div>
@@ -359,9 +360,9 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
           </div>
 
           {/* Missing Tracks List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {!hasScanCompleted ? (
-              <div className="text-center text-gray-400 py-12">
+              <div className="text-center text-gray-400 py-8">
                 <FileX size={48} className="mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">Track Relocator Ready</h3>
                 <p>Click "Scan for Missing" to find tracks that need relocation</p>
@@ -370,7 +371,7 @@ const TrackRelocator: React.FC<TrackRelocatorProps> = ({
                 </p>
               </div>
             ) : filteredMissingTracks.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
+              <div className="text-center text-gray-400 py-8">
                 <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
                 <h3 className="text-lg font-medium mb-2">All Tracks Located!</h3>
                 <p>No missing tracks found in your library</p>

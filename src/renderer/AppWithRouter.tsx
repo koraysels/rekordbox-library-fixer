@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Download, Wrench } from 'lucide-react';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
-import { AppHeader, NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard } from './components/ui';
+import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard, NativeDropHandler } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import DuplicateDetector from './components/DuplicateDetector';
 import { TrackRelocator } from './components/TrackRelocator';
@@ -31,6 +32,8 @@ const AppWithRouter: React.FC = () => {
     libraryData, 
     isLoading, 
     selectLibrary, 
+    loadLibrary,
+    clearStoredData,
     setLibraryData 
   } = useLibrary(showNotification);
   
@@ -80,24 +83,18 @@ const AppWithRouter: React.FC = () => {
         libraryPath={libraryPath}
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
+        onUnloadLibrary={clearStoredData}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <AppHeader
-          libraryPath={libraryPath}
-          isLoading={isLoading}
-          onSelectLibrary={selectLibrary}
-        />
-
         {/* Notification */}
         {notification && <NotificationToast notification={notification} />}
 
         {/* Content with route-based animation */}
-        <div className="flex-1 p-6 overflow-hidden">
+        <div className="flex-1 p-4 overflow-hidden">
         {!libraryData ? (
-          <EmptyLibraryState onSelectLibrary={selectLibrary} />
+          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (
           <AnimatePresence mode="wait">
             <motion.div
@@ -137,20 +134,34 @@ const AppWithRouter: React.FC = () => {
               )}
 
               {activeTab === 'import' && (
-                <div className="card">
-                  <h2 className="text-xl font-bold mb-4">Auto Import</h2>
-                  <p className="text-zinc-400">
-                    Feature coming soon: Automatically import new tracks while preventing duplicates
-                  </p>
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center max-w-lg">
+                    <div className="bg-gray-800 rounded-2xl p-8">
+                      <div className="w-12 h-12 bg-rekordbox-purple/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <Download className="w-6 h-6 text-rekordbox-purple" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white mb-3">Auto Import</h2>
+                      <p className="text-zinc-400 leading-relaxed">
+                        Feature coming soon: Automatically import new tracks while preventing duplicates
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {activeTab === 'maintenance' && (
-                <div className="card">
-                  <h2 className="text-xl font-bold mb-4">Library Maintenance</h2>
-                  <p className="text-zinc-400">
-                    Feature coming soon: Find orphan tracks, repair files, and optimize your library
-                  </p>
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center max-w-lg">
+                    <div className="bg-gray-800 rounded-2xl p-8">
+                      <div className="w-12 h-12 bg-rekordbox-purple/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                        <Wrench className="w-6 h-6 text-rekordbox-purple" />
+                      </div>
+                      <h2 className="text-xl font-bold text-white mb-3">Library Maintenance</h2>
+                      <p className="text-zinc-400 leading-relaxed">
+                        Feature coming soon: Find orphan tracks, repair files, and optimize your library
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </motion.div>
@@ -165,6 +176,9 @@ const AppWithRouter: React.FC = () => {
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+      
+      {/* Native Drop Handler */}
+      <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />
     </div>
   );
 };

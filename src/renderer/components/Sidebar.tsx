@@ -4,7 +4,8 @@ import {
   Download,
   Wrench,
   Copy,
-  FolderOpen
+  FolderOpen,
+  X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { TabType, LibraryData } from '../types';
@@ -46,13 +47,15 @@ interface SidebarProps {
   libraryPath?: string;
   isLoading: boolean;
   onSelectLibrary: () => void;
+  onUnloadLibrary?: () => void;
 }
 
 export function Sidebar({
   activeTab,
   libraryData,
   libraryPath,
-  onSelectLibrary
+  onSelectLibrary,
+  onUnloadLibrary
 }: SidebarProps) {
   return (
     <nav className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
@@ -73,16 +76,6 @@ export function Sidebar({
           </div>
         </div>
       </div>
-
-      {/* Library Info */}
-      {libraryPath && (
-        <div className="p-4 border-b border-gray-700">
-          <p className="text-xs text-gray-500 mb-1">Current Library</p>
-          <p className="text-sm font-medium text-white truncate" title={libraryPath}>
-            {libraryPath.split('/').pop()}
-          </p>
-        </div>
-      )}
 
       {/* Navigation Links */}
       <div className="flex-1 p-4">
@@ -166,10 +159,44 @@ export function Sidebar({
         </div>
       )}
 
+      {/* Library Info Section */}
+      {libraryPath && (
+        <div className="border-t border-gray-700">
+          <div className="p-4">
+            <div className="bg-gradient-to-r from-rekordbox-purple to-purple-700 rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-purple-100 text-xs font-medium">Current Library</p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={onSelectLibrary}
+                    className="text-purple-100 hover:text-white transition-colors p-1"
+                    title="Change Library"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                  </button>
+                  {onUnloadLibrary && (
+                    <button
+                      onClick={onUnloadLibrary}
+                      className="text-purple-100 hover:text-red-300 transition-colors p-1"
+                      title="Unload Library"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-white text-sm font-medium truncate" title={libraryPath}>
+                {libraryPath}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <div className="p-4 border-t border-gray-700">
-        <p className="text-xs text-gray-500">
-          Version 0.0.2
+        <p className="text-xs text-gray-500 text-center">
+          Made with ❤️ for DJs
         </p>
       </div>
     </nav>

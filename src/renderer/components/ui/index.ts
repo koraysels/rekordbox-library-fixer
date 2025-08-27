@@ -2,6 +2,9 @@
 export { AppHeader } from './AppHeader';
 export { NotificationToast } from './NotificationToast';
 export { EmptyLibraryState } from './EmptyLibraryState';
+export { FileDropzone } from './FileDropzone';
+export { NativeFileDropzone } from './NativeFileDropzone';
+export { NativeDropHandler } from './NativeDropHandler';
 export { AppFooter } from './AppFooter';
 export { SplashScreen } from './SplashScreen';
 export { AboutModal } from './AboutModal';

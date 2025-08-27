@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAppStore } from '../../stores/appStore';
 
 interface SplashScreenProps {
   isLoading?: boolean;
@@ -10,6 +11,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   isLoading = true,
   message = 'Loading Rekordbox Library Manager...'
 }) => {
+  const version = useAppStore((state) => state.version);
+  const loadVersion = useAppStore((state) => state.loadVersion);
+
+  useEffect(() => {
+    loadVersion();
+  }, [loadVersion]);
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-rekordbox-dark via-zinc-900 to-rekordbox-dark flex items-center justify-center z-50">
       <div className="text-center">
@@ -44,8 +51,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
         {/* Version info */}
         <div className="mt-8 text-center">
-          <p className="text-zinc-500 text-xs">Version 0.0.1</p>
-          <p className="text-zinc-600 text-xs mt-1">© 2024 Koray Sels</p>
+          <p className="text-zinc-500 text-xs">Version {version}</p>
+          <p className="text-zinc-600 text-xs mt-1">© 2025 Koray Sels</p>
         </div>
       </div>
     </div>
