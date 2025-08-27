@@ -39,6 +39,7 @@ vi.mock('../../src/renderer/db/relocationsDb', () => ({
 
 describe('Library Path Validation Tests', () => {
   const mockShowNotification = vi.fn();
+  const mockSetLibraryData = vi.fn();
 
   describe('Library Path Parameter Handling', () => {
     it('should use libraryData.libraryPath when available', () => {
@@ -51,7 +52,7 @@ describe('Library Path Validation Tests', () => {
       const separateLibraryPath = '/different/path/to/library.xml';
       
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification, mockSetLibraryData)
       );
       
       expect(result.current).toBeDefined();
@@ -69,7 +70,7 @@ describe('Library Path Validation Tests', () => {
       const separateLibraryPath = '/fallback/path/to/library.xml';
       
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification, mockSetLibraryData)
       );
       
       expect(result.current).toBeDefined();
@@ -80,7 +81,7 @@ describe('Library Path Validation Tests', () => {
       const separateLibraryPath = '/path/to/library.xml';
       
       const { result } = renderHook(() => 
-        useTrackRelocator(null, separateLibraryPath, mockShowNotification)
+        useTrackRelocator(null, separateLibraryPath, mockShowNotification, mockSetLibraryData)
       );
       
       expect(result.current).toBeDefined();
@@ -98,7 +99,7 @@ describe('Library Path Validation Tests', () => {
       const emptyLibraryPath = '';
       
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, emptyLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, emptyLibraryPath, mockShowNotification, mockSetLibraryData)
       );
 
       // Set up a relocation to trigger executeRelocations
@@ -133,7 +134,7 @@ describe('Library Path Validation Tests', () => {
       });
 
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, separateLibraryPath, mockShowNotification, mockSetLibraryData)
       );
 
       // Add a relocation
@@ -168,7 +169,7 @@ describe('Library Path Validation Tests', () => {
       });
 
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, fallbackLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, fallbackLibraryPath, mockShowNotification, mockSetLibraryData)
       );
 
       // Add a relocation
@@ -197,7 +198,7 @@ describe('Library Path Validation Tests', () => {
       const emptyLibraryPath = '';
 
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, emptyLibraryPath, mockShowNotification)
+        useTrackRelocator(mockLibraryData, emptyLibraryPath, mockShowNotification, mockSetLibraryData)
       );
 
       // Add a relocation
@@ -229,7 +230,7 @@ describe('Library Path Validation Tests', () => {
       });
 
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, '', mockShowNotification)
+        useTrackRelocator(mockLibraryData, '', mockShowNotification, mockSetLibraryData)
       );
 
       // Add a relocation
@@ -257,7 +258,7 @@ describe('Library Path Validation Tests', () => {
       
       // TypeScript compilation will fail if libraryPath parameter is missing
       const { result } = renderHook(() => 
-        useTrackRelocator(mockLibraryData, '/path/to/library.xml', mockShowNotification)
+        useTrackRelocator(mockLibraryData, '/path/to/library.xml', mockShowNotification, mockSetLibraryData)
       );
       
       expect(result.current).toBeDefined();
