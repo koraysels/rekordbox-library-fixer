@@ -15,7 +15,7 @@ import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 
 const DuplicateDetector: React.FC = () => {
-  const { libraryData, libraryPath, showNotification } = useAppContext();
+  const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
 
   // Use the custom duplicates hook
   const {
@@ -224,10 +224,14 @@ const DuplicateDetector: React.FC = () => {
           `📝 XML updated with ${result.tracksRemoved} tracks removed`
         );
 
-        // Update library data with the new version
-        if (result.updatedLibrary) {
-          // The onUpdate callback should refresh the main library data
-          // This will trigger a re-scan if needed
+        // Update library data with the new version to refresh UI
+        if (result.updatedLibrary && libraryData) {
+          const updatedLibraryData = {
+            ...libraryData,
+            tracks: result.updatedLibrary.tracks, // The API returns the updated tracks Map
+            playlists: result.updatedLibrary.playlists || libraryData.playlists
+          };
+          setLibraryData(updatedLibraryData);
         }
       } else {
         showNotification('error', `Failed to resolve duplicates: ${result.error}`);
