@@ -487,7 +487,6 @@ const TrackRelocator: React.FC = () => {
       >
         <TrackRelocatorSettings
           searchOptions={searchOptions}
-          updateSearchOptions={updateSearchOptions}
           newSearchPath={newSearchPath}
           setNewSearchPath={setNewSearchPath}
           addSearchPath={addSearchPath}
