@@ -1,61 +1,51 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## [0.0.3-alpha] - 2025-01-27
 
-## [0.0.2-alpha] - 2025-08-26
+### 🎉 New Features
+- **Track Unlocatable Status**: Tracks that fail auto-relocation are now marked as "unlocatable" instead of disappearing
+- **Retry Failed Relocations**: Clear unlocatable status to retry auto-relocation on previously failed tracks
+- **Enhanced Settings Sync**: Bidirectional synchronization between settings panel and main interface
 
-### 🚀 New Features
-
-#### Track Relocation Results Caching
-- **Persistent Storage**: Track relocation results are now cached using Dexie.js (IndexedDB)
-- **Smart Cache Loading**: Previously scanned missing tracks, relocation candidates, and search results are automatically restored when reopening a library
-- **Performance Enhancement**: Relocation candidates are cached per track to avoid redundant searches
-- **Multi-Session Support**: Results persist across app sessions for improved workflow continuity
-- **Database Integration**: Separate databases for relocation results, cloud sync results, and ownership results
-
-#### Enhanced User Experience
-- **Instant Results**: Cached relocation candidates load immediately with "info" notification
-- **Background Saves**: All results are automatically saved to cache without user intervention
-- **Cache Management**: Integrated cache clearing when results are manually cleared
-- **Error Handling**: Robust error handling for cache operations with fallback to normal operation
-
-### 🔧 Technical Improvements
-- **Dexie.js Integration**: Added professional IndexedDB wrapper with TypeScript support
-- **Map Serialization**: Custom serialization handling for JavaScript Map objects in database storage
-- **Modular Database Design**: Separate storage modules for different result types (relocations, cloud sync, ownership)
-- **Type Safety**: Full TypeScript interfaces for all cached data structures
-- **Memory Management**: Efficient state management with React hooks for cache data
-
-### 🛠️ Developer Experience
-- **Build System**: Updated electron-builder configuration for cross-platform releases
-- **Package Management**: Added proper author email for Linux package building
-- **Linux Support**: Enhanced Linux category mapping (AudioVideo) for better app store integration
-- **Cross-Platform Builds**: Automated builds for Mac (DMG), Windows (NSIS installer), and Linux (AppImage, deb)
-
-### 📦 Build Artifacts
-- **macOS**: Universal DMG and ZIP files for Intel (x64) and Apple Silicon (arm64)
-- **Windows**: NSIS installer and ZIP archives for both x64 and x32 architectures  
-- **Linux**: AppImage (portable) and deb package for ARM64 architecture
-
-### 🔄 Compatibility
-- Maintains backward compatibility with existing library files
-- No breaking changes to existing duplicate detection workflows
-- Cache data is library-specific and isolated per project
+### 🎨 Improvements
+- **Visual Indicators**: Orange badges and warning icons for unlocatable tracks
+- **Better Notifications**: Detailed auto-relocation results showing success, failure, and unlocatable counts
+- **Improved Path Search UI**: Enhanced settings panel for configuring track search paths
+- **Drag & Drop Support**: Added drag and drop functionality for better file handling
+- **Smarter Status Updates**: More informative status messages during relocation operations
 
 ### 🐛 Bug Fixes
-- Fixed package.json syntax error that was preventing test execution
-- Resolved DMG build configuration issues for macOS releases
-- Corrected Linux build requirements for deb package generation
+- Fixed track relocation state persistence across sessions
+- Improved error handling for failed relocations
+- Better memory management during large library scans
+
+### 🔧 Technical
+- Updated to latest TanStack Router for improved performance
+- Enhanced TypeScript type safety across relocation features
+- Optimized database queries for faster track searching
 
 ---
 
-## [0.0.1] - 2025-01-26
+## [0.0.2-alpha] - 2025-01-26
 
-### Initial Release
-- Electron-based desktop application for Rekordbox library management
-- Duplicate track detection with confidence scoring
-- XML library import/export functionality  
-- Track relocation and path management
-- React-based UI with TypeScript
-- Zustand state management with localStorage persistence
-- Cross-platform support (macOS, Windows, Linux)
+### 🎉 New Features
+- **Persistent Storage**: Track relocation results now persist across sessions using IndexedDB
+- **Smart Cache Loading**: Missing tracks and relocation candidates automatically restore
+- **Cross-Platform Builds**: Automated releases for Mac (DMG), Windows (NSIS), and Linux (AppImage/deb)
+
+### 🎨 Improvements
+- Enhanced user experience with cache-aware notifications
+- Seamless background saves for relocation results
+- Multi-session support for different libraries
+
+---
+
+## [0.0.1-alpha] - 2025-01-25
+
+### 🎉 Initial Release
+- **Duplicate Detection**: Find duplicate tracks using audio fingerprinting and metadata matching
+- **Track Relocation**: Automatically find and relocate missing tracks
+- **Library Import/Export**: Full Rekordbox XML support
+- **Confidence Scoring**: Smart matching with confidence indicators
+- **Bulk Operations**: Process entire library at once
+- **Beautiful UI**: Modern, responsive interface with dark theme

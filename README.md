@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Manager" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Manager](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.2--alpha-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.0.3--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -48,6 +48,7 @@ Make a simple, free tool that might help you get your library back under control
 - **🎯 Similarity Matching**: Matches tracks even when filenames are different
 - **📁 Bulk Operations**: Fix hundreds of tracks at once (if you're lucky!)
 - **⚡ Pretty Fast**: Scans through lots of files without making you wait forever
+- **⚠️ Unlocatable Tracking**: Marks tracks that couldn't be auto-relocated so you can retry or handle them manually
 
 ### 🛠️ **Resolution Options**
 - **🏆 Quality-Based**: Keeps the highest bitrate versions (usually what you want)
@@ -68,22 +69,22 @@ Make a simple, free tool that might help you get your library back under control
 ### 🏠 **Main Dashboard**
 *The main screen - nothing fancy, just gets the job done*
 
-![Main Interface](screenshots/01-main-interface.png)
+<img src="screenshots/01-main-interface.png" alt="Main Interface" width="600" />
 
 ### 🔍 **Duplicate Detection**
 *This is where the magic happens (hopefully)*
 
-![Library with Data](screenshots/03-duplicate-detection.png)
+<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" width="600" />
 
 ### 📍 **Track Relocation**
 *For when your tracks decide to play hide and seek*
 
-![Track Relocation](screenshots/04-track-relocation.png)
+<img src="screenshots/04-track-relocation.png" alt="Track Relocation" width="600" />
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
 
-![Settings Panel](screenshots/02-loaded-library.png)
+<img src="screenshots/02-loaded-library.png" alt="Settings Panel" width="600" />
 
 ---
 
@@ -94,8 +95,8 @@ Make a simple, free tool that might help you get your library back under control
 #### Option 1: Download Pre-built App *(Recommended)*
 1. Go to [Releases](https://github.com/koraysels/rekordbox-library-manager/releases)
 2. Download the latest version for your platform:
-   - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.2-alpha.exe`
-   - **macOS**: `Rekordbox-Library-Manager-0.0.2-alpha.dmg`
+   - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.3-alpha.exe`
+   - **macOS**: `Rekordbox-Library-Manager-0.0.3-alpha.dmg`
 3. Install and launch the app
 4. Load your Rekordbox XML file and start cleaning!
 
@@ -123,7 +124,7 @@ Before using this tool, you need to export your Rekordbox collection as an XML f
    - Click **File** in the top menu bar
    - Select **Export Collection in xml format**
    
-   ![Export Menu](screenshots/rekordbox-export-menu.png)
+   <img src="screenshots/rekordbox-export-menu.png" alt="Export Menu" width="400" />
    
 3. **Choose Export Location**:
    - A dialog box will appear
