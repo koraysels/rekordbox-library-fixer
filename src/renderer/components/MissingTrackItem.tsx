@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, AlertTriangle } from 'lucide-react';
 import { ListItem, PopoverButton } from './ui';
 import type { MissingTrack } from '../types';
 
@@ -53,10 +53,21 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
               className="rounded border-gray-600 text-rekordbox-purple focus:ring-purple-500"
             />
             <div>
-              <h3 className="font-medium text-white">{track.name}</h3>
-              <p className="text-gray-400 text-sm">{track.artist}</p>
+              <div className="flex items-center space-x-2">
+                <h3 className={`font-medium ${track.isUnlocatable ? 'text-orange-400' : 'text-white'}`}>
+                  {track.name}
+                </h3>
+                {track.isUnlocatable && (
+                  <AlertTriangle size={14} className="text-orange-400" title="Marked as unlocatable" />
+                )}
+              </div>
+              <p className={`text-sm ${track.isUnlocatable ? 'text-orange-300' : 'text-gray-400'}`}>
+                {track.artist}
+              </p>
               {track.album && (
-                <p className="text-gray-500 text-xs">{track.album}</p>
+                <p className={`text-xs ${track.isUnlocatable ? 'text-orange-500' : 'text-gray-500'}`}>
+                  {track.album}
+                </p>
               )}
             </div>
           </div>
@@ -64,6 +75,11 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             <p className="text-gray-500 text-xs font-mono">
               Missing: {track.originalLocation}
             </p>
+            {track.isUnlocatable && (
+              <p className="text-orange-400 text-xs font-semibold mt-1">
+                ⚠️ Auto-relocation failed - marked as unlocatable
+              </p>
+            )}
             {hasRelocation && relocationPath && (
               <p className="text-green-400 text-xs font-mono mt-1">
                 → Relocate to: {relocationPath}
