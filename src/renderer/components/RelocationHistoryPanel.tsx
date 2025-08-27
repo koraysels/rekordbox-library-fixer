@@ -127,166 +127,171 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-850">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 p-3 border-b border-gray-700 bg-gray-900">
+      {/* Sticky Header with bigger stats */}
+      <div className="sticky top-0 z-10 flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900">
 
-        {/* Compact Stats - Single Row */}
+        {/* Stats - Bigger and more prominent */}
         {stats && (
-          <div className="flex items-center space-x-4 text-xs">
-            <div className="flex items-center space-x-1">
-              <BarChart3 size={12} className="text-blue-400" />
-              <span className="text-gray-400">Total:</span>
-              <span className="font-semibold text-white">{stats.totalRelocations}</span>
+          <div className="flex items-center justify-between space-x-6 mb-3">
+            <div className="flex items-center space-x-2">
+              <BarChart3 size={16} className="text-blue-400" />
+              <span className="text-sm text-gray-400">Total:</span>
+              <span className="text-lg font-bold text-white">{stats.totalRelocations}</span>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <Zap size={12} className="text-green-400" />
-              <span className="text-gray-400">Auto:</span>
-              <span className="font-semibold text-white">{stats.autoRelocations}</span>
+            <div className="flex items-center space-x-2">
+              <Zap size={16} className="text-green-400" />
+              <span className="text-sm text-gray-400">Auto:</span>
+              <span className="text-lg font-bold text-white">{stats.autoRelocations}</span>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <Target size={12} className="text-purple-400" />
-              <span className="text-gray-400">Manual:</span>
-              <span className="font-semibold text-white">{stats.manualRelocations}</span>
+            <div className="flex items-center space-x-2">
+              <Target size={16} className="text-purple-400" />
+              <span className="text-sm text-gray-400">Manual:</span>
+              <span className="text-lg font-bold text-white">{stats.manualRelocations}</span>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <TrendingUp size={12} className="text-yellow-400" />
-              <span className="text-gray-400">Avg:</span>
-              <span className="font-semibold text-white">
+            <div className="flex items-center space-x-2">
+              <TrendingUp size={16} className="text-yellow-400" />
+              <span className="text-sm text-gray-400">Avg Confidence:</span>
+              <span className="text-lg font-bold text-white">
                 {stats.averageConfidence > 0 ? `${Math.round(stats.averageConfidence * 100)}%` : 'N/A'}
               </span>
             </div>
           </div>
         )}
 
-        {/* Filter Buttons */}
-        <div className="flex space-x-1 mt-2">
-          {(['all', 'auto', 'manual'] as const).map((filterType) => (
-            <button
-              key={filterType}
-              onClick={() => setFilter(filterType)}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                filter === filterType
-                  ? 'bg-rekordbox-purple text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              {filterType === 'all' ? 'All' : filterType === 'auto' ? 'Auto' : 'Manual'}
-            </button>
-          ))}
-          <div className="flex items-center space-x-1">
+        {/* Filter and Action Buttons */}
+        <div className="flex items-center justify-between">
+          <div className="flex space-x-2">
+            {(['all', 'auto', 'manual'] as const).map((filterType) => (
+              <button
+                key={filterType}
+                onClick={() => setFilter(filterType)}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                  filter === filterType
+                    ? 'bg-rekordbox-purple text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {filterType === 'all' ? 'All' : filterType === 'auto' ? 'Auto' : 'Manual'}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex items-center space-x-2">
             <button
                 onClick={loadHistory}
                 disabled={isLoading}
-                className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
+                className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
                 title="Refresh History"
             >
-              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
             </button>
             <button
                 onClick={clearHistory}
-                className="p-1.5 bg-red-600 hover:bg-red-500 rounded transition-colors"
+                className="p-2 bg-red-600 hover:bg-red-500 rounded transition-colors"
                 title="Clear History"
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* History List - Scrollable Area */}
-      <div className="flex-1 overflow-y-auto p-3">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <RefreshCw size={24} className="animate-spin text-rekordbox-purple" />
-          </div>
-        ) : filteredHistory.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">
-            <History size={48} className="mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No History Found</h3>
-            <p>
-              {filter === 'all'
-                ? 'No relocations have been performed yet'
-                : `No ${filter} relocations found`
-              }
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredHistory.map((entry) => (
-              <div
-                key={entry.id}
-                className="bg-gray-800 rounded p-3 border border-gray-700 hover:border-gray-600 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-1.5">
-                  <div className="flex items-center space-x-1.5">
-                    {entry.relocationMethod === 'auto' ? (
-                      <Zap size={14} className="text-green-400" />
-                    ) : (
-                      <Target size={14} className="text-purple-400" />
-                    )}
-                    <span className="text-xs font-medium text-gray-400 uppercase">
-                      {entry.relocationMethod}
-                    </span>
-                    {entry.confidence && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${
-                        entry.confidence > 0.8 
-                          ? 'bg-green-600 text-white' 
-                          : entry.confidence > 0.6
-                            ? 'bg-yellow-600 text-white'
-                            : 'bg-red-600 text-white'
-                      }`}>
-                        {Math.round(entry.confidence * 100)}%
+      {/* Scrollable History Items Container */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto p-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw size={24} className="animate-spin text-rekordbox-purple" />
+            </div>
+          ) : filteredHistory.length === 0 ? (
+            <div className="text-center text-gray-400 py-8">
+              <History size={48} className="mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No History Found</h3>
+              <p>
+                {filter === 'all'
+                  ? 'No relocations have been performed yet'
+                  : `No ${filter} relocations found`
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredHistory.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      {entry.relocationMethod === 'auto' ? (
+                        <Zap size={16} className="text-green-400" />
+                      ) : (
+                        <Target size={16} className="text-purple-400" />
+                      )}
+                      <span className="text-sm font-medium text-gray-400 uppercase">
+                        {entry.relocationMethod}
                       </span>
-                    )}
-                    {entry.xmlUpdated && (
-                      <FileText size={10} className="text-blue-400" title="XML Updated" />
-                    )}
-                    {entry.backupCreated && (
-                      <Shield size={10} className="text-green-400" title="Backup Created" />
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {formatTimeAgo(entry.timestamp)}
-                  </span>
-                </div>
-
-                <div className="mb-2">
-                  <h4 className="text-sm text-white font-medium truncate">{entry.trackName}</h4>
-                  <p className="text-xs text-gray-400 truncate">{entry.trackArtist}</p>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">From:</span>
-                    <p className="text-xs text-gray-400 font-mono truncate flex-1">
-                      {entry.originalLocation.split('/').pop()}
-                    </p>
+                      {entry.confidence && (
+                        <span className={`text-sm px-2 py-0.5 rounded ${
+                          entry.confidence > 0.8 
+                            ? 'bg-green-600 text-white' 
+                            : entry.confidence > 0.6
+                              ? 'bg-yellow-600 text-white'
+                              : 'bg-red-600 text-white'
+                        }`}>
+                          {Math.round(entry.confidence * 100)}%
+                        </span>
+                      )}
+                      {entry.xmlUpdated && (
+                        <FileText size={12} className="text-blue-400" title="XML Updated" />
+                      )}
+                      {entry.backupCreated && (
+                        <Shield size={12} className="text-green-400" title="Backup Created" />
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {formatTimeAgo(entry.timestamp)}
+                    </span>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">To:</span>
-                    <p className="text-xs text-green-400 font-mono truncate flex-1">
-                      {entry.newLocation.split('/').pop()}
-                    </p>
-                    {onShowFileInFolder && (
-                      <button
-                        onClick={() => onShowFileInFolder(entry.newLocation)}
-                        className="p-0.5 hover:bg-gray-700 rounded transition-colors"
-                        title="Show in Finder/Explorer"
-                      >
-                        <ExternalLink size={10} className="text-gray-400" />
-                      </button>
-                    )}
+                  <div className="mb-3">
+                    <h4 className="text-sm text-white font-medium truncate">{entry.trackName}</h4>
+                    <p className="text-xs text-gray-400 truncate">{entry.trackArtist}</p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">From:</span>
+                      <p className="text-xs text-gray-400 font-mono truncate flex-1" title={entry.originalLocation}>
+                        {entry.originalLocation}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">To:</span>
+                      <p className="text-xs text-green-400 font-mono truncate flex-1" title={entry.newLocation}>
+                        {entry.newLocation}
+                      </p>
+                      {onShowFileInFolder && (
+                        <button
+                          onClick={() => onShowFileInFolder(entry.newLocation)}
+                          className="p-1 hover:bg-gray-700 rounded transition-colors"
+                          title="Show in Finder/Explorer"
+                        >
+                          <ExternalLink size={12} className="text-gray-400" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
-};
+}
