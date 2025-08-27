@@ -51,7 +51,8 @@ const TrackRelocator: React.FC = () => {
     executeRelocations,
     autoRelocateTracks,
     updateSearchOptions,
-    clearResults
+    clearResults,
+    clearUnlocatableStatus
   } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData);
 
   const [searchTerm, setSearchTerm] = useState('');

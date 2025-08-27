@@ -70,6 +70,7 @@ export interface MissingTrack {
   size?: number;
   duration?: number;
   dateAdded?: string;
+  isUnlocatable?: boolean; // Track marked as unlocatable after failed auto-relocation
 }
 
 export interface RelocationCandidate {

@@ -457,6 +457,11 @@ export function useTrackRelocator(
         const successfulTrackIds = results
           .filter((r: any) => r.success)
           .map((r: any) => r.trackId);
+          
+        // Get list of failed track IDs to mark as unlocatable
+        const failedTrackIds = results
+          .filter((r: any) => !r.success)
+          .map((r: any) => r.trackId);
         
         // Update the main library data with new track locations
         if (libraryData && xmlUpdated) {
@@ -482,16 +487,25 @@ export function useTrackRelocator(
           logger.info(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
         }
         
-        // Update state to remove successfully relocated tracks from missing tracks list
+        // Update state: remove successfully relocated tracks and mark failed tracks as unlocatable
         setState(prev => {
           const newRelocations = new Map(prev.relocations);
           successfulTrackIds.forEach((trackId: string) => {
             newRelocations.delete(trackId);
           });
           
-          const newMissingTracks = prev.missingTracks.filter(track => 
+          // Remove successfully relocated tracks from missing tracks list
+          const filteredTracks = prev.missingTracks.filter(track => 
             !successfulTrackIds.includes(track.id)
           );
+          
+          // Mark failed tracks as unlocatable (keep them in the list but flag them)
+          const newMissingTracks = filteredTracks.map(track => {
+            if (failedTrackIds.includes(track.id)) {
+              return { ...track, isUnlocatable: true };
+            }
+            return track;
+          });
           
           return {
             ...prev,
@@ -514,6 +528,7 @@ export function useTrackRelocator(
         });
         
         const successCount = results.filter((r: any) => r.success).length;
+        const failureCount = results.filter((r: any) => !r.success).length;
         
         // Save successful relocations to history
         if (effectiveLibraryPath && successCount > 0) {
@@ -546,13 +561,20 @@ export function useTrackRelocator(
           }
         }
         
-        // Show success notification with XML update info
+        // Show notification with detailed results
         const xmlUpdateMessage = xmlUpdated 
           ? `\n📄 XML updated with ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${backupPath?.split('/').pop()}`
           : '';
         
-        showNotification('success', 
-          `✅ Auto-relocated ${successCount}/${tracks.length} tracks${xmlUpdateMessage}`
+        const failureMessage = failureCount > 0 
+          ? `\n⚠️ ${failureCount} track${failureCount > 1 ? 's' : ''} marked as unlocatable`
+          : '';
+        
+        const notificationType = failureCount > 0 && successCount === 0 ? 'error' : 
+                               failureCount > 0 ? 'info' : 'success';
+        
+        showNotification(notificationType, 
+          `✅ Auto-relocated ${successCount}/${tracks.length} tracks${failureMessage}${xmlUpdateMessage}`
         );
       } else {
         setState(prev => ({ ...prev, isRelocating: false }));
@@ -760,9 +782,26 @@ export function useTrackRelocator(
     }
   }, [libraryData?.libraryPath]);
 
+  // Clear unlocatable status from tracks (allow retry)
+  const clearUnlocatableStatus = useCallback((trackIds: string[]) => {
+    setState(prev => ({
+      ...prev,
+      missingTracks: prev.missingTracks.map(track => {
+        if (trackIds.includes(track.id)) {
+          const { isUnlocatable, ...trackWithoutFlag } = track;
+          return trackWithoutFlag as MissingTrack;
+        }
+        return track;
+      })
+    }));
+    
+    showNotification('info', `Cleared unlocatable status from ${trackIds.length} track${trackIds.length > 1 ? 's' : ''}`);
+  }, [showNotification]);
+
   // Computed values
   const stats = useMemo(() => ({
     totalMissingTracks: state.missingTracks.length,
+    unlocatableTracks: state.missingTracks.filter(track => track.isUnlocatable).length,
     configuredRelocations: state.relocations.size,
     successfulRelocations: state.relocationResults.filter(r => r.success).length,
     cloudSyncIssues: state.cloudSyncIssues.length,
@@ -788,6 +827,7 @@ export function useTrackRelocator(
     fixOwnershipIssues,
     updateSearchOptions,
     clearResults,
+    clearUnlocatableStatus,
     
     // Computed
     stats
