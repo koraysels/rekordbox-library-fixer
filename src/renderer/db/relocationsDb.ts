@@ -241,7 +241,8 @@ export const relocationStorage = {
     );
     
     // Use bulkPut for better performance
-    await relocationsDb.relocationResults.bulkPut(recordsToSave);
+    const db = await ensureDatabaseConnection();
+    await db.relocationResults.bulkPut(recordsToSave);
   },
 };
 
