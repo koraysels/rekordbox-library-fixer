@@ -91,12 +91,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const addPathPreference = useCallback(() => {
     const currentScanOptions = getValues('scanOptions');
     const input = getValues('pathPreferenceInput');
-    
+
     if (input.trim()) {
       const newPathPreferences = [...(currentScanOptions.pathPreferences || []), input.trim()];
       setValue('scanOptions.pathPreferences', newPathPreferences);
       setValue('pathPreferenceInput', '');
-      
+
       // Immediate sync for actions like add/remove
       setScanOptions({
         ...currentScanOptions,
@@ -105,12 +105,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
   }, [getValues, setValue, setScanOptions]);
 
-  // Remove path preference  
+  // Remove path preference
   const removePathPreference = useCallback((index: number) => {
     const currentScanOptions = getValues('scanOptions');
     const newPathPreferences = (currentScanOptions.pathPreferences || []).filter((_, i) => i !== index);
     setValue('scanOptions.pathPreferences', newPathPreferences);
-    
+
     // Immediate sync for actions like add/remove
     setScanOptions({
       ...currentScanOptions,
@@ -132,7 +132,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const handleBlurSync = useCallback(() => {
     const currentScanOptions = getValues('scanOptions');
     const currentResolutionStrategy = getValues('resolutionStrategy');
-    
+
     // Clear debounce and sync immediately
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -141,7 +141,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     setResolutionStrategy(currentResolutionStrategy);
   }, [getValues, setScanOptions, setResolutionStrategy]);
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 p-6">
           {/* Detection Methods */}
           <div>
             <h3 className="font-semibold mb-4 text-lg">Detection Methods</h3>
@@ -158,7 +158,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-sm text-zinc-400">Most accurate detection method</p>
                 </div>
               </label>
-              
+
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"
@@ -209,7 +209,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-sm text-zinc-400">Keeps tracks with higher bitrate and file size</p>
                 </div>
               </label>
-              
+
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
@@ -223,7 +223,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-sm text-zinc-400">Keeps tracks with most recent modification date</p>
                 </div>
               </label>
-              
+
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
@@ -237,7 +237,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-sm text-zinc-400">Keeps tracks that were added to library first</p>
                 </div>
               </label>
-              
+
               <label className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                 watchedResolutionStrategy === 'keep-preferred-path' 
                   ? 'border-rekordbox-purple bg-rekordbox-purple/10' 
@@ -255,7 +255,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <p className="text-sm text-zinc-400">Keeps tracks from your preferred folders/locations</p>
                 </div>
               </label>
-              
+
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
@@ -278,7 +278,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <p className="text-sm text-zinc-400 mb-4">
               Preferred paths/folders when using "Keep Preferred Path" strategy. Higher priority paths should be listed first.
             </p>
-            
+
             <div className="flex space-x-2 mb-4">
               <input
                 type="text"

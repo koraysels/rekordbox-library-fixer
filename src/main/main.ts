@@ -518,15 +518,25 @@ ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
   }
 });
 
-ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) => {
-  safeConsole.log(`🤖 IPC: Auto-relocating ${tracks.length} tracks`);
+ipcMain.handle('auto-relocate-tracks', async (_, data: {
+  tracks: any[];
+  options: any;
+  libraryPath: string;
+}) => {
+  safeConsole.log(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks`);
   try {
     let successCount = 0;
-    const results = [];
+    const results: any[] = [];
+    const successfulRelocations: Array<{
+      trackId: string;
+      oldLocation: string;
+      newLocation: string;
+    }> = [];
 
-    for (const track of tracks) {
+    // Step 1: Find candidates and build relocations for high-confidence matches
+    for (const track of data.tracks) {
       // Find candidates for this track
-      const candidatesResult = await trackRelocator.findRelocationCandidates(track, options);
+      const candidatesResult = await trackRelocator.findRelocationCandidates(track, data.options);
 
       if (candidatesResult.length > 0) {
         // Use the best candidate (highest confidence)
@@ -536,30 +546,29 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
 
         // Only auto-relocate if confidence is high enough (>80%)
         if (bestCandidate.confidence > 0.8) {
-          const relocResult = await trackRelocator.relocateTrack(
-            track.id,
-            track.originalLocation,
-            bestCandidate.path
-          );
-
-          if (relocResult.success) {
-            successCount++;
-          }
+          successfulRelocations.push({
+            trackId: track.id,
+            oldLocation: track.originalLocation,
+            newLocation: bestCandidate.path
+          });
 
           results.push({
             trackId: track.id,
             trackName: track.name,
-            success: relocResult.success,
-            newLocation: relocResult.success ? bestCandidate.path : undefined,
+            success: true,
+            newLocation: bestCandidate.path,
             confidence: bestCandidate.confidence,
-            error: relocResult.error
+            oldLocation: track.originalLocation
           });
+          
+          successCount++;
         } else {
           results.push({
             trackId: track.id,
             trackName: track.name,
             success: false,
-            error: 'No high-confidence candidate found'
+            error: 'No high-confidence candidate found',
+            confidence: bestCandidate.confidence
           });
         }
       } else {
@@ -572,19 +581,94 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
       }
     }
 
-    safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${tracks.length} successful`);
+    // Step 2: Apply the relocations using batch relocation logic
+    let batchResult: {
+      success: boolean;
+      data?: any;
+      xmlUpdated?: boolean;
+      tracksUpdated?: number;
+      backupPath?: string;
+      error?: string;
+    } | null = null;
+    
+    if (successfulRelocations.length > 0 && data.libraryPath) {
+      safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
+      
+      try {
+        // Step 2a: Verify relocations first (without XML update)
+        const verificationResults = await trackRelocator.batchRelocate(successfulRelocations);
+        const verifiedSuccessful = verificationResults.filter(r => r.success);
+        
+        if (verifiedSuccessful.length === 0) {
+          safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+          batchResult = { success: true, data: verificationResults, xmlUpdated: false, tracksUpdated: 0 };
+        } else {
+          // Step 2b: Create backup of original XML
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+
+          const fs = require('fs');
+          fs.copyFileSync(data.libraryPath, backupPath);
+          safeConsole.log(`💾 Backup created: ${backupPath}`);
+
+          // Step 2c: Parse current library
+          const library = await rekordboxParser.parseLibrary(data.libraryPath);
+          safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
+
+          // Step 2d: Update track locations in the library
+          let tracksUpdated = 0;
+          for (const relocation of verifiedSuccessful) {
+            const track = library.tracks.get(relocation.trackId);
+            if (track && relocation.newLocation) {
+              // Update the track location 
+              track.location = relocation.newLocation;
+              library.tracks.set(relocation.trackId, track);
+              tracksUpdated++;
+              safeConsole.log(`🎵 Auto-updated track "${track.name}": ${relocation.oldLocation} -> ${relocation.newLocation}`);
+            }
+          }
+
+          // Step 2e: Save updated library back to XML
+          if (tracksUpdated > 0) {
+            await rekordboxParser.saveLibrary(library, data.libraryPath);
+            safeConsole.log(`✅ XML updated with ${tracksUpdated} auto-relocated tracks`);
+            logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+          }
+          
+          batchResult = { 
+            success: true, 
+            data: verificationResults,
+            backupPath,
+            xmlUpdated: tracksUpdated > 0,
+            tracksUpdated
+          };
+        }
+      } catch (error) {
+        safeConsole.error('❌ Auto-relocate batch processing failed:', error);
+        batchResult = {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
+        };
+      }
+    }
+
+    safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful`);
+    
     return {
       success: true,
       data: {
-        totalTracks: tracks.length,
+        totalTracks: data.tracks.length,
         successfulRelocations: successCount,
-        results
+        results,
+        xmlUpdated: batchResult?.xmlUpdated || false,
+        tracksUpdated: batchResult?.tracksUpdated || 0,
+        backupPath: batchResult?.backupPath
       }
     };
   } catch (error) {
     safeConsole.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
-      trackCount: tracks.length,
+      trackCount: data.tracks.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
     return {

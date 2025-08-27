@@ -49,6 +49,7 @@ const TrackRelocator: React.FC = () => {
     addRelocation,
     removeRelocation,
     executeRelocations,
+    autoRelocateTracks,
     updateSearchOptions,
     clearResults
   } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData);
@@ -139,26 +140,11 @@ const TrackRelocator: React.FC = () => {
       return;
     }
 
-    if (searchOptions.searchPaths.length === 0) {
-      showNotification('error', 'Please configure search paths first');
-      return;
-    }
-
     setIsAutoRelocating(true);
     try {
-      const result = await window.electronAPI.autoRelocateTracks(selectedTracks, searchOptions);
-      if (result.success) {
-        const { successfulRelocations, totalTracks } = result.data;
-        showNotification('success',
-          `Auto-relocated ${successfulRelocations}/${totalTracks} tracks`);
-        clearSelection();
-        // Refresh the missing tracks list
-        setTimeout(() => scanForMissingTracks(), 1000);
-      } else {
-        showNotification('error', `Auto-relocation failed: ${result.error}`);
-      }
-    } catch (error) {
-      showNotification('error', 'Failed to auto-relocate tracks');
+      // Use the autoRelocateTracks function from the hook which properly updates state
+      await autoRelocateTracks(selectedTracks);
+      clearSelection();
     } finally {
       setIsAutoRelocating(false);
     }

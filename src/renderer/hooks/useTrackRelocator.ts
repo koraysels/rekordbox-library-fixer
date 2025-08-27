@@ -418,6 +418,151 @@ export function useTrackRelocator(
     }
   }, [state.relocations, state.missingTracks, showNotification]);
 
+  // Auto-relocate tracks with high confidence matches
+  const autoRelocateTracks = useCallback(async (tracks: MissingTrack[]) => {
+    if (tracks.length === 0) {
+      showNotification('error', 'No tracks selected for auto-relocation');
+      return;
+    }
+
+    if (state.searchOptions.searchPaths.length === 0) {
+      showNotification('error', 'Please configure search paths first');
+      return;
+    }
+
+    setState(prev => ({ ...prev, isRelocating: true }));
+
+    try {
+      // Use libraryPath from libraryData if available, otherwise use the separate libraryPath parameter
+      const effectiveLibraryPath = libraryData?.libraryPath || libraryPath;
+      
+      if (!effectiveLibraryPath) {
+        throw new Error('Library path is not available. Please reload the library.');
+      }
+
+      const result = await window.electronAPI.autoRelocateTracks({
+        tracks,
+        options: state.searchOptions,
+        libraryPath: effectiveLibraryPath
+      });
+
+      console.log('🔍 Auto-relocate result:', result);
+
+      if (result.success) {
+        const { results, xmlUpdated, tracksUpdated, backupPath } = result.data;
+        
+        // Get list of successfully relocated track IDs
+        const successfulTrackIds = results
+          .filter((r: any) => r.success)
+          .map((r: any) => r.trackId);
+        
+        // Update the main library data with new track locations
+        if (libraryData && xmlUpdated) {
+          const updatedLibraryData = { ...libraryData };
+          const updatedTracks = new Map(libraryData.tracks);
+          
+          // Update track locations in the library data
+          results.forEach((relocation: any) => {
+            if (relocation.success && relocation.newLocation) {
+              const track = updatedTracks.get(relocation.trackId);
+              if (track) {
+                updatedTracks.set(relocation.trackId, {
+                  ...track,
+                  location: relocation.newLocation
+                });
+              }
+            }
+          });
+          
+          updatedLibraryData.tracks = updatedTracks;
+          setLibraryData(updatedLibraryData);
+          
+          console.log(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
+        }
+        
+        // Update state to remove successfully relocated tracks from missing tracks list
+        setState(prev => {
+          const newRelocations = new Map(prev.relocations);
+          successfulTrackIds.forEach((trackId: string) => {
+            newRelocations.delete(trackId);
+          });
+          
+          const newMissingTracks = prev.missingTracks.filter(track => 
+            !successfulTrackIds.includes(track.id)
+          );
+          
+          return {
+            ...prev,
+            relocationResults: results,
+            missingTracks: newMissingTracks,
+            relocations: newRelocations,
+            selectedTrack: successfulTrackIds.includes(prev.selectedTrack?.id || '') ? null : prev.selectedTrack,
+            candidates: successfulTrackIds.includes(prev.selectedTrack?.id || '') ? [] : prev.candidates,
+            isRelocating: false
+          };
+        });
+        
+        // Update candidates cache to remove relocated tracks
+        setRelocationCandidatesCache(prev => {
+          const newCache = new Map(prev);
+          successfulTrackIds.forEach((trackId: string) => {
+            newCache.delete(trackId);
+          });
+          return newCache;
+        });
+        
+        const successCount = results.filter((r: any) => r.success).length;
+        
+        // Save successful relocations to history
+        if (effectiveLibraryPath && successCount > 0) {
+          const successfulRelocations = results.filter((r: any) => r.success);
+          console.log(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
+          
+          try {
+            for (const relocation of successfulRelocations) {
+              const track = tracks.find(t => t.id === relocation.trackId);
+              if (track) {
+                await historyStorage.addRelocationEntry({
+                  libraryPath: effectiveLibraryPath,
+                  trackId: relocation.trackId,
+                  trackName: relocation.trackName || track.name,
+                  trackArtist: track.artist,
+                  originalLocation: relocation.oldLocation,
+                  newLocation: relocation.newLocation,
+                  relocationMethod: 'auto' as const,
+                  timestamp: new Date(),
+                  xmlUpdated: xmlUpdated,
+                  backupCreated: !!backupPath
+                });
+              }
+            }
+            // Notify history panel to auto-refresh
+            historyEvents.notifyHistoryUpdate(effectiveLibraryPath);
+            console.log(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
+          } catch (historyError) {
+            console.error('❌ Failed to save auto-relocation history:', historyError);
+          }
+        }
+        
+        // Show success notification with XML update info
+        const xmlUpdateMessage = xmlUpdated 
+          ? `\n📄 XML updated with ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${backupPath?.split('/').pop()}`
+          : '';
+        
+        showNotification('success', 
+          `✅ Auto-relocated ${successCount}/${tracks.length} tracks${xmlUpdateMessage}`
+        );
+      } else {
+        setState(prev => ({ ...prev, isRelocating: false }));
+        showNotification('error', `Auto-relocation failed: ${result.error}`);
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, isRelocating: false }));
+      console.error('❌ Auto-relocate error:', error);
+      showNotification('error', `Failed to auto-relocate tracks: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [state.searchOptions, state.missingTracks, libraryData, libraryPath, showNotification, setLibraryData]);
+
   // Detect cloud sync issues
   const detectCloudSyncIssues = useCallback(async () => {
     if (!libraryData) {
@@ -633,6 +778,7 @@ export function useTrackRelocator(
     addRelocation,
     removeRelocation,
     executeRelocations,
+    autoRelocateTracks,
     detectCloudSyncIssues,
     fixCloudSyncIssues,
     initializeDropboxAPI,
