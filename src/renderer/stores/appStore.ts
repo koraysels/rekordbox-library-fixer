@@ -20,7 +20,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     try {
       const result = await window.electronAPI.getAppVersion();
-      if (result.success) {
+      if (result && result.success && result.data && typeof result.data.version === 'string') {
         set({ 
           version: result.data.version,
           isVersionLoaded: true 
