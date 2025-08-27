@@ -30,7 +30,7 @@ import type {
 } from '../types';
 
 const TrackRelocator: React.FC = () => {
-  const { libraryData, libraryPath, showNotification } = useAppContext();
+  const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
   const {
     // State
     missingTracks,
@@ -52,7 +52,7 @@ const TrackRelocator: React.FC = () => {
     executeRelocations,
     updateSearchOptions,
     clearResults
-  } = useTrackRelocator(libraryData, libraryPath, showNotification);
+  } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMissingTracks, setSelectedMissingTracks] = useState<Set<string>>(new Set());

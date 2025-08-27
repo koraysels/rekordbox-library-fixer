@@ -57,7 +57,8 @@ const defaultSearchOptions: RelocationOptions = {
 export function useTrackRelocator(
   libraryData: LibraryData | null,
   libraryPath: string,
-  showNotification: (type: NotificationType, message: string) => void
+  showNotification: (type: NotificationType, message: string) => void,
+  setLibraryData: (data: LibraryData) => void
 ) {
   const [state, setState] = useState<UseTrackRelocatorState>({
     missingTracks: [],
@@ -306,6 +307,30 @@ export function useTrackRelocator(
         const successfulTrackIds = result.data
           .filter((r: RelocationResult) => r.success)
           .map((r: RelocationResult) => r.trackId);
+        
+        // Update the main library data with new track locations
+        if (libraryData && result.xmlUpdated) {
+          const updatedLibraryData = { ...libraryData };
+          const updatedTracks = new Map(libraryData.tracks);
+          
+          // Update track locations in the library data
+          result.data.forEach((relocation: RelocationResult) => {
+            if (relocation.success && relocation.newLocation) {
+              const track = updatedTracks.get(relocation.trackId);
+              if (track) {
+                updatedTracks.set(relocation.trackId, {
+                  ...track,
+                  location: relocation.newLocation
+                });
+              }
+            }
+          });
+          
+          updatedLibraryData.tracks = updatedTracks;
+          setLibraryData(updatedLibraryData);
+          
+          console.log(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
+        }
         
         // Update state to remove successfully relocated tracks from missing tracks list
         // and clear their relocations from the map
