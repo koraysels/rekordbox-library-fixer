@@ -13,7 +13,7 @@ import {
   FileText,
   Shield
 } from 'lucide-react';
-import { relocationHistoryStorage, type RelocationHistoryEntry } from '../db/relocationsDb';
+import { historyStorage, type RelocationHistoryEntry } from '../db/historyDb';
 
 interface RelocationHistoryPanelProps {
   libraryPath: string | null;
@@ -43,8 +43,8 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
     setIsLoading(true);
     try {
       const [historyData, statsData] = await Promise.all([
-        relocationHistoryStorage.getRelocationHistory(libraryPath),
-        relocationHistoryStorage.getRelocationStats(libraryPath)
+        historyStorage.getRelocationHistory(libraryPath),
+        historyStorage.getRelocationStats(libraryPath)
       ]);
       
       setHistory(historyData);
@@ -65,7 +65,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
     
     if (confirm('Are you sure you want to clear all relocation history? This cannot be undone.')) {
       try {
-        await relocationHistoryStorage.clearRelocationHistory(libraryPath);
+        await historyStorage.clearRelocationHistory(libraryPath);
         setHistory([]);
         setStats(null);
       } catch (error) {

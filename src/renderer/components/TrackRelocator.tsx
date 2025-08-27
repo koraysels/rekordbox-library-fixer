@@ -24,7 +24,6 @@ import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
 import { RelocationHistoryPanel } from './RelocationHistoryPanel';
 import { useAppContext } from '../AppWithRouter';
-import { relocationHistoryStorage } from '../db/relocationsDb';
 import type {
   RelocationCandidate
 } from '../types';

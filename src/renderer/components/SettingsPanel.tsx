@@ -1,5 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { FolderOpen, Plus, X } from 'lucide-react';
+import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
 interface SettingsPanelProps {
@@ -9,10 +10,12 @@ interface SettingsPanelProps {
   setScanOptions: (options: ScanOptions) => void;
   resolutionStrategy: ResolutionStrategy;
   setResolutionStrategy: (strategy: ResolutionStrategy) => void;
+}
+
+interface FormData {
+  scanOptions: ScanOptions;
+  resolutionStrategy: ResolutionStrategy;
   pathPreferenceInput: string;
-  setPathPreferenceInput: (input: string) => void;
-  addPathPreference: () => void;
-  removePathPreference: (index: number) => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -21,23 +24,122 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   scanOptions,
   setScanOptions,
   resolutionStrategy,
-  setResolutionStrategy,
-  pathPreferenceInput,
-  setPathPreferenceInput,
-  addPathPreference,
-  removePathPreference
+  setResolutionStrategy
 }) => {
+  // React Hook Form for local state
+  const { register, control, setValue, getValues } = useForm<FormData>({
+    defaultValues: {
+      scanOptions,
+      resolutionStrategy,
+      pathPreferenceInput: ''
+    }
+  });
+
+  // Watch form changes for debounced sync
+  const watchedScanOptions = useWatch({ control, name: 'scanOptions' });
+  const watchedResolutionStrategy = useWatch({ control, name: 'resolutionStrategy' });
+  const pathPreferenceInput = useWatch({ control, name: 'pathPreferenceInput' });
+
+  // Debounced sync to Zustand store
+  const debounceRef = useRef<NodeJS.Timeout>();
+
+  const syncToStore = useCallback((scanOpts: ScanOptions, resStrategy: ResolutionStrategy) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setScanOptions(scanOpts);
+      setResolutionStrategy(resStrategy);
+    }, 500); // 500ms debounce
+  }, [setScanOptions, setResolutionStrategy]);
+
+  // Sync changes with debounce
+  useEffect(() => {
+    if (watchedScanOptions && watchedResolutionStrategy) {
+      syncToStore(watchedScanOptions, watchedResolutionStrategy);
+    }
+  }, [watchedScanOptions, watchedResolutionStrategy, syncToStore]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  // Update form when external props change
+  useEffect(() => {
+    setValue('scanOptions', scanOptions);
+    setValue('resolutionStrategy', resolutionStrategy);
+  }, [scanOptions, resolutionStrategy, setValue]);
+
   // Handle folder browsing for path preferences
   const handleBrowseFolder = useCallback(async () => {
     try {
       const folderPath = await window.electronAPI.selectFolder();
       if (folderPath) {
-        setPathPreferenceInput(folderPath);
+        setValue('pathPreferenceInput', folderPath);
       }
     } catch (error) {
       console.error('Failed to select folder:', error);
     }
-  }, [setPathPreferenceInput]);
+  }, [setValue]);
+
+  // Add path preference
+  const addPathPreference = useCallback(() => {
+    const currentScanOptions = getValues('scanOptions');
+    const input = getValues('pathPreferenceInput');
+    
+    if (input.trim()) {
+      const newPathPreferences = [...(currentScanOptions.pathPreferences || []), input.trim()];
+      setValue('scanOptions.pathPreferences', newPathPreferences);
+      setValue('pathPreferenceInput', '');
+      
+      // Immediate sync for actions like add/remove
+      setScanOptions({
+        ...currentScanOptions,
+        pathPreferences: newPathPreferences
+      });
+    }
+  }, [getValues, setValue, setScanOptions]);
+
+  // Remove path preference  
+  const removePathPreference = useCallback((index: number) => {
+    const currentScanOptions = getValues('scanOptions');
+    const newPathPreferences = (currentScanOptions.pathPreferences || []).filter((_, i) => i !== index);
+    setValue('scanOptions.pathPreferences', newPathPreferences);
+    
+    // Immediate sync for actions like add/remove
+    setScanOptions({
+      ...currentScanOptions,
+      pathPreferences: newPathPreferences
+    });
+  }, [getValues, setValue, setScanOptions]);
+
+
+  // Update metadata fields
+  const updateMetadataFields = useCallback((field: string, checked: boolean) => {
+    const currentOptions = getValues('scanOptions');
+    const fields = checked
+      ? [...(currentOptions.metadataFields || []), field]
+      : (currentOptions.metadataFields || []).filter(f => f !== field);
+    setValue('scanOptions.metadataFields', fields);
+  }, [getValues, setValue]);
+
+  // Immediate sync for critical changes (blur handlers)
+  const handleBlurSync = useCallback(() => {
+    const currentScanOptions = getValues('scanOptions');
+    const currentResolutionStrategy = getValues('resolutionStrategy');
+    
+    // Clear debounce and sync immediately
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    setScanOptions(currentScanOptions);
+    setResolutionStrategy(currentResolutionStrategy);
+  }, [getValues, setScanOptions, setResolutionStrategy]);
   return (
     <div className="space-y-8">
           {/* Detection Methods */}
@@ -47,11 +149,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  checked={scanOptions.useFingerprint}
-                  onChange={(e) => setScanOptions({
-                    ...scanOptions,
-                    useFingerprint: e.target.checked
-                  })}
+                  {...register('scanOptions.useFingerprint')}
+                  onBlur={handleBlurSync}
                   className="checkbox"
                 />
                 <div>
@@ -63,11 +162,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  checked={scanOptions.useMetadata}
-                  onChange={(e) => setScanOptions({
-                    ...scanOptions,
-                    useMetadata: e.target.checked
-                  })}
+                  {...register('scanOptions.useMetadata')}
+                  onBlur={handleBlurSync}
                   className="checkbox"
                 />
                 <div>
@@ -76,23 +172,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </div>
               </label>
 
-              {scanOptions.useMetadata && (
+              {watchedScanOptions?.useMetadata && (
                 <div className="ml-8 space-y-2 mt-3">
                   <p className="text-sm text-zinc-400 mb-3">Match by:</p>
                   {['artist', 'title', 'album', 'duration', 'bpm'].map(field => (
                     <label key={field} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={(scanOptions.metadataFields || []).includes(field)}
-                        onChange={(e) => {
-                          const fields = e.target.checked
-                            ? [...(scanOptions.metadataFields || []), field]
-                            : (scanOptions.metadataFields || []).filter(f => f !== field);
-                          setScanOptions({
-                            ...scanOptions,
-                            metadataFields: fields
-                          });
-                        }}
+                        checked={(watchedScanOptions?.metadataFields || []).includes(field)}
+                        onChange={(e) => updateMetadataFields(field, e.target.checked)}
+                        onBlur={handleBlurSync}
                         className="checkbox"
                       />
                       <span className="capitalize text-sm">{field}</span>
@@ -110,10 +199,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
-                  name="strategy"
                   value="keep-highest-quality"
-                  checked={resolutionStrategy === 'keep-highest-quality'}
-                  onChange={(e) => setResolutionStrategy(e.target.value as ResolutionStrategy)}
+                  {...register('resolutionStrategy')}
+                  onBlur={handleBlurSync}
                   className="mt-1 text-rekordbox-purple"
                 />
                 <div>
@@ -125,10 +213,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
-                  name="strategy"
                   value="keep-newest"
-                  checked={resolutionStrategy === 'keep-newest'}
-                  onChange={(e) => setResolutionStrategy(e.target.value as ResolutionStrategy)}
+                  {...register('resolutionStrategy')}
+                  onBlur={handleBlurSync}
                   className="mt-1 text-rekordbox-purple"
                 />
                 <div>
@@ -140,10 +227,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
-                  name="strategy"
                   value="keep-oldest"
-                  checked={resolutionStrategy === 'keep-oldest'}
-                  onChange={(e) => setResolutionStrategy(e.target.value as ResolutionStrategy)}
+                  {...register('resolutionStrategy')}
+                  onBlur={handleBlurSync}
                   className="mt-1 text-rekordbox-purple"
                 />
                 <div>
@@ -153,16 +239,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </label>
               
               <label className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
-                resolutionStrategy === 'keep-preferred-path' 
+                watchedResolutionStrategy === 'keep-preferred-path' 
                   ? 'border-rekordbox-purple bg-rekordbox-purple/10' 
                   : 'border-zinc-700 hover:border-zinc-600'
               }`}>
                 <input
                   type="radio"
-                  name="strategy"
                   value="keep-preferred-path"
-                  checked={resolutionStrategy === 'keep-preferred-path'}
-                  onChange={(e) => setResolutionStrategy(e.target.value as ResolutionStrategy)}
+                  {...register('resolutionStrategy')}
+                  onBlur={handleBlurSync}
                   className="mt-1 text-rekordbox-purple"
                 />
                 <div>
@@ -174,10 +259,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <label className="flex items-start space-x-3 p-4 rounded-lg border border-zinc-700 hover:border-zinc-600 cursor-pointer transition-colors">
                 <input
                   type="radio"
-                  name="strategy"
                   value="manual"
-                  checked={resolutionStrategy === 'manual'}
-                  onChange={(e) => setResolutionStrategy(e.target.value as ResolutionStrategy)}
+                  {...register('resolutionStrategy')}
+                  onBlur={handleBlurSync}
                   className="mt-1 text-rekordbox-purple"
                 />
                 <div>
@@ -198,9 +282,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="flex space-x-2 mb-4">
               <input
                 type="text"
-                value={pathPreferenceInput}
-                onChange={(e) => setPathPreferenceInput(e.target.value)}
+                {...register('pathPreferenceInput')}
                 onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
+                onBlur={handleBlurSync}
                 placeholder="e.g., /Users/DJ/Main Library"
                 className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
               />
@@ -221,7 +305,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </button>
             </div>
 
-            {(scanOptions.pathPreferences || []).length === 0 ? (
+            {(watchedScanOptions?.pathPreferences || []).length === 0 ? (
               <div className="text-center py-8 border border-dashed border-zinc-600 rounded-lg">
                 <div className="text-4xl mb-2">📂</div>
                 <p className="text-zinc-400 text-sm mb-1">No preferred paths set</p>
@@ -229,7 +313,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             ) : (
               <div className="space-y-2">
-                {(scanOptions.pathPreferences || []).map((path, index) => (
+                {(watchedScanOptions?.pathPreferences || []).map((path, index) => (
                   <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-3 rounded border border-zinc-700">
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
