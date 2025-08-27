@@ -57,7 +57,7 @@ Make a simple, free tool that might help you get your library back under control
 
 ### 💾 **Remembers Your Stuff** *(NEW!)*
 - **🔄 Picks Up Where You Left Off**: No need to start over if you close the app
-- **📊 SQLite Storage**: Saves your progress properly (not just random temp files)
+- **📊 IndexedDB Storage**: Built-in browser storage - no external database needed!
 - **⚡ Quick Loading**: Opens right back to where you were
 - **🎯 Per-Library**: Keeps results separate for each of your Rekordbox libraries
 
@@ -230,7 +230,8 @@ After cleaning your library, you'll want to import the updated XML back to Rekor
 ### 🏗️ **Tech Stack**
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
 - **Backend**: Electron + Node.js
-- **Database**: SQLite (better-sqlite3)  
+- **Storage**: Dexie.js (IndexedDB) - no external database needed!
+- **State Management**: Zustand with persistence
 - **Testing**: Vitest + Playwright
 - **Build**: Vite + electron-builder
 

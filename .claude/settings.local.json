@@ -42,7 +42,20 @@
       "mcp__context7__get-library-docs",
       "Bash(npm view:*)",
       "Bash(timeout:*)",
-      "Bash(npm run dist:all:*)"
+      "Bash(npm run dist:all:*)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(gh release create:*)",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha.dmg )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-arm64.dmg )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-mac.zip )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-arm64-mac.zip )",
+      "Bash(release/Rekordbox Library Manager Setup 0.0.2-alpha.exe )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-win.zip )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-ia32-win.zip )",
+      "Bash(release/Rekordbox Library Manager-0.0.2-alpha-arm64.AppImage )",
+      "Bash(release/rekordbox-library-manager_0.0.2-alpha_arm64.deb)",
+      "Bash(gh release:*)"
     ],
     "deny": [],
     "ask": []

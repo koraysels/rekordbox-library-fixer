@@ -123,7 +123,7 @@ ipcMain.handle('channel-name', async (_, args) => {
 - Global state: Zustand store (if needed)
 - Component state: React useState
 - Async operations: Custom hooks with loading/error states
-- Persistent data: SQLite database via main process
+- Persistent data: IndexedDB via Dexie.js in renderer process
 
 ## Error Handling Pattern
 

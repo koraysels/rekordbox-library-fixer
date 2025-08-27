@@ -38,7 +38,19 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 - Path aliases configured: `@/`, `@renderer/`, `@main/`, `@shared/`
 
 ### Recent Enhancements
-- **Code Architecture Refactor** (2025-01-26): Major refactoring following React best practices
+
+#### v0.0.2 (2025-08-26): Track Relocation Caching
+- **Persistent Storage**: Implemented Dexie.js (IndexedDB) for caching track relocation results
+  - **Smart Cache Loading**: Missing tracks, relocation candidates, and search results persist across sessions
+  - **Performance Enhancement**: Instant loading of previously computed relocation candidates
+  - **Multi-Session Support**: Results automatically restore when reopening libraries
+  - **Database Integration**: Separate databases for relocation, cloud sync, and ownership results
+- **Enhanced User Experience**: Cache-aware notifications and seamless background saves
+- **Cross-Platform Builds**: Automated releases for Mac (DMG), Windows (NSIS), and Linux (AppImage/deb)
+- **Technical Improvements**: Map serialization, TypeScript interfaces, and modular database design
+
+#### v0.0.1 (2025-01-26): Foundation & Architecture
+- **Code Architecture Refactor**: Major refactoring following React best practices
   - **DRY Implementation**: Eliminated duplicate PopoverButton code (saved ~184 lines)
   - **Modular Structure**: Clean ES module organization with barrel exports
   - **Separation of Concerns**: Clear boundaries between UI, utilities, and business logic
@@ -96,7 +108,7 @@ Test framework uses:
 - **React 18**: UI framework with TypeScript
 - **Vite**: Build tool and dev server
 - **Tailwind CSS**: Styling
-- **better-sqlite3**: SQLite database operations
+- **Dexie.js**: IndexedDB wrapper for all client-side storage and caching
 - **xml2js**: XML parsing
 - **music-metadata**: Audio file metadata extraction
 - **Zustand**: State management with persist middleware for localStorage sync
@@ -109,6 +121,7 @@ Test framework uses:
 - Electron preload: `src/main/preload.ts`
 - Main window config: `src/main/main.ts:11-36`
 - TypeScript configs: `tsconfig.json`, `tsconfig.main.json`, `tsconfig.node.json`
+- Database schemas: `src/renderer/db/duplicatesDb.ts`, `src/renderer/db/relocationsDb.ts`
 
 ## IPC Communication
 
@@ -130,17 +143,29 @@ The app uses Electron's IPC for communication between main and renderer processe
 - Automatic persistence via Zustand persist middleware to localStorage key `rekordbox-settings`
 - Store located at `src/renderer/stores/settingsStore.ts`
 
+### Caching Architecture
+- **IndexedDB Storage**: Dexie.js provides robust client-side caching for track relocation results
+- **Database Separation**: Dedicated databases for duplicates (`RekordboxDuplicatesDB`) and relocations (`RekordboxRelocationsDB`)
+- **Smart Loading**: Cached results automatically restore when reopening libraries
+- **Map Serialization**: Custom handling for JavaScript Map objects in database storage
+- **Storage Helpers**: Dedicated storage modules (`relocationStorage`, `cloudSyncStorage`, `ownershipStorage`)
+
 ### Performance Considerations
 - UI-critical state (duplicates, scanning status) remains in React state for optimal performance
 - Settings changes are handled by Zustand for immediate updates without lag
-- Debounced saves for duplicate results to SQLite database (1-second debounce)
+- Relocation candidates cached per track ID to avoid redundant searches
+- Background saves with error handling and fallback to normal operation
+- All data persistence uses IndexedDB through Dexie.js (no external database dependencies)
 
 ### Store Usage Pattern
 ```typescript
-// In components
+// Zustand store (settings)
 const scanOptions = useSettingsStore((state) => state.scanOptions);
 const setScanOptions = useSettingsStore((state) => state.setScanOptions);
-const addPathPreference = useSettingsStore((state) => state.addPathPreference);
+
+// Dexie cache (results)
+const cachedResult = await relocationStorage.getRelocationResult(libraryPath);
+await relocationStorage.saveRelocationResult(resultData);
 ```
 
 ## UI/UX Features
