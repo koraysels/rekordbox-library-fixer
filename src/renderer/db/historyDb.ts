@@ -102,7 +102,8 @@ export const historyStorage = {
     averageConfidence: number;
     recentRelocations: number; // Last 24 hours
   }> {
-    const history = await historyDb.relocationHistory
+    const db = getHistoryDb();
+    const history = await db.relocationHistory
       .where('libraryPath')
       .equals(libraryPath)
       .toArray();
@@ -128,13 +129,15 @@ export const historyStorage = {
   },
 
   async clearRelocationHistory(libraryPath: string): Promise<void> {
-    await historyDb.relocationHistory
+    const db = getHistoryDb();
+    await db.relocationHistory
       .where('libraryPath')
       .equals(libraryPath)
       .delete();
   },
 
   async clearAllHistory(): Promise<void> {
-    await historyDb.relocationHistory.clear();
+    const db = getHistoryDb();
+    await db.relocationHistory.clear();
   }
 };
