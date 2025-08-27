@@ -58,6 +58,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onShowAbout: (callback: () => void) => {
     ipcRenderer.on('show-about', callback);
     return () => ipcRenderer.removeListener('show-about', callback);
+  },
+
+  // File operations
+  saveDroppedFile: (data: { content: string, fileName: string }) => 
+    ipcRenderer.invoke('save-dropped-file', data),
+  openFileDialog: (options?: any) => ipcRenderer.invoke('open-file-dialog', options),
+  handleFileDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-file-drop', filePaths),
+  
+  // Native drag-and-drop
+  handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
+  onNativeFileDrop: (callback: (filePaths: string[]) => void) => {
+    const handler = (_: any, filePaths: string[]) => callback(filePaths);
+    ipcRenderer.on('native-file-dropped', handler);
+    return () => ipcRenderer.removeListener('native-file-dropped', handler);
   }
 });
 

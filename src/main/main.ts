@@ -64,8 +64,61 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
+
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Handle navigation for security
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url !== mainWindow?.webContents.getURL()) {
+      event.preventDefault();
+    }
+  });
+
+  // Enable native drag-and-drop handling in main process
+  mainWindow.webContents.on('dom-ready', () => {
+    // Override the default file drag behavior to capture native paths
+    mainWindow?.webContents.executeJavaScript(`
+      // Remove any existing listeners
+      document.removeEventListener('dragover', window.__electronDragOver);
+      document.removeEventListener('drop', window.__electronDrop);
+      
+      // Add new listeners that capture native file paths
+      window.__electronDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      
+      window.__electronDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const files = Array.from(e.dataTransfer.files);
+        console.log('Native drop detected, files:', files.length);
+        
+        // Extract native file paths
+        const filePaths = files.map(file => {
+          console.log('File object:', {
+            name: file.name,
+            path: file.path,
+            size: file.size,
+            type: file.type
+          });
+          return file.path;
+        }).filter(path => path && path.length > 0);
+        
+        if (filePaths.length > 0) {
+          console.log('Sending native paths to main process:', filePaths);
+          window.electronAPI?.handleNativeDrop?.(filePaths);
+        }
+      };
+      
+      document.addEventListener('dragover', window.__electronDragOver);
+      document.addEventListener('drop', window.__electronDrop);
+      
+      console.log('✅ Native drag-and-drop handlers installed');
+    `);
   });
 }
 
@@ -226,6 +279,7 @@ ipcMain.handle('select-folder', async () => {
   }
   return null;
 });
+
 
 ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
   try {
@@ -799,5 +853,138 @@ ipcMain.handle('get-app-version', async () => {
   } catch (error) {
     safeConsole.error('❌ Failed to read app version:', error);
     return { success: false, error: 'Failed to read version' };
+  }
+});
+
+// Native file dialog for opening files with absolute paths
+ipcMain.handle('open-file-dialog', async (_, options = {}) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openFile', 'multiSelections'],
+      filters: options.filters || [
+        { name: 'Rekordbox XML', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      ...options
+    });
+    
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return { success: false, error: 'User cancelled or no files selected' };
+    }
+    
+    // Return absolute file paths
+    return { 
+      success: true, 
+      data: { 
+        filePaths: result.filePaths,
+        filePath: result.filePaths[0] // For backward compatibility
+      } 
+    };
+  } catch (error) {
+    safeConsole.error('❌ Failed to open file dialog:', error);
+    return { success: false, error: 'Failed to open file dialog' };
+  }
+});
+
+// Handle native drag-and-drop file paths
+ipcMain.handle('handle-file-drop', async (_, filePaths: string[]) => {
+  try {
+    // Verify that all paths are absolute and exist
+    const fs = require('fs');
+    const validPaths: string[] = [];
+    
+    for (const filePath of filePaths) {
+      if (path.isAbsolute(filePath)) {
+        try {
+          await fs.promises.access(filePath);
+          validPaths.push(filePath);
+        } catch (error) {
+          safeConsole.warn('File does not exist:', filePath);
+        }
+      } else {
+        safeConsole.warn('Path is not absolute:', filePath);
+      }
+    }
+    
+    if (validPaths.length === 0) {
+      return { success: false, error: 'No valid file paths found' };
+    }
+    
+    return { 
+      success: true, 
+      data: { 
+        filePaths: validPaths,
+        filePath: validPaths[0] // For backward compatibility
+      } 
+    };
+  } catch (error) {
+    safeConsole.error('❌ Failed to handle file drop:', error);
+    return { success: false, error: 'Failed to handle file drop' };
+  }
+});
+
+// Handle native file drop with real file paths
+ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
+  try {
+    safeConsole.log('🎯 Processing native file drop:', filePaths);
+    
+    // Validate that all paths are absolute and files exist
+    const fs = require('fs');
+    const validPaths: string[] = [];
+    
+    for (const filePath of filePaths) {
+      if (path.isAbsolute(filePath)) {
+        try {
+          await fs.promises.access(filePath, fs.constants.R_OK);
+          validPaths.push(filePath);
+          safeConsole.log('✅ Valid native file path:', filePath);
+        } catch (error) {
+          safeConsole.warn('❌ Cannot access file:', filePath);
+        }
+      } else {
+        safeConsole.warn('❌ Path is not absolute:', filePath);
+      }
+    }
+    
+    if (validPaths.length === 0) {
+      return { success: false, error: 'No valid file paths found' };
+    }
+    
+    // Send the validated native paths to renderer
+    mainWindow?.webContents.send('native-file-dropped', validPaths);
+    
+    return { 
+      success: true, 
+      data: { 
+        filePaths: validPaths,
+        filePath: validPaths[0] 
+      } 
+    };
+  } catch (error) {
+    safeConsole.error('❌ Failed to handle native drop:', error);
+    return { success: false, error: 'Failed to handle native drop' };
+  }
+});
+
+// Save dropped file content to temp directory (fallback)
+ipcMain.handle('save-dropped-file', async (_, { content, fileName }) => {
+  try {
+    const fs = require('fs');
+    const os = require('os');
+    
+    // Create a temporary file path
+    const tempDir = path.join(os.tmpdir(), 'rekordbox-library-manager');
+    await fs.promises.mkdir(tempDir, { recursive: true });
+    
+    const tempFilePath = path.join(tempDir, fileName);
+    
+    // Write the file content
+    await fs.promises.writeFile(tempFilePath, content, 'utf8');
+    
+    safeConsole.log('✅ Dropped file saved to:', tempFilePath);
+    return { success: true, data: { filePath: tempFilePath } };
+  } catch (error) {
+    safeConsole.error('❌ Failed to save dropped file:', error);
+    return { success: false, error: 'Failed to save dropped file' };
   }
 });

@@ -1,29 +1,21 @@
 import React from 'react';
-import { FolderOpen } from 'lucide-react';
+import { FileDropzone } from './FileDropzone';
 
 interface EmptyLibraryStateProps {
   onSelectLibrary: () => void;
+  onLoadLibrary: (filePath: string) => void;
 }
 
-export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({ onSelectLibrary }) => {
+export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({ 
+  onSelectLibrary,
+  onLoadLibrary
+}) => {
   return (
-    <div className="card text-center py-20">
-      <img 
-        src="/icons/64x64.png" 
-        alt="Rekordbox Library Manager" 
-        className="w-20 h-20 mx-auto mb-4 bg-white rounded-2xl p-2 shadow-lg opacity-60"
+    <div className="h-full flex items-center justify-center p-8">
+      <FileDropzone 
+        onFileDrop={onLoadLibrary}
+        onBrowseClick={onSelectLibrary}
       />
-      <h3 className="text-xl font-semibold mb-2">No Library Loaded</h3>
-      <p className="text-zinc-400 mb-6">
-        Select your Rekordbox XML library file to get started
-      </p>
-      <button
-        onClick={onSelectLibrary}
-        className="btn-primary mx-auto flex items-center space-x-2"
-      >
-        <FolderOpen className="w-4 h-4" />
-        <span>Select Library</span>
-      </button>
     </div>
   );
 };

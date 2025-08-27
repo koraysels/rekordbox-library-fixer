@@ -278,18 +278,18 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 p-6 border-b border-gray-700">
+      <div className="flex-shrink-0 p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-3">
               <Search className="text-rekordbox-purple" size={24} />
-              <h1 className="text-xl font-bold text-white">Duplicate Detection</h1>
+              <h1 className="text-2xl font-bold text-white">Duplicate Detection</h1>
             </div>
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full">
               {duplicates.length} sets found • {selectedDuplicates.size} selected
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
@@ -307,7 +307,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         {/* Actions Bar */}
         <div className="flex-shrink-0 p-4 bg-gray-800 border-b border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <PopoverButton
                 onClick={scanForDuplicates}
                 disabled={isScanning}
@@ -343,13 +343,15 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               </PopoverButton>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <input
                 type="text"
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Search duplicates..."
-                className="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white w-64"
+                className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72 
+                         focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50 
+                         transition-colors"
               />
             </div>
           </div>
