@@ -50,7 +50,11 @@
 }
 
 .animate-spin {
-  animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite !important;
+}
+
+.spinner-loading {
+  animation: spin 1s linear infinite !important;
 }
 
 /* Custom scrollbar */

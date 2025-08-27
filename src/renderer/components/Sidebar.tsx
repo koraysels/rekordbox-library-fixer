@@ -1,8 +1,7 @@
 import { Link } from '@tanstack/react-router';
-import { 
-  Music, 
-  MapPin, 
-  Download, 
+import {
+  MapPin,
+  Download,
   Wrench,
   Copy,
   FolderOpen
@@ -49,26 +48,32 @@ interface SidebarProps {
   onSelectLibrary: () => void;
 }
 
-export function Sidebar({ 
-  activeTab, 
-  libraryData, 
+export function Sidebar({
+  activeTab,
+  libraryData,
   libraryPath,
-  isLoading,
-  onSelectLibrary 
+  onSelectLibrary
 }: SidebarProps) {
   return (
     <nav className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
       {/* App Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center gap-3">
-          <Music className="w-8 h-8 text-rekordbox-purple" />
+
+          <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center">
+            <img
+                src="./icons/48x48.png"
+                alt="Rekordbox Library Manager"
+                className="w-10 h-10"
+            />
+          </div>
           <div>
             <h1 className="font-bold text-lg">Rekordbox</h1>
             <p className="text-xs text-gray-400">Library Manager</p>
           </div>
         </div>
       </div>
-      
+
       {/* Library Info */}
       {libraryPath && (
         <div className="p-4 border-b border-gray-700">
@@ -78,13 +83,13 @@ export function Sidebar({
           </p>
         </div>
       )}
-      
+
       {/* Navigation Links */}
       <div className="flex-1 p-4">
         <ul className="space-y-2">
           {navItems.map((item) => {
             const isDisabled = !libraryData && item.id !== 'duplicates';
-            
+
             if (isDisabled) {
               return (
                 <li key={item.path}>
@@ -102,7 +107,7 @@ export function Sidebar({
                 </li>
               );
             }
-            
+
             return (
               <li key={item.path}>
                 <Link to={item.path} preload="intent">
@@ -146,13 +151,13 @@ export function Sidebar({
           })}
         </ul>
       </div>
-      
+
       {/* Quick Actions */}
       {!libraryPath && (
         <div className="p-4 border-t border-gray-700">
           <button
             onClick={onSelectLibrary}
-            className="w-full flex items-center gap-3 p-3 bg-rekordbox-purple/20 hover:bg-rekordbox-purple/30 
+            className="w-full flex items-center gap-3 p-3 bg-rekordbox-purple/20 hover:bg-rekordbox-purple/30
                      text-rekordbox-purple rounded-lg transition-colors"
           >
             <FolderOpen className="w-5 h-5" />
@@ -160,7 +165,7 @@ export function Sidebar({
           </button>
         </div>
       )}
-      
+
       {/* Footer */}
       <div className="p-4 border-t border-gray-700">
         <p className="text-xs text-gray-500">
