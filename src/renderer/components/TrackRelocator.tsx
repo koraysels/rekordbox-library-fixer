@@ -19,6 +19,8 @@ import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
 import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
+import { VirtualizedList } from './VirtualizedList';
+import { MissingTrackItem } from './MissingTrackItem';
 import { useAppContext } from '../AppWithRouter';
 import type {
   RelocationCandidate
@@ -58,13 +60,22 @@ const TrackRelocator: React.FC = () => {
 
   // Get settings store
   const relocationOptions = useSettingsStore((state) => state.relocationOptions);
+  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
   const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
 
-  // Sync search options with store
+  // Sync search options with store (FROM store TO hook)
   useEffect(() => {
     updateSearchOptions(relocationOptions);
-  }, [relocationOptions]);
+  }, [relocationOptions, updateSearchOptions]);
+
+  // Sync search options to store (FROM hook TO store) whenever searchOptions change
+  useEffect(() => {
+    // Only update store if searchOptions have actually changed from store values
+    if (JSON.stringify(searchOptions) !== JSON.stringify(relocationOptions)) {
+      setRelocationOptions(searchOptions);
+    }
+  }, [searchOptions, relocationOptions, setRelocationOptions]);
 
   // Filter missing tracks based on search term
   const filteredMissingTracks = missingTracks.filter(track =>
@@ -229,213 +240,158 @@ const TrackRelocator: React.FC = () => {
       />
 
 
+      {/* Actions Bar */}
+      <div className="flex-shrink-0 py-4 px-0 bg-gray-800 border-b border-gray-700">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <PopoverButton
+              onClick={scanForMissingTracks}
+              disabled={isScanning}
+              loading={isScanning}
+              icon={FileSearch}
+              title="Scan for Missing Tracks"
+              description="Analyze your library to find tracks with broken file paths that need relocation"
+              variant="primary"
+              className="w-full"
+            >
+              {isScanning ? 'Scanning...' : 'Scan for Missing'}
+            </PopoverButton>
+
+            <PopoverButton
+              onClick={autoRelocateSelected}
+              disabled={
+                isAutoRelocating ||
+                selectedMissingTracks.size === 0 ||
+                searchOptions.searchPaths.length === 0
+              }
+              loading={isAutoRelocating}
+              icon={Zap}
+              title="Auto Relocate Tracks"
+              description={
+                "Automatically find and relocate selected tracks using AI-powered matching " +
+                "(80%+ confidence required)"
+              }
+              variant="success"
+              className="w-full"
+            >
+              Auto Relocate ({selectedMissingTracks.size})
+            </PopoverButton>
+
+            <PopoverButton
+              onClick={resetSelectedTracks}
+              disabled={isResetting || selectedMissingTracks.size === 0}
+              loading={isResetting}
+              icon={RotateCcw}
+              title="Reset Track Locations"
+              description={
+                "Reset selected tracks to make them relocatable again. Tracks stay in " +
+                "playlists but marked as needing relocation"
+              }
+              variant="secondary"
+              className="w-full"
+            >
+              Reset Locations ({selectedMissingTracks.size})
+            </PopoverButton>
+
+            <PopoverButton
+              onClick={executeRelocations}
+              disabled={isRelocating || relocations.size === 0}
+              loading={isRelocating}
+              icon={Target}
+              title="Apply Manual Relocations"
+              description="Apply all manually configured track relocations to update file paths in your library"
+              variant="success"
+              className="w-full"
+            >
+              Apply Manual ({relocations.size})
+            </PopoverButton>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search tracks..."
+              className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72
+                       focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50
+                       transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Selection Controls */}
+        <div className="flex items-center justify-between mx-4">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={selectAllTracks}
+              className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors"
+            >
+              Select All ({filteredMissingTracks.length})
+            </button>
+            <button
+              onClick={clearSelection}
+              disabled={selectedMissingTracks.size === 0}
+              className={
+                "px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 " +
+                "disabled:opacity-50 text-white rounded text-sm transition-colors"
+              }
+            >
+              Clear Selection
+            </button>
+          </div>
+
+          {!stats.hasSearchPaths && (
+            <div className="flex items-center space-x-2 text-yellow-400 text-sm">
+              <AlertTriangle size={16} />
+              <span>Configure search paths in Settings to enable auto-relocation</span>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Actions Bar */}
-          <div className="flex-shrink-0 py-4 px-0 bg-gray-800 border-b border-gray-700">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <PopoverButton
-                  onClick={scanForMissingTracks}
-                  disabled={isScanning}
-                  loading={isScanning}
-                  icon={FileSearch}
-                  title="Scan for Missing Tracks"
-                  description="Analyze your library to find tracks with broken file paths that need relocation"
-                  variant="primary"
-                  className="w-full"
-                >
-                  {isScanning ? 'Scanning...' : 'Scan for Missing'}
-                </PopoverButton>
-
-                <PopoverButton
-                  onClick={autoRelocateSelected}
-                  disabled={
-                    isAutoRelocating ||
-                    selectedMissingTracks.size === 0 ||
-                    searchOptions.searchPaths.length === 0
-                  }
-                  loading={isAutoRelocating}
-                  icon={Zap}
-                  title="Auto Relocate Tracks"
-                  description={
-                    "Automatically find and relocate selected tracks using AI-powered matching " +
-                    "(80%+ confidence required)"
-                  }
-                  variant="success"
-                  className="w-full"
-                >
-                  Auto Relocate ({selectedMissingTracks.size})
-                </PopoverButton>
-
-                <PopoverButton
-                  onClick={resetSelectedTracks}
-                  disabled={isResetting || selectedMissingTracks.size === 0}
-                  loading={isResetting}
-                  icon={RotateCcw}
-                  title="Reset Track Locations"
-                  description={
-                    "Reset selected tracks to make them relocatable again. Tracks stay in " +
-                    "playlists but marked as needing relocation"
-                  }
-                  variant="secondary"
-                  className="w-full"
-                >
-                  Reset Locations ({selectedMissingTracks.size})
-                </PopoverButton>
-
-                <PopoverButton
-                  onClick={executeRelocations}
-                  disabled={isRelocating || relocations.size === 0}
-                  loading={isRelocating}
-                  icon={Target}
-                  title="Apply Manual Relocations"
-                  description="Apply all manually configured track relocations to update file paths in your library"
-                  variant="success"
-                  className="w-full"
-                >
-                  Apply Manual ({relocations.size})
-                </PopoverButton>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search tracks..."
-                  className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72
-                           focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50
-                           transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Selection Controls */}
-            <div className="flex items-center justify-between mx-4">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={selectAllTracks}
-                  className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors"
-                >
-                  Select All ({filteredMissingTracks.length})
-                </button>
-                <button
-                  onClick={clearSelection}
-                  disabled={selectedMissingTracks.size === 0}
-                  className={
-                    "px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 " +
-                    "disabled:opacity-50 text-white rounded text-sm transition-colors"
-                  }
-                >
-                  Clear Selection
-                </button>
-              </div>
-
-              {!stats.hasSearchPaths && (
-                <div className="flex items-center space-x-2 text-yellow-400 text-sm">
-                  <AlertTriangle size={16} />
-                  <span>Configure search paths in Settings to enable auto-relocation</span>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Missing Tracks List */}
-          <div className="flex-1 overflow-y-auto py-4 px-0 space-y-3">
-            {!hasScanCompleted ? (
-              <div className="text-center text-gray-400 py-8">
-                <FileX size={48} className="mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">Track Relocator Ready</h3>
-                <p>Click "Scan for Missing" to find tracks that need relocation</p>
-                <p className="text-sm mt-2 text-gray-500">
-                  This will identify tracks with broken file paths while keeping them in their playlists
-                </p>
-              </div>
-            ) : filteredMissingTracks.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
-                <h3 className="text-lg font-medium mb-2">All Tracks Located!</h3>
-                <p>No missing tracks found in your library</p>
-              </div>
-            ) : (
-              filteredMissingTracks.map((track) => (
-                <div
-                  key={track.id}
-                  className={`bg-gray-800 rounded-lg p-4 border transition-colors cursor-pointer ${
-                    selectedMissingTracks.has(track.id)
-                      ? 'border-rekordbox-purple bg-purple-900/20'
-                      : 'border-gray-700 hover:border-gray-600'
-                  }`}
-                  onClick={() => toggleTrackSelection(track.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedMissingTracks.has(track.id)}
-                          onChange={() => toggleTrackSelection(track.id)}
-                          className="rounded border-gray-600 text-rekordbox-purple focus:ring-purple-500"
-                        />
-                        <div>
-                          <h3 className="font-medium text-white">{track.name}</h3>
-                          <p className="text-gray-400 text-sm">{track.artist}</p>
-                          {track.album && (
-                            <p className="text-gray-500 text-xs">{track.album}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="mt-2 ml-6">
-                        <p className="text-gray-500 text-xs font-mono">
-                          Missing: {track.originalLocation}
-                        </p>
-                        {relocations.has(track.id) && (
-                          <p className="text-green-400 text-xs font-mono mt-1">
-                            → Relocate to: {relocations.get(track.id)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <PopoverButton
-                        onClick={(e) => {
-                          e?.stopPropagation();
-                          findRelocationCandidates(track);
-                        }}
-                        disabled={isFindingCandidates}
-                        loading={isFindingCandidates && selectedTrack?.id === track.id}
-                        icon={Search}
-                        title="Find Candidates"
-                        description="Search for potential new locations for this track using smart matching algorithms"
-                        variant="primary"
-                      >
-                        Find
-                      </PopoverButton>
-
-                      {relocations.has(track.id) && (
-                        <PopoverButton
-                          onClick={(e) => {
-                            e?.stopPropagation();
-                            removeRelocation(track.id);
-                          }}
-                          icon={Trash2}
-                          title="Remove Relocation"
-                          description="Remove the configured relocation for this track"
-                          variant="danger"
-                        >
-                          Remove
-                        </PopoverButton>
-                      )}
-                    </div>
+          <div className="flex-1 overflow-hidden px-4">
+            <VirtualizedList
+              items={filteredMissingTracks}
+              getItemKey={(track) => track.id}
+              renderItem={(track) => (
+                <MissingTrackItem
+                  track={track}
+                  isSelected={selectedMissingTracks.has(track.id)}
+                  onToggleSelection={() => toggleTrackSelection(track.id)}
+                  onFindCandidates={() => findRelocationCandidates(track)}
+                  onRemoveRelocation={() => removeRelocation(track.id)}
+                  hasRelocation={relocations.has(track.id)}
+                  relocationPath={relocations.get(track.id)}
+                  isFindingCandidates={isFindingCandidates}
+                  isLoadingThis={isFindingCandidates && selectedTrack?.id === track.id}
+                />
+              )}
+              emptyState={
+                !hasScanCompleted ? (
+                  <div className="text-center text-gray-400 py-8">
+                    <FileX size={48} className="mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-medium mb-2">Track Relocator Ready</h3>
+                    <p>Click "Scan for Missing" to find tracks that need relocation</p>
+                    <p className="text-sm mt-2 text-gray-500">
+                      This will identify tracks with broken file paths while keeping them in their playlists
+                    </p>
                   </div>
-                </div>
-              ))
-            )}
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
+                    <h3 className="text-lg font-medium mb-2">All Tracks Located!</h3>
+                    <p>No missing tracks found in your library</p>
+                  </div>
+                )
+              }
+            />
           </div>
         </div>
 
