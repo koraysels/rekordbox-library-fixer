@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   History,
   Clock,
@@ -13,7 +13,7 @@ import {
   FileText,
   Shield
 } from 'lucide-react';
-import { historyStorage, type RelocationHistoryEntry } from '../db/historyDb';
+import { historyStorage, historyEvents, type RelocationHistoryEntry } from '../db/historyDb';
 
 interface RelocationHistoryPanelProps {
   libraryPath: string | null;
@@ -37,9 +37,13 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'auto' | 'manual'>('all');
 
-  const loadHistory = async () => {
-    if (!libraryPath) return;
+  const loadHistory = useCallback(async () => {
+    if (!libraryPath) {
+      console.log('⚠️ No library path for history');
+      return;
+    }
     
+    console.log(`🔄 Loading history for: ${libraryPath}`);
     setIsLoading(true);
     try {
       const [historyData, statsData] = await Promise.all([
@@ -47,18 +51,35 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
         historyStorage.getRelocationStats(libraryPath)
       ]);
       
+      console.log(`📊 Loaded ${historyData.length} history entries`);
       setHistory(historyData);
       setStats(statsData);
     } catch (error) {
-      console.error('Failed to load relocation history:', error);
+      console.error('❌ Failed to load history:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [libraryPath]);
 
   useEffect(() => {
     loadHistory();
   }, [libraryPath]);
+
+  // Auto-refresh when history is updated
+  useEffect(() => {
+    if (!libraryPath) return;
+    
+    console.log(`📡 Setting up history auto-refresh for: ${libraryPath}`);
+    const unsubscribe = historyEvents.onHistoryUpdate((updatedLibraryPath) => {
+      // Only refresh if it's for the current library
+      if (updatedLibraryPath === libraryPath) {
+        console.log(`🔄 Auto-refreshing history for: ${updatedLibraryPath}`);
+        loadHistory();
+      }
+    });
+
+    return unsubscribe;
+  }, [libraryPath, loadHistory]);
 
   const clearHistory = async () => {
     if (!libraryPath) return;

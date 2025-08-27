@@ -25,25 +25,74 @@ class HistoryDatabase extends Dexie {
     this.version(1).stores({
       relocationHistory: '++id, libraryPath, timestamp'
     });
+    
+    console.log('🗄️ RekordboxHistoryDB initialized');
   }
 }
 
-// Create the database instance
-export const historyDb = new HistoryDatabase();
+// Lazy database instance creation
+let historyDb: HistoryDatabase | null = null;
+
+function getHistoryDb(): HistoryDatabase {
+  if (!historyDb) {
+    console.log('🗄️ Creating HistoryDatabase instance...');
+    historyDb = new HistoryDatabase();
+  }
+  return historyDb;
+}
+
+// Simple event emitter for history updates
+const historyEventListeners: ((libraryPath: string) => void)[] = [];
+
+export const historyEvents = {
+  onHistoryUpdate: (callback: (libraryPath: string) => void) => {
+    historyEventListeners.push(callback);
+    return () => {
+      const index = historyEventListeners.indexOf(callback);
+      if (index > -1) {
+        historyEventListeners.splice(index, 1);
+      }
+    };
+  },
+  
+  notifyHistoryUpdate: (libraryPath: string) => {
+    historyEventListeners.forEach(callback => callback(libraryPath));
+  }
+};
 
 // Helper functions for history operations (following duplicates pattern)
 export const historyStorage = {
   async addRelocationEntry(entry: Omit<RelocationHistoryEntry, 'id'>): Promise<void> {
-    await historyDb.relocationHistory.add(entry);
+    console.log('📝 Adding history entry for:', entry.trackName, 'from library:', entry.libraryPath);
+    try {
+      const db = getHistoryDb();
+      const result = await db.relocationHistory.add(entry);
+      console.log('✅ History entry added with ID:', result);
+      
+      // Notify listeners that history was updated
+      historyEvents.notifyHistoryUpdate(entry.libraryPath);
+    } catch (error) {
+      console.error('❌ Failed to add history entry:', error);
+      throw error;
+    }
   },
 
   async getRelocationHistory(libraryPath: string, limit = 100): Promise<RelocationHistoryEntry[]> {
-    return await historyDb.relocationHistory
-      .where('libraryPath')
-      .equals(libraryPath)
-      .reverse()
-      .sortBy('timestamp')
-      .then(results => results.slice(0, limit));
+    console.log(`🔍 Getting history for library: ${libraryPath}`);
+    try {
+      const db = getHistoryDb();
+      const results = await db.relocationHistory
+        .where('libraryPath')
+        .equals(libraryPath)
+        .reverse()
+        .sortBy('timestamp')
+        .then(results => results.slice(0, limit));
+      console.log(`📋 Found ${results.length} history entries`);
+      return results;
+    } catch (error) {
+      console.error('❌ Failed to get history:', error);
+      return [];
+    }
   },
 
   async getRelocationStats(libraryPath: string): Promise<{

@@ -25,15 +25,30 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
   isFindingCandidates,
   isLoadingThis
 }) => {
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onToggleSelection();
+  };
+
+  const handleItemClick = (e: React.MouseEvent) => {
+    // Only handle click if it's not on an interactive element
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, input, a, [role="button"]');
+    
+    if (!isInteractiveElement) {
+      onToggleSelection();
+    }
+  };
+
   return (
-    <ListItem isSelected={isSelected} onClick={onToggleSelection}>
+    <ListItem isSelected={isSelected} onClick={handleItemClick}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2">
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={onToggleSelection}
+              onChange={handleCheckboxChange}
               className="rounded border-gray-600 text-rekordbox-purple focus:ring-purple-500"
             />
             <div>
