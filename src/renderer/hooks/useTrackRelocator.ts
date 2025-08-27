@@ -14,13 +14,8 @@ import type {
   NotificationType
 } from '../types';
 
-// Development logging utility
-const isDev = import.meta.env.DEV;
-const devLog = (...args: any[]) => {
-  if (isDev) {
-    console.log(...args);
-  }
-};
+// Import the modular logger
+import { rendererLogger as logger } from '../utils/logger';
 
 // Helper function to get effective library path with consistent fallback logic
 const getEffectiveLibraryPath = (libraryData: LibraryData | null, libraryPath?: string): string => {
@@ -304,9 +299,9 @@ export function useTrackRelocator(
       });
 
       // Debug logging for development
-      devLog('🔍 executeRelocations - libraryData:', libraryData);
-      devLog('🔍 executeRelocations - libraryData.libraryPath:', libraryData?.libraryPath);
-      devLog('🔍 executeRelocations - libraryPath param:', libraryPath);
+      logger.debug('🔍 executeRelocations - libraryData:', libraryData);
+      logger.debug('🔍 executeRelocations - libraryData.libraryPath:', libraryData?.libraryPath);
+      logger.debug('🔍 executeRelocations - libraryPath param:', libraryPath);
       
       const effectiveLibraryPath = getEffectiveLibraryPath(libraryData, libraryPath);
       
@@ -342,7 +337,7 @@ export function useTrackRelocator(
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
           
-          devLog(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
+          logger.info(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
         }
         
         // Update state to remove successfully relocated tracks from missing tracks list
@@ -380,11 +375,11 @@ export function useTrackRelocator(
         const successCount = result.data.filter((r: RelocationResult) => r.success).length;
         
         // Save successful relocations to history
-        devLog(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
+        logger.debug(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
         
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = result.data.filter((r: RelocationResult) => r.success);
-          devLog(`📝 Saving ${successfulRelocations.length} relocations to history`);
+          logger.info(`📝 Saving ${successfulRelocations.length} relocations to history`);
           
           try {
             for (const relocation of successfulRelocations) {
@@ -404,12 +399,12 @@ export function useTrackRelocator(
                 });
               }
             }
-            devLog(`✅ History saved: ${successfulRelocations.length} entries`);
+            logger.info(`✅ History saved: ${successfulRelocations.length} entries`);
           } catch (historyError) {
             console.error('❌ Failed to save relocation history:', historyError);
           }
         } else {
-          devLog(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
+          logger.warn(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
         }
         
         // Show success notification with XML update info
@@ -453,7 +448,7 @@ export function useTrackRelocator(
         libraryPath: effectiveLibraryPath
       });
 
-      devLog('🔍 Auto-relocate result:', result);
+      logger.debug('🔍 Auto-relocate result:', result);
 
       if (result.success) {
         const { results, xmlUpdated, tracksUpdated, backupPath } = result.data;
@@ -484,7 +479,7 @@ export function useTrackRelocator(
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
           
-          devLog(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
+          logger.info(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
         }
         
         // Update state to remove successfully relocated tracks from missing tracks list
@@ -523,7 +518,7 @@ export function useTrackRelocator(
         // Save successful relocations to history
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = results.filter((r: any) => r.success);
-          devLog(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
+          logger.info(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
           
           try {
             for (const relocation of successfulRelocations) {
@@ -545,7 +540,7 @@ export function useTrackRelocator(
             }
             // Notify history panel to auto-refresh
             historyEvents.notifyHistoryUpdate(effectiveLibraryPath);
-            devLog(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
+            logger.info(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
           } catch (historyError) {
             console.error('❌ Failed to save auto-relocation history:', historyError);
           }
