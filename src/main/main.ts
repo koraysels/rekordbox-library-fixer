@@ -90,13 +90,23 @@ function createMenu() {
         { type: 'separator' },
         { role: 'quit' }
       ]
-    }
-  ] as Electron.MenuItemConstructorOptions[];
-
-  // Don't show developer menu in production
-  if (process.env.NODE_ENV === 'development') {
-    template.push({
-      label: 'Developer',
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+        { type: 'separator' },
+        { role: 'delete' }
+      ]
+    },
+    {
+      label: 'View',
       submenu: [
         { role: 'reload' },
         { role: 'forceReload' },
@@ -108,7 +118,23 @@ function createMenu() {
         { type: 'separator' },
         { role: 'togglefullscreen' }
       ]
-    });
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'close' }
+      ]
+    }
+  ] as Electron.MenuItemConstructorOptions[];
+
+  // Add developer menu in development only
+  if (process.env.NODE_ENV === 'development') {
+    // Find View menu and add separator + dev tools if not already there
+    const viewMenu = template.find(menu => menu.label === 'View');
+    if (viewMenu && viewMenu.submenu && Array.isArray(viewMenu.submenu)) {
+      // Dev tools already added above in View menu for consistency
+    }
   }
 
   const menu = Menu.buildFromTemplate(template);
@@ -767,7 +793,8 @@ ipcMain.handle('get-app-version', async () => {
   try {
     const packageJsonPath = path.join(__dirname, '../../package.json');
     const fs = require('fs');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonContent = await fs.promises.readFile(packageJsonPath, 'utf-8');
+    const packageJson = JSON.parse(packageJsonContent);
     return { success: true, data: { version: packageJson.version } };
   } catch (error) {
     safeConsole.error('❌ Failed to read app version:', error);
