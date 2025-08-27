@@ -544,8 +544,9 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
           current.confidence > best.confidence ? current : best
         );
 
-        // Only auto-relocate if confidence is high enough (>80%)
-        if (bestCandidate.confidence > 0.8) {
+        // Only auto-relocate if confidence is high enough (use client threshold with fallback)
+        const matchThreshold = typeof data.options.matchThreshold === 'number' ? data.options.matchThreshold : 0.8;
+        if (bestCandidate.confidence > matchThreshold) {
           successfulRelocations.push({
             trackId: track.id,
             oldLocation: track.originalLocation,
