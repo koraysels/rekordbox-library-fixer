@@ -16,7 +16,7 @@ export const useDuplicates = (
     const [debouncedSearchFilter, setDebouncedSearchFilter] = useState<string>('');
     const [isSearching, setIsSearching] = useState(false);
 
-    // Persistent settings from Zustand store
+    // Persistent settings from Zustand store - individual selectors for optimal re-renders
     const scanOptions = useSettingsStore((state) => state.scanOptions);
     const resolutionStrategy = useSettingsStore((state) => state.resolutionStrategy);
     const setScanOptions = useSettingsStore((state) => state.setScanOptions);

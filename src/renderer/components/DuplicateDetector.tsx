@@ -11,7 +11,6 @@ import { useDuplicates } from '../hooks';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { SettingsPanel } from './SettingsPanel';
-import { useSettingsStore } from '../stores/settingsStore';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 
@@ -47,12 +46,7 @@ const DuplicateDetector: React.FC = () => {
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
 
   const [showSettings, setShowSettings] = useState(false);
-  const [pathPreferenceInput, setPathPreferenceInput] = useState('');
   const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
-
-  // Zustand actions for path preferences
-  const addPathPreference = useSettingsStore((state) => state.addPathPreference);
-  const removePathPreference = useSettingsStore((state) => state.removePathPreference);
 
   // Preferences are now loaded in the useDuplicates hook
 
@@ -247,13 +241,6 @@ const DuplicateDetector: React.FC = () => {
   };
 
 
-  // Path preference functions now use Zustand store
-  const handleAddPathPreference = useCallback(() => {
-    if (pathPreferenceInput.trim()) {
-      addPathPreference(pathPreferenceInput.trim());
-      setPathPreferenceInput('');
-    }
-  }, [pathPreferenceInput, addPathPreference]);
 
   // Memoize expensive calculations
 
@@ -425,10 +412,6 @@ const DuplicateDetector: React.FC = () => {
           setScanOptions={setScanOptions}
           resolutionStrategy={resolutionStrategy}
           setResolutionStrategy={setResolutionStrategy}
-          pathPreferenceInput={pathPreferenceInput}
-          setPathPreferenceInput={setPathPreferenceInput}
-          addPathPreference={handleAddPathPreference}
-          removePathPreference={removePathPreference}
         />
       </SettingsSlideout>
     </div>

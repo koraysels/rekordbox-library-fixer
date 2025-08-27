@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { relocationStorage, cloudSyncStorage, ownershipStorage, relocationHistoryStorage } from '../db/relocationsDb';
+import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
+import { historyStorage } from '../db/historyDb';
 import type { 
   MissingTrack, 
   RelocationCandidate, 
@@ -373,7 +374,7 @@ export function useTrackRelocator(
             for (const relocation of successfulRelocations) {
               const track = state.missingTracks.find(t => t.id === relocation.trackId);
               if (track) {
-                await relocationHistoryStorage.saveRelocationHistoryEntry({
+                await historyStorage.addRelocationEntry({
                   libraryPath: effectiveLibraryPath,
                   trackId: relocation.trackId,
                   trackName: track.name,
