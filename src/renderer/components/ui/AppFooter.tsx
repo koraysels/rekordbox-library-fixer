@@ -61,7 +61,7 @@ const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({
   );
 };
 
-export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
+export const AppFooter: React.FC<AppFooterProps> = React.memo(({ libraryData }) => {
   const [version, setVersion] = useState('0.0.1');
 
   const playlistStats = useMemo(() => {
@@ -167,4 +167,4 @@ export const AppFooter: React.FC<AppFooterProps> = ({ libraryData }) => {
       </div>
     </div>
   );
-};
+});

@@ -38,20 +38,12 @@ export const duplicateStorage = {
       .equals(result.libraryPath)
       .first();
     
-    if (existing) {
-      // Update existing record
-      await db.duplicateResults.update(existing.id!, {
-        ...result,
-        updatedAt: now
-      });
-    } else {
-      // Create new record
-      await db.duplicateResults.add({
-        ...result,
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    const recordToSave = existing
+      ? { ...existing, ...result, updatedAt: now }
+      : { ...result, createdAt: now, updatedAt: now };
+    
+    // Use put for better performance (handles both insert and update)
+    await db.duplicateResults.put(recordToSave);
   },
   
   async getDuplicateResult(libraryPath: string): Promise<StoredDuplicateResult | null> {
@@ -89,5 +81,28 @@ export const duplicateStorage = {
   
   async getResultsCount(): Promise<number> {
     return await db.duplicateResults.count();
-  }
+  },
+
+  
+  // Bulk operations for improved performance
+  async bulkSaveDuplicateResults(results: Omit<StoredDuplicateResult, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
+    const now = new Date();
+    
+    // Prepare records for bulk insert/update
+    const recordsToSave = await Promise.all(
+      results.map(async (result) => {
+        const existing = await db.duplicateResults
+          .where('libraryPath')
+          .equals(result.libraryPath)
+          .first();
+        
+        return existing
+          ? { ...existing, ...result, updatedAt: now }
+          : { ...result, createdAt: now, updatedAt: now };
+      })
+    );
+    
+    // Use bulkPut for better performance
+    await db.duplicateResults.bulkPut(recordsToSave);
+  },
 };

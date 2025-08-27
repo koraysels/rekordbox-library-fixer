@@ -8,8 +8,8 @@ import { useSettingsStore } from '../stores/settingsStore';
  * Uses Dexie's useLiveQuery for reactive data
  */
 export function useRouteData(route: string, libraryPath?: string) {
-  // Get settings from Zustand
-  const settings = useSettingsStore();
+  // Get settings from Zustand - currently unused, commented for performance
+  // const settings = useSettingsStore();
   
   // Fetch cached duplicate results
   const duplicateResults = useLiveQuery(
@@ -37,8 +37,8 @@ export function useRouteData(route: string, libraryPath?: string) {
   return {
     isLoading: duplicateResults === undefined || relocationResults === undefined,
     duplicateResults,
-    relocationResults,
-    settings
+    relocationResults
+    // settings // Commented out for performance - currently unused
   };
 }
 

@@ -109,20 +109,12 @@ export const relocationStorage = {
       .equals(result.libraryPath)
       .first();
     
-    if (existing) {
-      // Update existing record
-      await relocationsDb.relocationResults.update(existing.id!, {
-        ...storableResult,
-        updatedAt: now
-      });
-    } else {
-      // Create new record
-      await relocationsDb.relocationResults.add({
-        ...storableResult,
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    const recordToSave = existing
+      ? { ...existing, ...storableResult, updatedAt: now }
+      : { ...storableResult, createdAt: now, updatedAt: now };
+    
+    // Use put for better performance (handles both insert and update)
+    await relocationsDb.relocationResults.put(recordToSave);
   },
   
   async getRelocationResult(libraryPath: string): Promise<StoredRelocationResult | null> {
@@ -156,7 +148,37 @@ export const relocationStorage = {
   
   async clearAllRelocationResults(): Promise<void> {
     await relocationsDb.relocationResults.clear();
-  }
+  },
+
+  
+  // Bulk operations for improved performance
+  async bulkSaveRelocationResults(results: Omit<StoredRelocationResult, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
+    const now = new Date();
+    
+    // Prepare records for bulk insert/update
+    const recordsToSave = await Promise.all(
+      results.map(async (result) => {
+        // Convert Maps to arrays for storage
+        const storableResult = {
+          ...result,
+          relocationCandidates: Array.from(result.relocationCandidates.entries()),
+          relocations: Array.from(result.relocations.entries())
+        };
+        
+        const existing = await relocationsDb.relocationResults
+          .where('libraryPath')
+          .equals(result.libraryPath)
+          .first();
+        
+        return existing
+          ? { ...existing, ...storableResult, updatedAt: now }
+          : { ...storableResult, createdAt: now, updatedAt: now };
+      })
+    );
+    
+    // Use bulkPut for better performance
+    await relocationsDb.relocationResults.bulkPut(recordsToSave);
+  },
 };
 
 // Helper functions for cloud sync results
@@ -170,20 +192,12 @@ export const cloudSyncStorage = {
       .equals(result.libraryPath)
       .first();
     
-    if (existing) {
-      // Update existing record
-      await relocationsDb.cloudSyncResults.update(existing.id!, {
-        ...result,
-        updatedAt: now
-      });
-    } else {
-      // Create new record
-      await relocationsDb.cloudSyncResults.add({
-        ...result,
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    const recordToSave = existing
+      ? { ...existing, ...result, updatedAt: now }
+      : { ...result, createdAt: now, updatedAt: now };
+    
+    // Use put for better performance (handles both insert and update)
+    await relocationsDb.cloudSyncResults.put(recordToSave);
   },
   
   async getCloudSyncResult(libraryPath: string): Promise<StoredCloudSyncResult | null> {
@@ -222,20 +236,12 @@ export const ownershipStorage = {
       .equals(result.libraryPath)
       .first();
     
-    if (existing) {
-      // Update existing record
-      await relocationsDb.ownershipResults.update(existing.id!, {
-        ...result,
-        updatedAt: now
-      });
-    } else {
-      // Create new record
-      await relocationsDb.ownershipResults.add({
-        ...result,
-        createdAt: now,
-        updatedAt: now
-      });
-    }
+    const recordToSave = existing
+      ? { ...existing, ...result, updatedAt: now }
+      : { ...result, createdAt: now, updatedAt: now };
+    
+    // Use put for better performance (handles both insert and update)
+    await relocationsDb.ownershipResults.put(recordToSave);
   },
   
   async getOwnershipResult(libraryPath: string): Promise<StoredOwnershipResult | null> {
