@@ -201,7 +201,7 @@ npm install archiver node-schedule
 
 Create **`src/main/database.ts`** for persistent storage:
 ```typescript
-// SQLite schema for caching and performance
+// Dexie.js (IndexedDB) schema for caching and performance
 const schema = `
   CREATE TABLE fingerprints (
     file_path TEXT PRIMARY KEY,
@@ -274,7 +274,7 @@ Create **`src/tests/`** directory with:
 - Use `chokidar` for cross-platform file watching
 - Implement queue system to prevent overwhelming the system
 - Add debouncing for rapid file additions
-- Store import history in SQLite
+- Store import history in IndexedDB (via Dexie.js)
 
 ### For Track Relocation:
 - Implement multiple search strategies (exact, fuzzy, by size/duration)
@@ -308,7 +308,7 @@ Create **`src/tests/`** directory with:
 
 1. Implement virtual scrolling for large track lists
 2. Add pagination for duplicate results
-3. Cache fingerprints in SQLite database
+3. Cache fingerprints in IndexedDB (via Dexie.js)
 4. Use worker threads for CPU-intensive operations
 5. Implement incremental library scanning
 

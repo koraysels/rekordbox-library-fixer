@@ -60,7 +60,6 @@
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
-    "@tanstack/db": "^0.1.7",
     "autoprefixer": "^10.4.20",
     "crypto-js": "^4.2.0",
     "dexie": "^4.2.0",
