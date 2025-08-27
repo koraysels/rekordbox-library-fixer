@@ -66,7 +66,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
         className={`${variantClasses[variant]} ${className} flex items-center space-x-2`}
       >
         {loading ? (
-          <Loader2 size={16} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin spinner-loading" />
         ) : (
           <Icon size={16} />
         )}

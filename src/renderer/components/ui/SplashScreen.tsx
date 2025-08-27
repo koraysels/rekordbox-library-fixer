@@ -32,7 +32,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* Loading indicator */}
         {isLoading && (
           <div className="flex items-center justify-center space-x-3 mb-6">
-            <Loader2 className="w-6 h-6 text-rekordbox-purple animate-spin" />
+            <Loader2 className="w-6 h-6 text-rekordbox-purple animate-spin spinner-loading" />
             <span className="text-white text-sm">{message}</span>
           </div>
         )}
