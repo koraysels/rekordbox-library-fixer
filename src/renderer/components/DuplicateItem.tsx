@@ -96,14 +96,32 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     setSelectedTrackId(trackId);
   }, []);
 
+  const handleCheckboxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onToggleSelection();
+  }, [onToggleSelection]);
+
+  const handleContainerClick = useCallback((e: React.MouseEvent) => {
+    // Only handle click if it's not on an interactive element
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = target.closest('button, input, a, [role="button"]');
+    
+    if (!isInteractiveElement) {
+      onToggleSelection();
+    }
+  }, [onToggleSelection]);
+
   return (
-    <div className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'border-rekordbox-purple' : 'border-zinc-700'}`}>
+    <div 
+      className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'border-rekordbox-purple' : 'border-zinc-700'} cursor-pointer`}
+      onClick={handleContainerClick}
+    >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={onToggleSelection}
+            onChange={handleCheckboxChange}
             className="checkbox"
           />
           <div className="flex-1 min-w-0">
@@ -202,7 +220,8 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         <div className="flex items-center justify-between">
                           <span className="text-zinc-600 font-medium">Path:</span>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               console.log('🔵 Go to File button clicked!', track.location);
                               openFileLocation(track.location);
                             }}
@@ -233,7 +252,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
                   {resolutionStrategy === 'manual' && (
                     <button
-                      onClick={() => handleManualSelection(track.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleManualSelection(track.id);
+                      }}
                       className={`ml-3 px-2 py-1 text-xs rounded transition-colors ${
                         isManuallySelected
                           ? 'bg-rekordbox-purple text-white'

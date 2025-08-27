@@ -368,8 +368,12 @@ export function useTrackRelocator(
         const successCount = result.data.filter((r: RelocationResult) => r.success).length;
         
         // Save successful relocations to history
+        console.log(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
+        
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = result.data.filter((r: RelocationResult) => r.success);
+          console.log(`📝 Saving ${successfulRelocations.length} relocations to history`);
+          
           try {
             for (const relocation of successfulRelocations) {
               const track = state.missingTracks.find(t => t.id === relocation.trackId);
@@ -381,16 +385,19 @@ export function useTrackRelocator(
                   trackArtist: track.artist,
                   originalLocation: relocation.oldLocation,
                   newLocation: relocation.newLocation,
-                  relocationMethod: 'manual',
+                  relocationMethod: 'manual' as const,
                   timestamp: new Date(),
                   xmlUpdated: result.xmlUpdated,
                   backupCreated: !!result.backupPath
                 });
               }
             }
+            console.log(`✅ History saved: ${successfulRelocations.length} entries`);
           } catch (historyError) {
-            console.error('Failed to save relocation history:', historyError);
+            console.error('❌ Failed to save relocation history:', historyError);
           }
+        } else {
+          console.log(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
         }
         
         // Show success notification with XML update info
