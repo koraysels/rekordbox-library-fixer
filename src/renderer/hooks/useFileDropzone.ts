@@ -16,21 +16,11 @@ interface ElectronFile extends File {
 const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
   const files: FileWithPath[] = [];
   
-  console.log('getFilesFromEvent called with event:', event.type);
-  
   if (event.dataTransfer) {
     const fileList = Array.from(event.dataTransfer.files || []) as File[];
     console.log('DataTransfer files found:', fileList.length);
     
     fileList.forEach((file, index) => {
-      console.log(`File ${index}:`, {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        path: (file as any).path,
-        allKeys: Object.getOwnPropertyNames(file),
-        allDescriptors: Object.getOwnPropertyDescriptors(file)
-      });
       
       // In Electron, the file should have a 'path' property
       let fullPath = (file as any).path || file.name;
@@ -45,13 +35,6 @@ const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
     console.log('Input files found:', fileList.length);
     
     fileList.forEach((file, index) => {
-      console.log(`Input file ${index}:`, {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        path: (file as any).path,
-        allKeys: Object.getOwnPropertyNames(file)
-      });
       
       const filePath = (file as any).path || file.name;
       const fileWithPath = Object.assign(file, { path: filePath }) as FileWithPath;
@@ -59,7 +42,7 @@ const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
     });
   }
   
-  console.log('Returning files:', files.map(f => ({ name: f.name, path: f.path })));
+  console.log('Processed files count:', files.length);
   return files;
 };
 
