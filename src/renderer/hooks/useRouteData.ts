@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/duplicatesDb';
-import { relocationsDb } from '../db/relocationsDb';
+import { duplicateStorage } from '../db/duplicatesDb';
+import { relocationStorage } from '../db/relocationsDb';
 import { useSettingsStore } from '../stores/settingsStore';
 
 /**
@@ -15,7 +15,7 @@ export function useRouteData(route: string, libraryPath?: string) {
   const duplicateResults = useLiveQuery(
     async () => {
       if (route === '/' && libraryPath) {
-        return await db.getDuplicateResult(libraryPath);
+        return await duplicateStorage.getDuplicateResult(libraryPath);
       }
       return null;
     },
@@ -26,19 +26,7 @@ export function useRouteData(route: string, libraryPath?: string) {
   const relocationResults = useLiveQuery(
     async () => {
       if (route === '/relocate' && libraryPath) {
-        const result = await relocationsDb.relocationResults
-          .where('libraryPath')
-          .equals(libraryPath)
-          .first();
-        
-        if (result) {
-          // Convert arrays back to Maps
-          return {
-            ...result,
-            relocationCandidates: new Map(result.relocationCandidates as any),
-            relocations: new Map(result.relocations as any)
-          };
-        }
+        return await relocationStorage.getRelocationResult(libraryPath);
       }
       return null;
     },
@@ -62,15 +50,12 @@ export function usePrefetchRouteData() {
   return {
     prefetchDuplicates: async (libraryPath: string) => {
       // Trigger Dexie query to warm cache
-      await db.getDuplicateResult(libraryPath);
+      await duplicateStorage.getDuplicateResult(libraryPath);
     },
     
     prefetchRelocations: async (libraryPath: string) => {
       // Trigger Dexie query to warm cache
-      await relocationsDb.relocationResults
-        .where('libraryPath')
-        .equals(libraryPath)
-        .first();
+      await relocationStorage.getRelocationResult(libraryPath);
     }
   };
 }
