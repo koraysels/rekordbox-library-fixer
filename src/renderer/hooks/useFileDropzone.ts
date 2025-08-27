@@ -61,10 +61,27 @@ export const useFileDropzone = ({
       const file = acceptedFiles[0];
       
       try {
-        // Read the file content as text
+        // Prefer native file path when available (more efficient)
+        if (file.path) {
+          try {
+            const result = await window.electronAPI.saveDroppedFile({
+              filePath: file.path
+            });
+            
+            if (result.success && result.data?.filePath) {
+              onDrop(result.data.filePath);
+              return;
+            } else {
+              console.warn('Failed to use direct file path, falling back to content read:', result.error);
+            }
+          } catch (pathError) {
+            console.warn('Direct file path access failed, falling back to content read:', pathError);
+          }
+        }
+        
+        // Fallback: read file content and send to main process
         const content = await file.text();
         
-        // Save to a temporary file in the app data directory via Electron
         const result = await window.electronAPI.saveDroppedFile({
           content,
           fileName: file.name
@@ -76,7 +93,7 @@ export const useFileDropzone = ({
           console.error('Failed to save dropped file:', result.error);
         }
       } catch (error) {
-        console.error('Failed to read file content:', error);
+        console.error('Failed to process dropped file:', error);
       }
     }
   }, [onDrop]);
