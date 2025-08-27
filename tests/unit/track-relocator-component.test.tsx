@@ -195,7 +195,7 @@ describe('TrackRelocator Component Library Path Tests', () => {
   });
 
   describe('Hook Parameter Validation', () => {
-    it('should ensure useTrackRelocator receives exactly 3 parameters', () => {
+    it('should ensure useTrackRelocator receives exactly 4 parameters', () => {
       const testLibraryData: LibraryData = {
         libraryPath: '/test/path.xml',
         tracks: new Map(),
@@ -210,12 +210,13 @@ describe('TrackRelocator Component Library Path Tests', () => {
       // Verify the hook was called with exactly the expected number of parameters
       expect(mockUseTrackRelocator).toHaveBeenCalledTimes(1);
       const callArgs = mockUseTrackRelocator.mock.calls[0];
-      expect(callArgs).toHaveLength(3);
+      expect(callArgs).toHaveLength(4);
       
       // Verify parameter types
       expect(callArgs[0]).toBe(testLibraryData); // LibraryData
       expect(typeof callArgs[1]).toBe('string'); // libraryPath
       expect(typeof callArgs[2]).toBe('function'); // showNotification
+      expect(typeof callArgs[3]).toBe('function'); // setLibraryData
     });
 
     it('should pass consistent libraryPath across re-renders', () => {
