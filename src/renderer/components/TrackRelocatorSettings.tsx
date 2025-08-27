@@ -5,7 +5,6 @@ import type { RelocationOptions } from '../types';
 
 interface TrackRelocatorSettingsProps {
   searchOptions: RelocationOptions;
-  updateSearchOptions: (options: Partial<RelocationOptions>) => void;
   newSearchPath: string;
   setNewSearchPath: (path: string) => void;
   addSearchPath: () => void;
@@ -14,14 +13,13 @@ interface TrackRelocatorSettingsProps {
 
 export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
   searchOptions,
-  updateSearchOptions,
   newSearchPath,
   setNewSearchPath,
   addSearchPath,
   removeSearchPath
 }) => {
   // Get store functions for direct updates (avoid feedback loops)
-  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
+  const updateRelocationOption = useSettingsStore((state) => state.updateRelocationOption);
   const handleBrowseFolder = async () => {
     try {
       const folderPath = await window.electronAPI.selectFolder();
@@ -47,8 +45,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               value={searchOptions.searchDepth}
               onChange={(e) => {
                 const newValue = parseInt(e.target.value);
-                const updatedOptions = { ...searchOptions, searchDepth: newValue };
-                setRelocationOptions(updatedOptions);
+                updateRelocationOption('searchDepth', newValue);
               }}
               className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:border-rekordbox-purple focus:outline-none"
             />
@@ -64,8 +61,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
               value={searchOptions.matchThreshold}
               onChange={(e) => {
                 const newValue = parseFloat(e.target.value);
-                const updatedOptions = { ...searchOptions, matchThreshold: newValue };
-                setRelocationOptions(updatedOptions);
+                updateRelocationOption('matchThreshold', newValue);
               }}
               className="w-full accent-rekordbox-purple"
             />
@@ -161,7 +157,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
             <input
               type="checkbox"
               checked={searchOptions.includeSubdirectories}
-              onChange={(e) => updateSearchOptions({ includeSubdirectories: e.target.checked })}
+              onChange={(e) => updateRelocationOption('includeSubdirectories', e.target.checked)}
               className="rounded border-zinc-600 text-rekordbox-purple focus:ring-purple-500"
             />
             <div>
