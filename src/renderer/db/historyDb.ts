@@ -84,9 +84,8 @@ export const historyStorage = {
       const results = await db.relocationHistory
         .where('libraryPath')
         .equals(libraryPath)
-        .reverse()
         .sortBy('timestamp')
-        .then(results => results.slice(0, limit));
+        .then(results => results.reverse().slice(0, limit));
       console.log(`📋 Found ${results.length} history entries`);
       return results;
     } catch (error) {

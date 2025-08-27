@@ -68,7 +68,7 @@ class RelocationsDatabase extends Dexie {
       relocationResults: '++id, libraryPath, updatedAt',
       cloudSyncResults: '++id, libraryPath, updatedAt',
       ownershipResults: '++id, libraryPath, updatedAt',
-      relocationHistory: '++id, libraryPath, trackId, timestamp'
+      relocationHistory: '++id, libraryPath, trackId, timestamp, [libraryPath+timestamp]'
     });
     
     // Note: Map serialization is handled in the storage helper functions
@@ -348,11 +348,11 @@ export const relocationHistoryStorage = {
     try {
       const db = await ensureDatabaseConnection();
       return await db.relocationHistory
-        .where('libraryPath')
-        .equals(libraryPath)
+        .where('[libraryPath+timestamp]')
+        .between([libraryPath, Dexie.minKey], [libraryPath, Dexie.maxKey])
         .reverse()
-        .sortBy('timestamp')
-        .then(entries => entries.slice(0, limit));
+        .limit(limit)
+        .toArray();
     } catch (error) {
       console.error('Failed to get relocation history:', error);
       return [];
