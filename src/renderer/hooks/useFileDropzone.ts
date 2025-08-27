@@ -109,10 +109,19 @@ export const useFileDropzone = ({
       };
     }
     
-    // Check for common Rekordbox file patterns
-    if (!fileName.includes('rekordbox') && 
-        !fileName.includes('library') && 
-        !fileName.includes('collection')) {
+    // Use configurable patterns for file name validation
+    const patterns = fileNamePatterns && fileNamePatterns.length > 0
+      ? fileNamePatterns
+      : ['rekordbox', 'library', 'collection'];
+    const matchesPattern = patterns.some(pattern => {
+      if (typeof pattern === 'string') {
+        return fileName.includes(pattern.toLowerCase());
+      } else if (pattern instanceof RegExp) {
+        return pattern.test(fileName);
+      }
+      return false;
+    });
+    if (!matchesPattern) {
       return {
         code: 'file-not-rekordbox',
         message: 'Please drop a Rekordbox XML library file (e.g., rekordbox.xml, Collection.xml)'
