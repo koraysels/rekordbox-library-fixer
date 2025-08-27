@@ -1066,44 +1066,8 @@ ipcMain.handle('open-file-dialog', async (_, options = {}) => {
   }
 });
 
-// Handle native drag-and-drop file paths
-ipcMain.handle('handle-file-drop', async (_, filePaths: string[]) => {
-  try {
-    // Verify that all paths are absolute and exist
-    const fs = require('fs');
-    const validPaths: string[] = [];
-    
-    for (const filePath of filePaths) {
-      if (path.isAbsolute(filePath)) {
-        try {
-          await fs.promises.access(filePath);
-          validPaths.push(filePath);
-        } catch (error) {
-          safeConsole.warn('File does not exist:', filePath);
-        }
-      } else {
-        safeConsole.warn('Path is not absolute:', filePath);
-      }
-    }
-    
-    if (validPaths.length === 0) {
-      return { success: false, error: 'No valid file paths found' };
-    }
-    
-    return { 
-      success: true, 
-      data: { 
-        filePaths: validPaths,
-        filePath: validPaths[0] // For backward compatibility
-      } 
-    };
-  } catch (error) {
-    safeConsole.error('❌ Failed to handle file drop:', error);
-    return { success: false, error: 'Failed to handle file drop' };
-  }
-});
 
-// Handle native file drop with real file paths
+// Handle native file drop with real file paths (event-based only)
 ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
   try {
     safeConsole.log('🎯 Processing native file drop:', filePaths);
@@ -1126,20 +1090,13 @@ ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
       }
     }
     
-    if (validPaths.length === 0) {
+    if (validPaths.length > 0) {
+      // Send the validated native paths to renderer via event (single notification path)
+      mainWindow?.webContents.send('native-file-dropped', validPaths);
+      return { success: true, data: { filePaths: validPaths, filePath: validPaths[0] } };
+    } else {
       return { success: false, error: 'No valid file paths found' };
     }
-    
-    // Send the validated native paths to renderer
-    mainWindow?.webContents.send('native-file-dropped', validPaths);
-    
-    return { 
-      success: true, 
-      data: { 
-        filePaths: validPaths,
-        filePath: validPaths[0] 
-      } 
-    };
   } catch (error) {
     safeConsole.error('❌ Failed to handle native drop:', error);
     return { success: false, error: 'Failed to handle native drop' };

@@ -166,6 +166,9 @@ declare global {
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // File Drop APIs
+      handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
+      onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
       // Event listeners
       onShowAbout: (callback: () => void) => () => void;
     };
