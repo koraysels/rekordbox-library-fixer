@@ -6,6 +6,7 @@ import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
+import { mainLogger as appLogger } from './appLogger';
 
 // Safe console logging to prevent EPIPE errors
 const safeConsole = {
@@ -177,6 +178,36 @@ function createMenu() {
       submenu: [
         { role: 'minimize' },
         { role: 'close' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Open Log File',
+          click: () => {
+            const logPath = logger.getLogPath();
+            shell.openPath(logPath).catch(err => {
+              appLogger.error('Failed to open log file:', err);
+            });
+          }
+        },
+        {
+          label: 'Open Logs Directory',
+          click: () => {
+            const logsDir = logger.getLogsDirectory();
+            shell.openPath(logsDir).catch(err => {
+              appLogger.error('Failed to open logs directory:', err);
+            });
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'About Rekordbox Library Manager',
+          click: () => {
+            mainWindow?.webContents.send('show-about');
+          }
+        }
       ]
     }
   ] as Electron.MenuItemConstructorOptions[];
@@ -523,7 +554,7 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
   options: any;
   libraryPath: string;
 }) => {
-  safeConsole.log(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks`);
+  appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks`);
   try {
     let successCount = 0;
     const results: any[] = [];
@@ -653,7 +684,7 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
       }
     }
 
-    safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful`);
+    appLogger.info(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful`);
     
     return {
       success: true,
@@ -667,7 +698,7 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
       }
     };
   } catch (error) {
-    safeConsole.error('❌ Auto-relocate tracks failed:', error);
+    appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
       trackCount: data.tracks.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -680,14 +711,14 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
 });
 
 ipcMain.handle('find-missing-tracks', async (_, tracks: any) => {
-  safeConsole.log('🔍 IPC: Finding missing tracks');
+  appLogger.info('🔍 IPC: Finding missing tracks');
   try {
     const tracksMap = new Map(Object.entries(tracks));
     const missingTracks = await trackRelocator.findMissingTracks(tracksMap);
-    safeConsole.log(`✅ Found ${missingTracks.length} missing tracks`);
+    appLogger.info(`✅ Found ${missingTracks.length} missing tracks`);
     return { success: true, data: missingTracks };
   } catch (error) {
-    safeConsole.error('❌ Find missing tracks failed:', error);
+    appLogger.error('❌ Find missing tracks failed:', error);
     logger.error('FIND_MISSING_TRACKS_FAILED', {
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
