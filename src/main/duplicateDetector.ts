@@ -105,7 +105,7 @@ export class DuplicateDetector {
       await fs.promises.access(track.location);
       
       // Get audio metadata for fingerprinting
-      const metadata = await mm.parseFile(track.location);
+      const metadata = await mm.parseBuffer(await fs.promises.readFile(track.location));
       
       // Create a simplified fingerprint based on:
       // - Duration (rounded to nearest second)

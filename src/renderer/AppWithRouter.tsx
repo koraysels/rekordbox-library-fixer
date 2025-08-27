@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from '@tanstack/react-router';
+import { useLocation } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
@@ -19,7 +19,6 @@ const pathToTab: Record<string, TabType> = {
 const AppWithRouter: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
-  const navigate = useNavigate();
   const location = useLocation();
   
   // Derive active tab from route
@@ -37,10 +36,8 @@ const AppWithRouter: React.FC = () => {
   
   // Fetch route-specific cached data from Dexie
   const { 
-    isLoading: isLoadingCached, 
-    duplicateResults, 
-    relocationResults,
-    settings 
+    isLoading: isLoadingCached 
+    // duplicateResults, relocationResults, settings // Unused for now
   } = useRouteData(location.pathname, libraryPath);
 
   // Hide splash screen after initial load
@@ -54,13 +51,15 @@ const AppWithRouter: React.FC = () => {
 
   // Set up menu event listeners
   useEffect(() => {
-    const removeAboutListener = window.electronAPI.onShowAbout(() => {
-      setShowAbout(true);
-    });
+    if (window.electronAPI?.onShowAbout) {
+      const removeAboutListener = window.electronAPI.onShowAbout(() => {
+        setShowAbout(true);
+      });
 
-    return () => {
-      removeAboutListener();
-    };
+      return () => {
+        removeAboutListener();
+      };
+    }
   }, []);
 
   // Show splash screen during initial load
@@ -69,8 +68,12 @@ const AppWithRouter: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-rekordbox-dark flex overflow-hidden">
-      {/* Sidebar Navigation */}
+    <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
+      {/* Title Bar for Window Controls */}
+      <div className="h-7 bg-gray-800 app-drag-region flex-shrink-0"></div>
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar Navigation */}
       <Sidebar 
         activeTab={activeTab}
         libraryData={libraryData}
@@ -115,7 +118,6 @@ const AppWithRouter: React.FC = () => {
                       libraryPath={libraryPath}
                       onUpdate={(updatedLibrary) => setLibraryData(updatedLibrary)}
                       showNotification={showNotification}
-                      initialCachedData={duplicateResults}
                     />
                   )}
                 </div>
@@ -129,7 +131,6 @@ const AppWithRouter: React.FC = () => {
                     <TrackRelocator
                       libraryData={libraryData}
                       showNotification={showNotification}
-                      initialCachedData={relocationResults}
                     />
                   )}
                 </div>
@@ -159,6 +160,7 @@ const AppWithRouter: React.FC = () => {
 
         {/* Footer */}
         <AppFooter libraryData={libraryData} />
+      </div>
       </div>
 
       {/* About Modal */}
