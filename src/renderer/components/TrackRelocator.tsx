@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
-import { SettingsSlideout, PopoverButton } from './ui';
+import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { useAppContext } from '../AppWithRouter';
 import type {
@@ -202,18 +202,12 @@ const TrackRelocator: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
       {/* Header */}
-      <div className="flex-shrink-0 py-4 px-1 border-b border-gray-700">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <MapPin className="text-rekordbox-purple" size={24} />
-              <h1 className="text-2xl font-bold text-white">Track Relocator</h1>
-            </div>
-            <div className="text-sm text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full">
-              {stats.totalMissingTracks} missing • {stats.configuredRelocations} configured • {selectedMissingTracks.size} selected
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 px-1">
+      <PageHeader
+        title="Track Relocator"
+        icon={MapPin}
+        stats={`${stats.totalMissingTracks} missing • ${stats.configuredRelocations} configured • ${selectedMissingTracks.size} selected`}
+        actions={
+          <>
             <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
@@ -230,9 +224,9 @@ const TrackRelocator: React.FC = () => {
             >
               Clear
             </PopoverButton>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
 
       {/* Content Area */}
