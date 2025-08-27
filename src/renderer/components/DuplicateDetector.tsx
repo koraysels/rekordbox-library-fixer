@@ -392,7 +392,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
               {isSearching ? (
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin" />
+                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin spinner-loading" />
                   </div>
                   <div className="pl-10 text-sm text-rekordbox-purple">Filtering duplicates...</div>
                 </div>
@@ -418,7 +418,7 @@ const DuplicateDetector: React.FC<DuplicateDetectorProps> = ({
         ) : isLoadingDuplicates ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center text-gray-400">
-              <Loader2 size={48} className="mx-auto mb-4 text-rekordbox-purple animate-spin" />
+              <Loader2 size={48} className="mx-auto mb-4 text-rekordbox-purple animate-spin spinner-loading" />
               <h3 className="text-lg font-medium mb-2 text-rekordbox-purple">Loading Duplicates</h3>
               <p>Reading duplicate results from database...</p>
             </div>
