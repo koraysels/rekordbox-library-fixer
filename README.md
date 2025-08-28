@@ -13,7 +13,7 @@
 
 *Maybe this will help you clean up those pesky duplicates and find your missing tracks*
 
-[Download Latest Release](https://github.com/koraysels/rekordbox-library-manager/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-manager/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-manager/issues)
+[Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-fixer/issues)
 
 </div>
 
