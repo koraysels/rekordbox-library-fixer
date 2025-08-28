@@ -22,7 +22,7 @@
 Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
 
 This little tool is just our attempt to help fellow DJs deal with the chaos. Will it solve all your problems? Probably not. But hopefully it'll save you some time and headaches.
-excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
+I am aware of other (commercial) tools available, like the excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
 
 ### 😤 The Stuff That's Annoying:
 - 🎵 **Too Many Duplicates**: Same track, but with slightly different names, cluttering everything
