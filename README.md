@@ -22,6 +22,7 @@
 Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
 
 This little tool is just our attempt to help fellow DJs deal with the chaos. Will it solve all your problems? Probably not. But hopefully it'll save you some time and headaches.
+excellent Rekordbox Collection Tool (RCT), but is Mac only and not open-source. 
 
 ### 😤 The Stuff That's Annoying:
 - 🎵 **Too Many Duplicates**: Same track, but with slightly different names, cluttering everything
@@ -278,12 +279,11 @@ We welcome contributions from the DJ community! Whether you're a developer or ju
 4. Write tests for your changes
 5. Submit a pull request
 
-### 🎯 **Priority Features We Need Help With**:
+### 🎯 ** Features we could use your help with**:
 - [ ] **Serato/VirtualDJ support**: Expand beyond Rekordbox
-- [ ] **Playlist duplicate detection**: Find duplicates across playlists
+- [ ] **Playlist duplicate detection**: Find duplicates in playlists
 - [ ] **Audio analysis**: BPM/key detection for better matching
 - [ ] **Batch processing**: Handle multiple libraries
-- [ ] **Cloud backup**: Sync settings across devices
 - [ ] **Plugin system**: Custom duplicate detection algorithms
 
 ---
@@ -294,13 +294,13 @@ We welcome contributions from the DJ community! Whether you're a developer or ju
 **Yes!** The tool creates backups before making any changes. Your original files are never modified directly.
 
 ### ❓ **Does this work with large libraries?**
-**Absolutely!** Tested with libraries containing 50,000+ tracks. Uses SQLite for performance and persistent storage.
+**Absolutely!** Tested with libraries containing 50,000+ tracks. Uses Indexdb (Dexie.js) for performance and persistent storage.
 
 ### ❓ **Can I undo changes?**
 **Yes!** Every operation creates a backup XML file. You can always restore your library to its previous state.
 
 ### ❓ **What about other DJ software?**
-Currently supports Rekordbox XML format. Serato and VirtualDJ support is planned for future releases.
+Currently supports Rekordbox XML format. Serato and VirtualDJ might be supported in future versions if enough people want it.
 
 ### ❓ **Is this really free?**
 **100% free for personal use!** No ads, no subscriptions, no limits. Open source but protected against commercial repackaging.
@@ -318,27 +318,9 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ support is planned
 ### 📅 **v0.1.0** *(Major Release)*
 - [ ] **Multi-format Support**: Serato, VirtualDJ, Traktor
 - [ ] **Audio Analysis**: Automatic BPM/key detection
-- [ ] **Cloud Sync**: Backup settings and preferences
-- [ ] **Plugin System**: Custom detection algorithms
 
 ### 📅 **v1.0.0** *(Full Release)*
-- [ ] **Professional Features**: Advanced audio analysis
-- [ ] **Enterprise Tools**: Batch processing, API access
-- [ ] **Community Features**: Share detection rules, presets
-
----
-
-## 🎉 **Some Feedback We Got**
-
-> *"Actually worked on my giant library - cleaned up way more duplicates than I expected!"*
-> — A relieved DJ somewhere
-
-> *"Found tracks I thought were lost forever when I moved my music folder. Pretty sweet."*
-> — Sarah K.
-
-> *"The fingerprint thing is kinda neat - found duplicates with completely different names."*
-> — Mike R.
-
+- [ ] **Stability & Performance is fine-tuned**: 
 ---
 
 ## 🆘 **Support & Community**
@@ -350,6 +332,7 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ support is planned
 
 ### 🌟 **Show Support**:
 - ⭐ **Star this repository** to help other DJs find it
+- ☕ **[Buy me a coffee on Ko-fi](https://ko-fi.com/koraysels)** if this tool saved you time
 - 🐦 **Share on social media** with your DJ friends
 - 💝 **Contribute code** or documentation improvements
 - 🎵 **Tell other DJs** about this tool
