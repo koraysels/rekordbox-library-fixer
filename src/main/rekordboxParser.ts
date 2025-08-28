@@ -22,6 +22,24 @@ export interface Track {
   loops?: Loop[];
   beatgrid?: BeatGrid;
   playlists?: string[];
+  // Required Rekordbox fields that must be preserved
+  composer?: string;
+  grouping?: string;
+  kind?: string;
+  discNumber?: number;
+  trackNumber?: number;
+  year?: number;
+  sampleRate?: number;
+  remixer?: string;
+  label?: string;
+  mix?: string;
+  // Store all TEMPO elements, not just the first one
+  tempos?: Array<{
+    bpm: number;
+    inizio: number;
+    metro?: string;
+    battito?: number;
+  }>;
 }
 
 export interface Cue {
@@ -122,6 +140,18 @@ export class RekordboxParser {
       playCount: trackNode.PlayCount ? parseInt(trackNode.PlayCount) : undefined,
       rating: trackNode.Rating ? parseInt(trackNode.Rating) : undefined,
       comments: trackNode.Comments,
+      // Required Rekordbox fields
+      composer: trackNode.Composer || '',
+      grouping: trackNode.Grouping || '',
+      kind: trackNode.Kind,
+      discNumber: trackNode.DiscNumber ? parseInt(trackNode.DiscNumber) : 0,
+      trackNumber: trackNode.TrackNumber ? parseInt(trackNode.TrackNumber) : 0,
+      year: trackNode.Year ? parseInt(trackNode.Year) : 0,
+      sampleRate: trackNode.SampleRate ? parseInt(trackNode.SampleRate) : undefined,
+      remixer: trackNode.Remixer || '',
+      label: trackNode.Label || '',
+      mix: trackNode.Mix || '',
+      dateAdded: trackNode.DateAdded ? new Date(trackNode.DateAdded) : undefined,
       cues: [],
       loops: [],
     };
@@ -150,12 +180,20 @@ export class RekordboxParser {
       }
     }
 
-    // Parse tempo/beatgrid
+    // Parse ALL tempo elements, not just the first one
     if (trackNode.TEMPO) {
       const tempos = Array.isArray(trackNode.TEMPO) 
         ? trackNode.TEMPO 
         : [trackNode.TEMPO];
       
+      track.tempos = tempos.map((tempo: any) => ({
+        bpm: parseFloat(tempo.Bpm || trackNode.AverageBpm || '120'),
+        inizio: parseFloat(tempo.Inizio || '0'),
+        metro: tempo.Metro,
+        battito: tempo.Battito ? parseInt(tempo.Battito) : undefined,
+      }));
+      
+      // Keep the first tempo as beatgrid for backward compatibility
       if (tempos[0]) {
         track.beatgrid = {
           bpm: parseFloat(tempos[0].Bpm || trackNode.AverageBpm || '120'),
@@ -234,22 +272,31 @@ export class RekordboxParser {
       $: {
         TrackID: track.id,
         Name: track.name,
-        Artist: track.artist,
-        Location: 'file://localhost' + encodeURIComponent(track.location),
+        Artist: track.artist || '',
+        Composer: track.composer || '',
+        Album: track.album || '',
+        Grouping: track.grouping || '',
+        Genre: track.genre || '',
+        Kind: track.kind || '',
+        Size: track.size?.toString() || '',
+        TotalTime: track.duration?.toString() || '',
+        DiscNumber: track.discNumber?.toString() || '0',
+        TrackNumber: track.trackNumber?.toString() || '0',
+        Year: track.year?.toString() || '0',
+        AverageBpm: track.bpm?.toString() || '0.00',
+        DateAdded: track.dateAdded ? track.dateAdded.toISOString().split('T')[0] : '',
+        BitRate: track.bitrate?.toString() || '',
+        SampleRate: track.sampleRate?.toString() || '',
+        Comments: track.comments || '',
+        PlayCount: track.playCount?.toString() || '0',
+        Rating: track.rating?.toString() || '0',
+        Location: 'file://localhost' + track.location, // No encodeURIComponent - keep original format
+        Remixer: track.remixer || '',
+        Tonality: track.key || '',
+        Label: track.label || '',
+        Mix: track.mix || '',
       },
     };
-
-    // Add optional attributes
-    if (track.album) xmlTrack.$.Album = track.album;
-    if (track.genre) xmlTrack.$.Genre = track.genre;
-    if (track.bpm) xmlTrack.$.AverageBpm = track.bpm.toString();
-    if (track.key) xmlTrack.$.Tonality = track.key;
-    if (track.size) xmlTrack.$.Size = track.size.toString();
-    if (track.bitrate) xmlTrack.$.BitRate = track.bitrate.toString();
-    if (track.duration) xmlTrack.$.TotalTime = track.duration.toString();
-    if (track.playCount) xmlTrack.$.PlayCount = track.playCount.toString();
-    if (track.rating) xmlTrack.$.Rating = track.rating.toString();
-    if (track.comments) xmlTrack.$.Comments = track.comments;
 
     // Add position marks
     const positionMarks: any[] = [];
@@ -286,12 +333,25 @@ export class RekordboxParser {
       xmlTrack.POSITION_MARK = positionMarks;
     }
 
-    // Add beatgrid/tempo
-    if (track.beatgrid) {
+    // Add ALL TEMPO elements, not just the first one
+    if (track.tempos && track.tempos.length > 0) {
+      xmlTrack.TEMPO = track.tempos.map(tempo => {
+        const tempoElement: any = {
+          $: {
+            Inizio: tempo.inizio.toString(),
+            Bpm: tempo.bpm.toString(),
+          },
+        };
+        if (tempo.metro) tempoElement.$.Metro = tempo.metro;
+        if (tempo.battito) tempoElement.$.Battito = tempo.battito.toString();
+        return tempoElement;
+      });
+    } else if (track.beatgrid) {
+      // Fallback to single tempo if no tempos array
       xmlTrack.TEMPO = {
         $: {
-          Bpm: track.beatgrid.bpm.toString(),
           Inizio: track.beatgrid.offset.toString(),
+          Bpm: track.beatgrid.bpm.toString(),
         },
       };
     }
