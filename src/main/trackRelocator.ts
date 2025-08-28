@@ -201,7 +201,7 @@ export class TrackRelocator {
                   confidence: 0.6
                 });
               }
-            } catch (error) {
+            } catch {
               // Skip files that can't be accessed
             }
           }

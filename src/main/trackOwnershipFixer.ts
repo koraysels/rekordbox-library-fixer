@@ -343,7 +343,7 @@ export class TrackOwnershipFixer {
       .filter(comp => comp.isActive)
       .map(comp => comp.uuid);
 
-    for (const [_, track] of tracks.entries()) {
+    for (const [, track] of tracks.entries()) {
       if (track.owner) {
         tracksWithOwners++;
 

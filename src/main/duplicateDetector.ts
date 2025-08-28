@@ -131,7 +131,7 @@ export class DuplicateDetector {
       this.fingerprintCache.set(track.location, hash);
 
       return hash;
-    } catch (error) {
+    } catch {
       // If file doesn't exist or can't be read, use metadata fallback
       const fallbackFingerprint = `${track.artist}_${track.name}_${track.duration}_${track.size}`;
       return crypto.createHash('md5').update(fallbackFingerprint).digest('hex');

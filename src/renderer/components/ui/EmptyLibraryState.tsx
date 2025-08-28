@@ -8,7 +8,7 @@ interface EmptyLibraryStateProps {
 
 export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onSelectLibrary,
-  onLoadLibrary
+  onLoadLibrary: _onLoadLibrary
 }) => {
   return (
     <div className="h-full flex items-center justify-center py-8 px-0">

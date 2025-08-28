@@ -178,7 +178,7 @@ const DuplicateDetector: React.FC = () => {
       } else {
         showNotification('error', result.error || 'Scan failed');
       }
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to scan for duplicates');
     } finally {
       setIsScanning(false);

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Search,
   Settings,
   RefreshCw,
   MapPin,
@@ -9,7 +8,6 @@ import {
   AlertTriangle,
   Loader2,
   ExternalLink,
-  Trash2,
   RotateCcw,
   Zap,
   Target,
@@ -34,7 +32,6 @@ const TrackRelocator: React.FC = () => {
 
   // Get settings store first, before initializing the hook
   const relocationOptions = useSettingsStore((state) => state.relocationOptions);
-  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
   const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
 
@@ -59,8 +56,7 @@ const TrackRelocator: React.FC = () => {
     executeRelocations,
     autoRelocateTracks,
     updateSearchOptions,
-    clearResults,
-    clearUnlocatableStatus
+    clearResults
   } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData, relocationOptions);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,7 +123,7 @@ const TrackRelocator: React.FC = () => {
       } else {
         showNotification('error', `Reset failed: ${result.error}`);
       }
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to reset track locations');
     } finally {
       setIsResetting(false);
@@ -194,7 +190,7 @@ const TrackRelocator: React.FC = () => {
   const showInFolder = async (filePath: string) => {
     try {
       await window.electronAPI.showFileInFolder(filePath);
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to open file location');
     }
   };

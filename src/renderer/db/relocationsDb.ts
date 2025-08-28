@@ -75,42 +75,6 @@ class RelocationsDatabase extends Dexie {
   }
 }
 
-// Class to handle Map serialization
-class StoredRelocationResultClass implements StoredRelocationResult {
-  id?: number;
-  libraryPath: string = '';
-  missingTracks: MissingTrack[] = [];
-  relocationCandidates: Map<string, RelocationCandidate[]> = new Map();
-  relocations: Map<string, string> = new Map();
-  relocationResults: RelocationResult[] = [];
-  searchOptions: RelocationOptions = {
-    searchPaths: [],
-    searchDepth: 3,
-    matchThreshold: 0.7,
-    includeSubdirectories: true,
-    fileExtensions: ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg']
-  };
-  hasScanCompleted: boolean = false;
-  createdAt: Date = new Date();
-  updatedAt: Date = new Date();
-
-  // Custom serialization for Maps
-  toJSON() {
-    return {
-      ...this,
-      relocationCandidates: Array.from(this.relocationCandidates.entries()),
-      relocations: Array.from(this.relocations.entries())
-    };
-  }
-
-  static fromJSON(json: any): StoredRelocationResultClass {
-    const instance = new StoredRelocationResultClass();
-    Object.assign(instance, json);
-    instance.relocationCandidates = new Map(json.relocationCandidates || []);
-    instance.relocations = new Map(json.relocations || []);
-    return instance;
-  }
-}
 
 // Create the database instance
 export const relocationsDb = new RelocationsDatabase();
