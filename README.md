@@ -100,8 +100,8 @@ Make a simple, free tool that might help you get your library back under control
    - **macOS**: `Rekordbox-Library-Manager-0.0.3-alpha.dmg`
 3. Install and launch the app
 4. Export you collection as xml using Rekordbox.  
-![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)
-5Load your Rekordbox XML file and start cleaning!  
+![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)  
+5. Load your Rekordbox XML file and start cleaning!  
 
 
 #### Option 2: Build from Source
