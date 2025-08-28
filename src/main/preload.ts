@@ -24,6 +24,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('reset-track-locations', trackIds),
   autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) =>
     ipcRenderer.invoke('auto-relocate-tracks', data),
+  cancelAutoRelocate: (operationId: string) =>
+    ipcRenderer.invoke('cancel-auto-relocate', operationId),
+  onAutoRelocateProgress: (callback: (progress: any) => void) => {
+    ipcRenderer.on('auto-relocate-progress', (_, progress) => callback(progress));
+    return () => {
+      ipcRenderer.removeAllListeners('auto-relocate-progress');
+    };
+  },
   findRelocationCandidates: (track: any, options: any) =>
     ipcRenderer.invoke('find-relocation-candidates', track, options),
   relocateTrack: (trackId: string, oldLocation: string, newLocation: string) =>

@@ -19,6 +19,7 @@ import {
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
 import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
+import { AutoRelocateProgressDialog } from './ui/AutoRelocateProgressDialog';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
@@ -30,6 +31,13 @@ import type {
 
 const TrackRelocator: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
+  
+  // Get settings store first, before initializing the hook
+  const relocationOptions = useSettingsStore((state) => state.relocationOptions);
+  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
+  const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
+  const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
+  
   const {
     // State
     missingTracks,
@@ -53,7 +61,7 @@ const TrackRelocator: React.FC = () => {
     updateSearchOptions,
     clearResults,
     clearUnlocatableStatus
-  } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData);
+  } = useTrackRelocator(libraryData, libraryPath, showNotification, setLibraryData, relocationOptions);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMissingTracks, setSelectedMissingTracks] = useState<Set<string>>(new Set());
@@ -62,15 +70,11 @@ const TrackRelocator: React.FC = () => {
   const [newSearchPath, setNewSearchPath] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
 
-  // Get settings store
-  const relocationOptions = useSettingsStore((state) => state.relocationOptions);
-  const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
-  const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
-  const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
-
-  // Sync search options with store (FROM store TO hook only)
+  // Sync search options with store when they change
   useEffect(() => {
+    console.log('🔄 Syncing relocation settings from store:', relocationOptions);
     updateSearchOptions(relocationOptions);
   }, [relocationOptions, updateSearchOptions]);
 
@@ -142,6 +146,11 @@ const TrackRelocator: React.FC = () => {
     }
 
     setIsAutoRelocating(true);
+    setShowProgressDialog(true);
+    
+    // Debug: Log current search options being used
+    console.log('🚀 Starting auto-relocation with settings:', searchOptions);
+    
     try {
       // Use the autoRelocateTracks function from the hook which properly updates state
       await autoRelocateTracks(selectedTracks);
@@ -149,6 +158,16 @@ const TrackRelocator: React.FC = () => {
     } finally {
       setIsAutoRelocating(false);
     }
+  };
+
+  const handleProgressDialogClose = () => {
+    setShowProgressDialog(false);
+    setIsAutoRelocating(false);
+  };
+
+  const handleProgressDialogCancel = () => {
+    // The cancellation is handled in the progress dialog itself
+    setIsAutoRelocating(false);
   };
 
   // Functions for managing search paths
@@ -508,6 +527,13 @@ const TrackRelocator: React.FC = () => {
           onShowFileInFolder={showInFolder}
         />
       </SettingsSlideout>
+
+      {/* Progress Dialog */}
+      <AutoRelocateProgressDialog
+        isOpen={showProgressDialog}
+        onClose={handleProgressDialogClose}
+        onCancel={handleProgressDialogCancel}
+      />
     </div>
   );
 };

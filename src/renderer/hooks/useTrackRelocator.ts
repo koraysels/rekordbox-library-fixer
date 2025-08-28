@@ -61,7 +61,7 @@ interface UseTrackRelocatorState {
 
 const defaultSearchOptions: RelocationOptions = {
   searchPaths: [],
-  searchDepth: 3,
+  searchDepth: 8,
   matchThreshold: 0.7,
   includeSubdirectories: true,
   fileExtensions: ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg']
@@ -71,7 +71,8 @@ export function useTrackRelocator(
   libraryData: LibraryData | null,
   libraryPath: string,
   showNotification: (type: NotificationType, message: string) => void,
-  setLibraryData: (data: LibraryData) => void
+  setLibraryData: (data: LibraryData) => void,
+  initialSearchOptions?: RelocationOptions
 ) {
   const [state, setState] = useState<UseTrackRelocatorState>({
     missingTracks: [],
@@ -91,7 +92,7 @@ export function useTrackRelocator(
     isDetectingOwnershipIssues: false,
     isFixingOwnershipIssues: false,
     ownershipResults: [],
-    searchOptions: { ...defaultSearchOptions },
+    searchOptions: initialSearchOptions || { ...defaultSearchOptions },
     dropboxConnected: false
   });
   
