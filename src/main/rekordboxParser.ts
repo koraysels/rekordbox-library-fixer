@@ -276,7 +276,7 @@ export class RekordboxParser {
             $: {
               Type: '0',
               Name: 'ROOT',
-              Entries: '0'
+              Count: library.playlists.length.toString()
             },
             NODE: this.playlistsToXML(library.playlists, library.tracks)
           }
@@ -311,7 +311,7 @@ export class RekordboxParser {
         Comments: track.comments || '',
         PlayCount: track.playCount?.toString() || '0',
         Rating: track.rating?.toString() || '0',
-        Location: 'file://localhost' + track.location, // No encodeURIComponent - keep original format
+        Location: 'file://localhost' + encodeURI(track.location).replace(/#/g, '%23'),
         Remixer: track.remixer || '',
         Tonality: track.key || '',
         Label: track.label || '',
@@ -384,8 +384,9 @@ export class RekordboxParser {
     return playlists.map(playlist => {
       const node: any = {
         $: {
-          Type: playlist.type === 'FOLDER' ? '0' : '1',
           Name: playlist.name,
+          Type: playlist.type === 'FOLDER' ? '0' : '1',
+          KeyType: '0',
           Entries: playlist.tracks.length.toString(),
         },
       };
