@@ -114,11 +114,25 @@ export class RekordboxParser {
 
     // Parse playlists
     if (result.DJ_PLAYLISTS?.PLAYLISTS?.NODE) {
-      const nodes = Array.isArray(result.DJ_PLAYLISTS.PLAYLISTS.NODE)
+      const topLevelNodes = Array.isArray(result.DJ_PLAYLISTS.PLAYLISTS.NODE)
         ? result.DJ_PLAYLISTS.PLAYLISTS.NODE
         : [result.DJ_PLAYLISTS.PLAYLISTS.NODE];
 
-      library.playlists = this.parsePlaylists(nodes, library.tracks);
+      // Look for ROOT node (Type="0" with Name="ROOT")
+      const rootNode = topLevelNodes.find((node: any) => 
+        node.Type === '0' && node.Name === 'ROOT'
+      );
+
+      if (rootNode && rootNode.NODE) {
+        // Parse children of ROOT node
+        const rootChildren = Array.isArray(rootNode.NODE) 
+          ? rootNode.NODE 
+          : [rootNode.NODE];
+        library.playlists = this.parsePlaylists(rootChildren, library.tracks);
+      } else {
+        // No ROOT node found, parse all top-level nodes directly
+        library.playlists = this.parsePlaylists(topLevelNodes, library.tracks);
+      }
     }
 
     return library;
@@ -258,7 +272,14 @@ export class RekordboxParser {
           TRACK: Array.from(library.tracks.values()).map(track => this.trackToXML(track)),
         },
         PLAYLISTS: {
-          NODE: this.playlistsToXML(library.playlists, library.tracks),
+          NODE: {
+            $: {
+              Type: '0',
+              Name: 'ROOT',
+              Entries: '0'
+            },
+            NODE: this.playlistsToXML(library.playlists, library.tracks)
+          }
         },
       },
     };
