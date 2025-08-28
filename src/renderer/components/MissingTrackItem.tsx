@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Trash2, AlertTriangle } from 'lucide-react';
-import { ListItem, PopoverButton } from './ui';
 import type { MissingTrack } from '../types';
+import { ListItem, PopoverButton } from './ui';
 
 interface MissingTrackItemProps {
   track: MissingTrack;
@@ -35,7 +35,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
     // Only handle click if it's not on an interactive element
     const target = e.target as HTMLElement;
     const isInteractiveElement = target.closest('button, input, a, [role="button"]');
-    
+
     if (!isInteractiveElement) {
       onToggleSelection(track);
     }

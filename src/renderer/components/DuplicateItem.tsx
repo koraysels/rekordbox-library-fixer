@@ -33,7 +33,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   const { openFileLocation } = useFileOperations();
 
   const recommendedTrack = useMemo(() => {
-    if (resolutionStrategy === 'manual') return null;
+    if (resolutionStrategy === 'manual') {return null;}
 
     let recommended = duplicate.tracks[0];
 
@@ -45,14 +45,14 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
       });
     } else if (resolutionStrategy === 'keep-newest') {
       recommended = duplicate.tracks.reduce((newest: any, current: any) => {
-        if (!newest.dateModified) return current;
-        if (!current.dateModified) return newest;
+        if (!newest.dateModified) {return current;}
+        if (!current.dateModified) {return newest;}
         return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
       });
     } else if (resolutionStrategy === 'keep-oldest') {
       recommended = duplicate.tracks.reduce((oldest: any, current: any) => {
-        if (!oldest.dateAdded) return current;
-        if (!current.dateAdded) return oldest;
+        if (!oldest.dateAdded) {return current;}
+        if (!current.dateAdded) {return oldest;}
         return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
       });
     } else if (resolutionStrategy === 'keep-preferred-path') {
@@ -71,10 +71,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
           );
 
           // If both match, return the one with lower index (higher priority)
-          if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
+          if (aMatch !== -1 && bMatch !== -1) {return aMatch - bMatch;}
           // If only one matches, prioritize the matching one
-          if (aMatch !== -1) return -1;
-          if (bMatch !== -1) return 1;
+          if (aMatch !== -1) {return -1;}
+          if (bMatch !== -1) {return 1;}
           // If neither match, keep original order
           return 0;
         });
@@ -105,14 +105,14 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     // Only handle click if it's not on an interactive element
     const target = e.target as HTMLElement;
     const isInteractiveElement = target.closest('button, input, a, [role="button"]');
-    
+
     if (!isInteractiveElement) {
       onToggleSelection();
     }
   }, [onToggleSelection]);
 
   return (
-    <div 
+    <div
       className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'border-rekordbox-purple' : 'border-zinc-700'} cursor-pointer`}
       onClick={handleContainerClick}
     >
@@ -164,8 +164,8 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <div
                 key={track.id}
                 className={`p-3 bg-zinc-900 rounded border ${
-                  isRecommended ? 'border-green-600' : 
-                  isManuallySelected ? 'border-rekordbox-purple' : 
+                  isRecommended ? 'border-green-600' :
+                  isManuallySelected ? 'border-rekordbox-purple' :
                   'border-zinc-700'
                 }`}
               >

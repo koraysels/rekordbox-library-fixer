@@ -34,9 +34,9 @@ const countFolders = (playlists: Playlist[]): number => {
 };
 
 // Recursive component to render playlist tree
-const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({ 
-  playlists, 
-  level = 0 
+const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({
+  playlists,
+  level = 0
 }) => {
   return (
     <div className={`${level > 0 ? 'ml-4' : ''}`}>
@@ -70,7 +70,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
     if (!libraryData || !libraryData.playlists) {
       return { totalPlaylists: 0, folders: 0 };
     }
-    
+
     return {
       totalPlaylists: countAllPlaylists(libraryData.playlists),
       folders: countFolders(libraryData.playlists)
@@ -88,7 +88,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
           {libraryData && (
             <div className="flex items-center space-x-4">
               <span>Library: {libraryData.tracks.size} tracks</span>
-              
+
               <Popover.Root>
                 <Popover.Trigger asChild>
                   <button className="flex items-center space-x-1 hover:text-zinc-200 transition-colors">
@@ -96,7 +96,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
                     <ChevronDown className="w-3 h-3" />
                   </button>
                 </Popover.Trigger>
-                
+
                 <Popover.Portal>
                   <Popover.Content
                     className="z-50 w-80 max-h-96 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl p-4"
@@ -111,7 +111,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
                           </button>
                         </Popover.Close>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="bg-zinc-900 rounded p-3">
                           <div className="flex items-center space-x-2 mb-1">
@@ -120,7 +120,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
                           </div>
                           <div className="text-xl font-bold text-white">{playlistStats.totalPlaylists}</div>
                         </div>
-                        
+
                         <div className="bg-zinc-900 rounded p-3">
                           <div className="flex items-center space-x-2 mb-1">
                             <Folder className="w-4 h-4 text-zinc-500" />
@@ -129,7 +129,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
                           <div className="text-xl font-bold text-white">{playlistStats.folders}</div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="text-sm font-medium text-zinc-300 mb-2">Playlist Structure</h4>
                         <div className="max-h-48 overflow-y-auto bg-zinc-900 rounded p-3">
@@ -151,7 +151,7 @@ export const AppFooter = React.memo(({ libraryData }: AppFooterProps) => {
             </div>
           )}
         </div>
-        
+
         <div className="text-xs text-zinc-500">
           Version {version} • Made with ❤️ for DJs
         </div>

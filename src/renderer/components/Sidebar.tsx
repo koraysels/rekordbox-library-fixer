@@ -111,7 +111,7 @@ export function Sidebar({
                       flex items-center gap-3 p-3 rounded-lg
                       transition-colors duration-200
                       ${activeTab === item.id
-                        ? 'bg-rekordbox-purple/20 text-rekordbox-purple' 
+                        ? 'bg-rekordbox-purple/20 text-rekordbox-purple'
                         : 'hover:bg-gray-700 text-gray-300 hover:text-white'
                       }
                     `}

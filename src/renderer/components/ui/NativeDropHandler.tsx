@@ -30,7 +30,7 @@ export const NativeDropHandler: React.FC<NativeDropHandlerProps> = ({
     };
 
     const cleanup = window.electronAPI.onNativeFileDrop(handleNativeFileDrop);
-    
+
     return cleanup;
   }, [onFileDrop, acceptedExtensions]);
 

@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   History,
-  Clock,
   Target,
   Zap,
   ExternalLink,
   Trash2,
   TrendingUp,
-  Calendar,
   BarChart3,
   RefreshCw,
   FileText,
@@ -67,7 +65,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
 
   // Auto-refresh when history is updated
   useEffect(() => {
-    if (!libraryPath) return;
+    if (!libraryPath) {return;}
 
     console.log(`📡 Setting up history auto-refresh for: ${libraryPath}`);
     const unsubscribe = historyEvents.onHistoryUpdate((updatedLibraryPath) => {
@@ -82,7 +80,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   }, [libraryPath, loadHistory]);
 
   const clearHistory = async () => {
-    if (!libraryPath) return;
+    if (!libraryPath) {return;}
 
     if (confirm('Are you sure you want to clear all relocation history? This cannot be undone.')) {
       try {
@@ -96,7 +94,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   };
 
   const filteredHistory = history.filter(entry => {
-    if (filter === 'all') return true;
+    if (filter === 'all') {return true;}
     return entry.relocationMethod === filter;
   });
 
@@ -108,8 +106,8 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
+    if (minutes < 60) {return `${minutes}m ago`;}
+    if (hours < 24) {return `${hours}h ago`;}
     return `${days}d ago`;
   };
 
@@ -178,7 +176,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
               </button>
             ))}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <button
                 onClick={loadHistory}
@@ -236,8 +234,8 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                       </span>
                       {entry.confidence && (
                         <span className={`text-sm px-2 py-0.5 rounded ${
-                          entry.confidence > 0.8 
-                            ? 'bg-green-600 text-white' 
+                          entry.confidence > 0.8
+                            ? 'bg-green-600 text-white'
                             : entry.confidence > 0.6
                               ? 'bg-yellow-600 text-white'
                               : 'bg-red-600 text-white'
@@ -294,4 +292,4 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
       </div>
     </div>
   );
-}
+};

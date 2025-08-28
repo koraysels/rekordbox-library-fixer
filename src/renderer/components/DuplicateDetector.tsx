@@ -8,11 +8,11 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
+import { duplicateStorage } from '../db/duplicatesDb';
+import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { SettingsPanel } from './SettingsPanel';
-import { duplicateStorage } from '../db/duplicatesDb';
-import { useAppContext } from '../AppWithRouter';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -113,7 +113,7 @@ const DuplicateDetector: React.FC = () => {
   const debouncedSaveRef = React.useRef<NodeJS.Timeout>();
 
   const saveDuplicateResults = useCallback(async () => {
-    if (!libraryPath) return;
+    if (!libraryPath) {return;}
 
     // Clear existing timeout
     if (debouncedSaveRef.current) {
@@ -243,7 +243,6 @@ const DuplicateDetector: React.FC = () => {
       setIsScanning(false);
     }
   };
-
 
 
   // Memoize expensive calculations

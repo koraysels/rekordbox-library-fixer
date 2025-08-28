@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
 import { historyStorage } from '../db/historyDb';
-import type { 
-  MissingTrack, 
-  RelocationCandidate, 
-  RelocationOptions, 
+import type {
+  MissingTrack,
+  RelocationCandidate,
+  RelocationOptions,
   RelocationResult,
   CloudSyncIssue,
   CloudSyncFix,
@@ -31,29 +31,29 @@ interface UseTrackRelocatorState {
   missingTracks: MissingTrack[];
   isScanning: boolean;
   hasScanCompleted: boolean;
-  
+
   // Relocation candidates state
   selectedTrack: MissingTrack | null;
   candidates: RelocationCandidate[];
   isFindingCandidates: boolean;
-  
+
   // Relocation operations state
   relocations: Map<string, string>; // trackId -> newLocation
   isRelocating: boolean;
   relocationResults: RelocationResult[];
-  
+
   // Cloud sync state
   cloudSyncIssues: CloudSyncIssue[];
   isDetectingCloudIssues: boolean;
   isFixingCloudIssues: boolean;
   cloudSyncResults: CloudSyncFix[];
-  
+
   // Ownership issues state
   ownershipIssues: OwnershipIssue[];
   isDetectingOwnershipIssues: boolean;
   isFixingOwnershipIssues: boolean;
   ownershipResults: OwnershipFix[];
-  
+
   // Configuration
   searchOptions: RelocationOptions;
   dropboxConnected: boolean;
@@ -95,13 +95,13 @@ export function useTrackRelocator(
     searchOptions: initialSearchOptions || { ...defaultSearchOptions },
     dropboxConnected: false
   });
-  
+
   const [relocationCandidatesCache, setRelocationCandidatesCache] = useState<Map<string, RelocationCandidate[]>>(new Map());
 
   // Load cached results when library data changes
   useEffect(() => {
-    if (!libraryData?.libraryPath) return;
-    
+    if (!libraryData?.libraryPath) {return;}
+
     const loadCachedResults = async () => {
       try {
         // Load relocation results
@@ -117,7 +117,7 @@ export function useTrackRelocator(
           }));
           setRelocationCandidatesCache(relocationResult.relocationCandidates || new Map());
         }
-        
+
         // Load cloud sync results
         const cloudResult = await cloudSyncStorage.getCloudSyncResult(libraryData.libraryPath);
         if (cloudResult) {
@@ -127,7 +127,7 @@ export function useTrackRelocator(
             cloudSyncResults: cloudResult.fixes || []
           }));
         }
-        
+
         // Load ownership results
         const ownershipResult = await ownershipStorage.getOwnershipResult(libraryData.libraryPath);
         if (ownershipResult) {
@@ -141,7 +141,7 @@ export function useTrackRelocator(
         console.error('Failed to load cached results:', error);
       }
     };
-    
+
     loadCachedResults();
   }, [libraryData?.libraryPath]);
 
@@ -165,7 +165,7 @@ export function useTrackRelocator(
           isScanning: false,
           hasScanCompleted: true
         }));
-        
+
         // Save to cache
         if (libraryData?.libraryPath) {
           try {
@@ -182,7 +182,7 @@ export function useTrackRelocator(
             console.error('Failed to cache scan results:', cacheError);
           }
         }
-        
+
         showNotification('success', `Found ${result.data.length} missing tracks`);
       } else {
         setState(prev => ({ ...prev, isScanning: false }));
@@ -229,7 +229,7 @@ export function useTrackRelocator(
         const newCandidatesCache = new Map(relocationCandidatesCache);
         newCandidatesCache.set(track.id, result.data);
         setRelocationCandidatesCache(newCandidatesCache);
-        
+
         // Save to database
         if (libraryData?.libraryPath) {
           try {
@@ -246,7 +246,7 @@ export function useTrackRelocator(
             console.error('Failed to cache candidates:', cacheError);
           }
         }
-        
+
         setState(prev => ({
           ...prev,
           candidates: result.data,
@@ -303,9 +303,9 @@ export function useTrackRelocator(
       logger.debug('🔍 executeRelocations - libraryData:', libraryData);
       logger.debug('🔍 executeRelocations - libraryData.libraryPath:', libraryData?.libraryPath);
       logger.debug('🔍 executeRelocations - libraryPath param:', libraryPath);
-      
+
       const effectiveLibraryPath = getEffectiveLibraryPath(libraryData, libraryPath);
-      
+
       const result = await window.electronAPI.batchRelocateTracks({
         libraryPath: effectiveLibraryPath,
         relocations: relocationsArray
@@ -316,12 +316,12 @@ export function useTrackRelocator(
         const successfulTrackIds = result.data
           .filter((r: RelocationResult) => r.success)
           .map((r: RelocationResult) => r.trackId);
-        
+
         // Update the main library data with new track locations
         if (libraryData && result.xmlUpdated) {
           const updatedLibraryData = { ...libraryData };
           const updatedTracks = new Map(libraryData.tracks);
-          
+
           // Update track locations in the library data
           result.data.forEach((relocation: RelocationResult) => {
             if (relocation.success && relocation.newLocation) {
@@ -334,13 +334,13 @@ export function useTrackRelocator(
               }
             }
           });
-          
+
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
-          
+
           logger.info(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
         }
-        
+
         // Update state to remove successfully relocated tracks from missing tracks list
         // and clear their relocations from the map
         setState(prev => {
@@ -348,11 +348,11 @@ export function useTrackRelocator(
           successfulTrackIds.forEach(trackId => {
             newRelocations.delete(trackId);
           });
-          
-          const newMissingTracks = prev.missingTracks.filter(track => 
+
+          const newMissingTracks = prev.missingTracks.filter(track =>
             !successfulTrackIds.includes(track.id)
           );
-          
+
           return {
             ...prev,
             relocationResults: result.data,
@@ -363,7 +363,7 @@ export function useTrackRelocator(
             isRelocating: false
           };
         });
-        
+
         // Update candidates cache to remove relocated tracks
         setRelocationCandidatesCache(prev => {
           const newCache = new Map(prev);
@@ -372,16 +372,16 @@ export function useTrackRelocator(
           });
           return newCache;
         });
-        
+
         const successCount = result.data.filter((r: RelocationResult) => r.success).length;
-        
+
         // Save successful relocations to history
         logger.debug(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
-        
+
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = result.data.filter((r: RelocationResult) => r.success);
           logger.info(`📝 Saving ${successfulRelocations.length} relocations to history`);
-          
+
           try {
             for (const relocation of successfulRelocations) {
               const track = state.missingTracks.find(t => t.id === relocation.trackId);
@@ -407,13 +407,13 @@ export function useTrackRelocator(
         } else {
           logger.warn(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
         }
-        
+
         // Show success notification with XML update info
-        const xmlUpdateMessage = result.xmlUpdated 
+        const xmlUpdateMessage = result.xmlUpdated
           ? `\n📄 XML updated with ${result.tracksUpdated} track${result.tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${result.backupPath?.split('/').pop()}`
           : '';
-        
-        showNotification('success', 
+
+        showNotification('success',
           `✅ Successfully relocated ${successCount}/${relocationsArray.length} tracks${xmlUpdateMessage}`
         );
       } else {
@@ -453,22 +453,22 @@ export function useTrackRelocator(
 
       if (result.success) {
         const { results, xmlUpdated, tracksUpdated, backupPath } = result.data;
-        
+
         // Get list of successfully relocated track IDs
         const successfulTrackIds = results
           .filter((r: any) => r.success)
           .map((r: any) => r.trackId);
-          
+
         // Get list of failed track IDs to mark as unlocatable
         const failedTrackIds = results
           .filter((r: any) => !r.success)
           .map((r: any) => r.trackId);
-        
+
         // Update the main library data with new track locations
         if (libraryData && xmlUpdated) {
           const updatedLibraryData = { ...libraryData };
           const updatedTracks = new Map(libraryData.tracks);
-          
+
           // Update track locations in the library data
           results.forEach((relocation: any) => {
             if (relocation.success && relocation.newLocation) {
@@ -481,25 +481,25 @@ export function useTrackRelocator(
               }
             }
           });
-          
+
           updatedLibraryData.tracks = updatedTracks;
           setLibraryData(updatedLibraryData);
-          
+
           logger.info(`🔄 Updated ${successfulTrackIds.length} track locations in library data`);
         }
-        
+
         // Update state: remove successfully relocated tracks and mark failed tracks as unlocatable
         setState(prev => {
           const newRelocations = new Map(prev.relocations);
           successfulTrackIds.forEach((trackId: string) => {
             newRelocations.delete(trackId);
           });
-          
+
           // Remove successfully relocated tracks from missing tracks list
-          const filteredTracks = prev.missingTracks.filter(track => 
+          const filteredTracks = prev.missingTracks.filter(track =>
             !successfulTrackIds.includes(track.id)
           );
-          
+
           // Mark failed tracks as unlocatable (keep them in the list but flag them)
           const newMissingTracks = filteredTracks.map(track => {
             if (failedTrackIds.includes(track.id)) {
@@ -507,7 +507,7 @@ export function useTrackRelocator(
             }
             return track;
           });
-          
+
           return {
             ...prev,
             relocationResults: results,
@@ -518,7 +518,7 @@ export function useTrackRelocator(
             isRelocating: false
           };
         });
-        
+
         // Update candidates cache to remove relocated tracks
         setRelocationCandidatesCache(prev => {
           const newCache = new Map(prev);
@@ -527,15 +527,15 @@ export function useTrackRelocator(
           });
           return newCache;
         });
-        
+
         const successCount = results.filter((r: any) => r.success).length;
         const failureCount = results.filter((r: any) => !r.success).length;
-        
+
         // Save successful relocations to history
         if (effectiveLibraryPath && successCount > 0) {
           const successfulRelocations = results.filter((r: any) => r.success);
           logger.info(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
-          
+
           try {
             for (const relocation of successfulRelocations) {
               const track = tracks.find(t => t.id === relocation.trackId);
@@ -561,20 +561,20 @@ export function useTrackRelocator(
             console.error('❌ Failed to save auto-relocation history:', historyError);
           }
         }
-        
+
         // Show notification with detailed results
-        const xmlUpdateMessage = xmlUpdated 
+        const xmlUpdateMessage = xmlUpdated
           ? `\n📄 XML updated with ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${backupPath?.split('/').pop()}`
           : '';
-        
-        const failureMessage = failureCount > 0 
+
+        const failureMessage = failureCount > 0
           ? `\n⚠️ ${failureCount} track${failureCount > 1 ? 's' : ''} marked as unlocatable`
           : '';
-        
-        const notificationType = failureCount > 0 && successCount === 0 ? 'error' : 
+
+        const notificationType = failureCount > 0 && successCount === 0 ? 'error' :
                                failureCount > 0 ? 'info' : 'success';
-        
-        showNotification(notificationType, 
+
+        showNotification(notificationType,
           `✅ Auto-relocated ${successCount}/${tracks.length} tracks${failureMessage}${xmlUpdateMessage}`
         );
       } else {
@@ -607,7 +607,7 @@ export function useTrackRelocator(
           cloudSyncIssues: result.data,
           isDetectingCloudIssues: false
         }));
-        
+
         // Save to cache
         if (libraryData?.libraryPath) {
           try {
@@ -620,7 +620,7 @@ export function useTrackRelocator(
             console.error('Failed to cache cloud sync issues:', cacheError);
           }
         }
-        
+
         showNotification('success', `Found ${result.data.length} cloud sync issues`);
       } else {
         setState(prev => ({ ...prev, isDetectingCloudIssues: false }));
@@ -645,7 +645,7 @@ export function useTrackRelocator(
           cloudSyncResults: result.data,
           isFixingCloudIssues: false
         }));
-        
+
         const successCount = result.data.filter((r: CloudSyncFix) => r.success).length;
         showNotification('success', `Fixed ${successCount}/${issues.length} cloud sync issues`);
       } else {
@@ -694,7 +694,7 @@ export function useTrackRelocator(
           ownershipIssues: result.data,
           isDetectingOwnershipIssues: false
         }));
-        
+
         // Save to cache
         if (libraryData?.libraryPath) {
           try {
@@ -707,7 +707,7 @@ export function useTrackRelocator(
             console.error('Failed to cache ownership issues:', cacheError);
           }
         }
-        
+
         showNotification('success', `Found ${result.data.length} ownership issues`);
       } else {
         setState(prev => ({ ...prev, isDetectingOwnershipIssues: false }));
@@ -732,7 +732,7 @@ export function useTrackRelocator(
           ownershipResults: result.data,
           isFixingOwnershipIssues: false
         }));
-        
+
         const successCount = result.data.filter((r: OwnershipFix) => r.success).length;
         showNotification('success', `Fixed ${successCount}/${issues.length} ownership issues`);
       } else {
@@ -768,9 +768,9 @@ export function useTrackRelocator(
       ownershipIssues: [],
       ownershipResults: []
     }));
-    
+
     setRelocationCandidatesCache(new Map());
-    
+
     // Clear cache from database
     if (libraryData?.libraryPath) {
       try {
@@ -795,7 +795,7 @@ export function useTrackRelocator(
         return track;
       })
     }));
-    
+
     showNotification('info', `Cleared unlocatable status from ${trackIds.length} track${trackIds.length > 1 ? 's' : ''}`);
   }, [showNotification]);
 
@@ -813,7 +813,7 @@ export function useTrackRelocator(
   return {
     // State
     ...state,
-    
+
     // Actions
     scanForMissingTracks,
     findRelocationCandidates,
@@ -829,7 +829,7 @@ export function useTrackRelocator(
     updateSearchOptions,
     clearResults,
     clearUnlocatableStatus,
-    
+
     // Computed
     stats
   };

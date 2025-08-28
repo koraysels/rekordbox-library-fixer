@@ -7,6 +7,7 @@
     "dev:vite": "vite",
     "dev:electron": "npm run build:main && NODE_ENV=development electron .",
     "build": "npm run build:vite && npm run build:main",
+    "build:check": "npm run lint:check && npm run build",
     "build:vite": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
     "dist": "npm run build && electron-builder",

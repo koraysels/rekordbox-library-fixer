@@ -13,7 +13,7 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
       setLibraryData(null);
       // Set the new library path immediately
       setLibraryPath(path);
-      
+
       const result = await window.electronAPI.parseRekordboxLibrary(path);
       if (result.success) {
         setLibraryData(result.data);

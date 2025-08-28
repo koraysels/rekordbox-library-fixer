@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import * as path from 'path';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
@@ -13,21 +13,21 @@ const safeConsole = {
   log: (...args: any[]) => {
     try {
       console.log(...args);
-    } catch (error) {
+    } catch {
       // Silently ignore EPIPE errors during logging
     }
   },
   error: (...args: any[]) => {
     try {
       console.error(...args);
-    } catch (error) {
+    } catch {
       // Silently ignore EPIPE errors during logging
     }
   },
   warn: (...args: any[]) => {
     try {
       console.warn(...args);
-    } catch (error) {
+    } catch {
       // Silently ignore EPIPE errors during logging
     }
   }
@@ -50,7 +50,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
-    icon: path.join(__dirname, "../assets/icons/icon.png"), // works in dev + Linux
+    icon: path.join(__dirname, '../assets/icons/icon.png'), // works in dev + Linux
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#18181B',
   });
@@ -316,13 +316,13 @@ ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
   try {
     const library = await rekordboxParser.parseLibrary(xmlPath);
     logger.logLibraryParsing(xmlPath, library.tracks.size, library.playlists.length);
-    
+
     // Include the libraryPath in the returned data to match LibraryData interface
     const libraryData = {
       ...library,
       libraryPath: xmlPath
     };
-    
+
     return { success: true, data: libraryData };
   } catch (error) {
     logger.error('LIBRARY_PARSING_FAILED', {
@@ -381,7 +381,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     const library = await rekordboxParser.parseLibrary(resolution.libraryPath);
 
     // Step 3: Determine which tracks to remove for each duplicate set
-    let tracksToRemove: string[] = [];
+    const tracksToRemove: string[] = [];
 
     for (const duplicateSet of resolution.duplicates) {
       const tracksInSet = duplicateSet.tracks;
@@ -396,14 +396,14 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
         });
       } else if (resolution.strategy === 'keep-newest') {
         trackToKeep = tracksInSet.reduce((newest: any, current: any) => {
-          if (!newest.dateModified) return current;
-          if (!current.dateModified) return newest;
+          if (!newest.dateModified) {return current;}
+          if (!current.dateModified) {return newest;}
           return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
         });
       } else if (resolution.strategy === 'keep-oldest') {
         trackToKeep = tracksInSet.reduce((oldest: any, current: any) => {
-          if (!oldest.dateAdded) return current;
-          if (!current.dateAdded) return oldest;
+          if (!oldest.dateAdded) {return current;}
+          if (!current.dateAdded) {return oldest;}
           return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
         });
       } else if (resolution.strategy === 'keep-preferred-path') {
@@ -416,9 +416,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
             b.location && b.location.toLowerCase().includes(pref.toLowerCase())
           );
 
-          if (aMatch !== -1 && bMatch !== -1) return aMatch - bMatch;
-          if (aMatch !== -1) return -1;
-          if (bMatch !== -1) return 1;
+          if (aMatch !== -1 && bMatch !== -1) {return aMatch - bMatch;}
+          if (aMatch !== -1) {return -1;}
+          if (bMatch !== -1) {return 1;}
           return 0;
         });
         trackToKeep = sortedTracks[0];
@@ -558,11 +558,11 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
   libraryPath: string;
 }) => {
   appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks using manual logic`);
-  
+
   const operationId = Date.now().toString();
   const cancelToken = { cancelled: false };
   activeOperations.set(operationId, cancelToken);
-  
+
   try {
     let successCount = 0;
     const results: any[] = [];
@@ -587,7 +587,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
     for (let i = 0; i < data.tracks.length; i++) {
       // Check if cancelled
       if (cancelToken.cancelled) {
-        appLogger.info(`⚠️ Auto-relocation cancelled by user`);
+        appLogger.info('⚠️ Auto-relocation cancelled by user');
         if (mainWindow) {
           mainWindow.webContents.send('auto-relocate-progress', {
             operationId,
@@ -601,7 +601,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
       }
 
       const track = data.tracks[i];
-      
+
       // Send progress update for searching
       if (mainWindow) {
         mainWindow.webContents.send('auto-relocate-progress', {
@@ -614,18 +614,18 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
           message: `Searching for: ${track.name}`
         });
       }
-      
+
       try {
         // Use the EXACT same logic as manual relocation
         appLogger.info(`🔍 Auto-relocating track ${i+1}/${data.tracks.length}: "${track.name}" by ${track.artist}`);
         const candidatesResult = await trackRelocator.findRelocationCandidates(track, data.options);
-        
+
         if (candidatesResult.length > 0) {
           // Use the best candidate (highest confidence) - same as manual
           const bestCandidate = candidatesResult.reduce((best, current) =>
             current.confidence > best.confidence ? current : best
           );
-          
+
           appLogger.info(`   Found ${candidatesResult.length} candidates, best: ${bestCandidate.path} (confidence: ${bestCandidate.confidence})`);
 
           // Only auto-relocate if confidence is high enough
@@ -644,9 +644,9 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
               confidence: bestCandidate.confidence,
               oldLocation: track.originalLocation
             });
-            
+
             successCount++;
-            
+
             // Send success update
             if (mainWindow) {
               mainWindow.webContents.send('auto-relocate-progress', {
@@ -661,7 +661,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
                 successCount
               });
             }
-            
+
             appLogger.info(`   ✅ Auto-relocating: confidence ${bestCandidate.confidence} >= threshold ${data.options.matchThreshold}`);
           } else {
             results.push({
@@ -671,7 +671,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
               error: 'No high-confidence candidate found',
               confidence: bestCandidate.confidence
             });
-            
+
             // Send low confidence update
             if (mainWindow) {
               mainWindow.webContents.send('auto-relocate-progress', {
@@ -685,7 +685,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
                 successCount
               });
             }
-            
+
             appLogger.info(`   ❌ Confidence too low: ${bestCandidate.confidence} < ${data.options.matchThreshold}`);
           }
         } else {
@@ -695,7 +695,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
             success: false,
             error: 'No candidates found'
           });
-          
+
           // Send not found update
           if (mainWindow) {
             mainWindow.webContents.send('auto-relocate-progress', {
@@ -708,7 +708,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
               successCount
             });
           }
-          
+
           appLogger.info(`   ❌ No candidates found for "${track.name}"`);
         }
       } catch (error) {
@@ -731,17 +731,17 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
       backupPath?: string;
       error?: string;
     } | null = null;
-    
+
     if (successfulRelocations.length > 0 && data.libraryPath) {
       safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
-      
+
       try {
         // Step 2a: Verify relocations first (without XML update)
         const verificationResults = await trackRelocator.batchRelocate(successfulRelocations);
         const verifiedSuccessful = verificationResults.filter(r => r.success);
-        
+
         if (verifiedSuccessful.length === 0) {
-          safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+          safeConsole.log('⚠️ No successful relocations to apply to XML');
           batchResult = { success: true, data: verificationResults, xmlUpdated: false, tracksUpdated: 0 };
         } else {
           // Step 2b: Create backup of original XML
@@ -761,7 +761,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
           for (const relocation of verifiedSuccessful) {
             const track = library.tracks.get(relocation.trackId);
             if (track && relocation.newLocation) {
-              // Update the track location 
+              // Update the track location
               track.location = relocation.newLocation;
               library.tracks.set(relocation.trackId, track);
               tracksUpdated++;
@@ -775,9 +775,9 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
             safeConsole.log(`✅ XML updated with ${tracksUpdated} auto-relocated tracks`);
             logger.logLibrarySaving(data.libraryPath, library.tracks.size);
           }
-          
-          batchResult = { 
-            success: true, 
+
+          batchResult = {
+            success: true,
             data: verificationResults,
             backupPath,
             xmlUpdated: tracksUpdated > 0,
@@ -822,7 +822,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
     }
 
     appLogger.info(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful (using manual logic)`);
-    
+
     return {
       success: true,
       operationId,
@@ -838,13 +838,13 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
   } catch (error) {
     // Clean up active operation
     activeOperations.delete(operationId);
-    
+
     appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
       trackCount: data.tracks.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
-    
+
     // Send error notification
     if (mainWindow) {
       mainWindow.webContents.send('auto-relocate-progress', {
@@ -853,7 +853,7 @@ ipcMain.handle('auto-relocate-tracks', async (event, data: {
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       });
     }
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -867,9 +867,9 @@ ipcMain.handle('cancel-auto-relocate', async (_, operationId: string) => {
   if (cancelToken) {
     cancelToken.cancelled = true;
     activeOperations.delete(operationId);
-    
+
     appLogger.info(`⚠️ Auto-relocation ${operationId} cancelled by user`);
-    
+
     if (mainWindow) {
       mainWindow.webContents.send('auto-relocate-progress', {
         operationId,
@@ -877,7 +877,7 @@ ipcMain.handle('cancel-auto-relocate', async (_, operationId: string) => {
         message: 'Auto-relocation cancelled'
       });
     }
-    
+
     return { success: true };
   }
   return { success: false, error: 'Operation not found' };
@@ -926,7 +926,7 @@ ipcMain.handle('relocate-track', async (_, trackId: string, oldLocation: string,
   try {
     const result = await trackRelocator.relocateTrack(trackId, oldLocation, newLocation);
     if (result.success) {
-      safeConsole.log(`✅ Track relocation successful`);
+      safeConsole.log('✅ Track relocation successful');
     } else {
       safeConsole.log(`❌ Track relocation failed: ${result.error}`);
     }
@@ -955,9 +955,9 @@ ipcMain.handle('batch-relocate-tracks', async (_, data: {
     // Step 1: Verify relocations first (without XML update)
     const verificationResults = await trackRelocator.batchRelocate(data.relocations);
     const successfulRelocations = verificationResults.filter(r => r.success);
-    
+
     if (successfulRelocations.length === 0) {
-      safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+      safeConsole.log('⚠️ No successful relocations to apply to XML');
       return { success: true, data: verificationResults };
     }
 
@@ -978,7 +978,7 @@ ipcMain.handle('batch-relocate-tracks', async (_, data: {
     for (const relocation of successfulRelocations) {
       const track = library.tracks.get(relocation.trackId);
       if (track && relocation.newLocation) {
-        // Update the track location 
+        // Update the track location
         track.location = relocation.newLocation;
         library.tracks.set(relocation.trackId, track);
         tracksUpdated++;
@@ -1002,9 +1002,9 @@ ipcMain.handle('batch-relocate-tracks', async (_, data: {
 
     const successCount = verificationResults.filter(r => r.success).length;
     safeConsole.log(`✅ Batch relocation complete: ${successCount}/${data.relocations.length} successful, XML updated with ${tracksUpdated} changes`);
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       data: verificationResults,
       backupPath,
       xmlUpdated: tracksUpdated > 0,
@@ -1048,7 +1048,7 @@ ipcMain.handle('fix-cloud-sync-issue', async (_, issue: any) => {
   try {
     const result = await cloudSyncFixer.fixCloudSyncIssue(issue);
     if (result.success) {
-      safeConsole.log(`✅ Cloud sync fix successful`);
+      safeConsole.log('✅ Cloud sync fix successful');
     } else {
       safeConsole.log(`❌ Cloud sync fix failed: ${result.error}`);
     }
@@ -1091,9 +1091,9 @@ ipcMain.handle('initialize-dropbox-api', async (_, config: any) => {
   try {
     const success = await cloudSyncFixer.initializeDropboxAPI(config);
     if (success) {
-      safeConsole.log(`✅ Dropbox API initialized successfully`);
+      safeConsole.log('✅ Dropbox API initialized successfully');
     } else {
-      safeConsole.log(`❌ Dropbox API initialization failed`);
+      safeConsole.log('❌ Dropbox API initialization failed');
     }
     return { success: true, data: { initialized: success } };
   } catch (error) {
@@ -1134,7 +1134,7 @@ ipcMain.handle('fix-track-ownership', async (_, issue: any) => {
   try {
     const result = await trackOwnershipFixer.fixTrackOwnership(issue);
     if (result.success) {
-      safeConsole.log(`✅ Ownership fix successful`);
+      safeConsole.log('✅ Ownership fix successful');
     } else {
       safeConsole.log(`❌ Ownership fix failed: ${result.error}`);
     }
@@ -1220,18 +1220,18 @@ ipcMain.handle('open-file-dialog', async (_, options = {}) => {
       ],
       ...options
     });
-    
+
     if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
       return { success: false, error: 'User cancelled or no files selected' };
     }
-    
+
     // Return absolute file paths
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         filePaths: result.filePaths,
         filePath: result.filePaths[0] // For backward compatibility
-      } 
+      }
     };
   } catch (error) {
     safeConsole.error('❌ Failed to open file dialog:', error);
@@ -1244,11 +1244,11 @@ ipcMain.handle('open-file-dialog', async (_, options = {}) => {
 ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
   try {
     safeConsole.log('🎯 Processing native file drop:', filePaths);
-    
+
     // Validate that all paths are absolute and files exist
     const fs = require('fs');
     const validPaths: string[] = [];
-    
+
     for (const filePath of filePaths) {
       if (path.isAbsolute(filePath)) {
         try {
@@ -1262,7 +1262,7 @@ ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
         safeConsole.warn('❌ Path is not absolute:', filePath);
       }
     }
-    
+
     if (validPaths.length > 0) {
       // Send the validated native paths to renderer via event (single notification path)
       mainWindow?.webContents.send('native-file-dropped', validPaths);
@@ -1281,16 +1281,16 @@ ipcMain.handle('save-dropped-file', async (_, { content, fileName }) => {
   try {
     const fs = require('fs');
     const os = require('os');
-    
+
     // Create a temporary file path
     const tempDir = path.join(os.tmpdir(), 'rekordbox-library-manager');
     await fs.promises.mkdir(tempDir, { recursive: true });
-    
+
     const tempFilePath = path.join(tempDir, fileName);
-    
+
     // Write the file content
     await fs.promises.writeFile(tempFilePath, content, 'utf8');
-    
+
     safeConsole.log('✅ Dropped file saved to:', tempFilePath);
     return { success: true, data: { filePath: tempFilePath } };
   } catch (error) {

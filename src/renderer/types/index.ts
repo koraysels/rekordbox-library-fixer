@@ -53,11 +53,11 @@ export interface ScanOptions {
   pathPreferences: string[];
 }
 
-export type ResolutionStrategy = 
-  | 'keep-highest-quality' 
-  | 'keep-newest' 
-  | 'keep-oldest' 
-  | 'keep-preferred-path' 
+export type ResolutionStrategy =
+  | 'keep-highest-quality'
+  | 'keep-newest'
+  | 'keep-oldest'
+  | 'keep-preferred-path'
   | 'manual';
 
 // Track Relocation types

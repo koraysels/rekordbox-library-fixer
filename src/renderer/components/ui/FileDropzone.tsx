@@ -32,9 +32,9 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     <div className={`text-center max-w-2xl w-full ${className}`}>
       {/* App Logo */}
       <div className="mb-8">
-        <img 
-          src="/icons/64x64.png" 
-          alt="Rekordbox Library Manager" 
+        <img
+          src="/icons/64x64.png"
+          alt="Rekordbox Library Manager"
           className="w-24 h-24 mx-auto mb-4 bg-white rounded-3xl p-3 shadow-lg"
         />
         <h2 className="text-3xl font-bold text-white mb-2">Welcome to Rekordbox Library Manager</h2>
@@ -48,8 +48,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         {...getRootProps({
           className: `
             border-2 border-dashed rounded-3xl p-12 mb-8 transition-all duration-300 cursor-pointer
-            ${isDragAccept 
-              ? 'border-rekordbox-purple bg-rekordbox-purple/10 scale-105' 
+            ${isDragAccept
+              ? 'border-rekordbox-purple bg-rekordbox-purple/10 scale-105'
               : isDragReject
                 ? 'border-red-500 bg-red-500/10 scale-105'
                 : isDragActive
@@ -96,8 +96,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
                     onBrowseClick();
                   }}
                   disabled={disabled}
-                  className="bg-rekordbox-purple hover:bg-rekordbox-purple/90 disabled:bg-gray-600 
-                           disabled:cursor-not-allowed text-white font-semibold 
+                  className="bg-rekordbox-purple hover:bg-rekordbox-purple/90 disabled:bg-gray-600
+                           disabled:cursor-not-allowed text-white font-semibold
                            py-4 px-8 rounded-xl transition-colors duration-200 flex items-center space-x-3"
                 >
                   <FolderOpen className="w-5 h-5" />

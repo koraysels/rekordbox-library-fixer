@@ -1,6 +1,6 @@
 /**
  * Renderer process logging utility
- * 
+ *
  * Uses import.meta.env.MODE to determine environment
  * Designed to be easily extensible with external logging services (Sentry, etc.)
  */
@@ -46,11 +46,11 @@ class ConsoleLoggerProvider implements LoggerProvider {
   }
 
   log(entry: LogEntry): void {
-    if (!this.shouldLog(entry.level)) return;
+    if (!this.shouldLog(entry.level)) {return;}
 
     const timestamp = entry.timestamp.toISOString();
     const prefix = `[${timestamp}] [renderer]`;
-    
+
     switch (entry.level) {
       case LogLevel.DEBUG:
         console.debug(`${prefix} 🐛`, entry.message, entry.data || '');

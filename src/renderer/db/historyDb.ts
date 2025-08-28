@@ -17,15 +17,15 @@ export interface RelocationHistoryEntry {
 
 class HistoryDatabase extends Dexie {
   relocationHistory!: EntityTable<RelocationHistoryEntry, 'id'>;
-  
+
   constructor() {
     super('RekordboxHistoryDB');
-    
+
     // Define schema
     this.version(1).stores({
       relocationHistory: '++id, libraryPath, timestamp'
     });
-    
+
     console.log('🗄️ RekordboxHistoryDB initialized');
   }
 }
@@ -54,7 +54,7 @@ export const historyEvents = {
       }
     };
   },
-  
+
   notifyHistoryUpdate: (libraryPath: string) => {
     historyEventListeners.forEach(callback => callback(libraryPath));
   }
@@ -68,7 +68,7 @@ export const historyStorage = {
       const db = getHistoryDb();
       const result = await db.relocationHistory.add(entry);
       console.log('✅ History entry added with ID:', result);
-      
+
       // Notify listeners that history was updated
       historyEvents.notifyHistoryUpdate(entry.libraryPath);
     } catch (error) {

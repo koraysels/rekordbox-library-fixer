@@ -35,7 +35,7 @@ export class Logger {
 
   private writeLog(entry: LogEntry): void {
     const logLine = `[${entry.timestamp}] ${entry.level.toUpperCase()} - ${entry.operation}\n${JSON.stringify(entry.details, null, 2)}\n\n`;
-    
+
     try {
       fs.appendFileSync(this.logFile, logLine);
     } catch (error) {

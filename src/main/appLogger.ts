@@ -1,6 +1,6 @@
 /**
  * Main process logging utility
- * 
+ *
  * Uses NODE_ENV to determine environment
  * Designed to be easily extensible with external logging services (Sentry, etc.)
  */
@@ -50,39 +50,39 @@ class ConsoleLoggerProvider implements LoggerProvider {
     debug: (...args: any[]) => {
       try {
         console.debug(...args);
-      } catch (error) {
+      } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
     info: (...args: any[]) => {
       try {
         console.info(...args);
-      } catch (error) {
+      } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
     warn: (...args: any[]) => {
       try {
         console.warn(...args);
-      } catch (error) {
+      } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
     error: (...args: any[]) => {
       try {
         console.error(...args);
-      } catch (error) {
+      } catch {
         // Silently ignore EPIPE errors during logging
       }
     }
   };
 
   log(entry: LogEntry): void {
-    if (!this.shouldLog(entry.level)) return;
+    if (!this.shouldLog(entry.level)) {return;}
 
     const timestamp = entry.timestamp.toISOString();
     const prefix = `[${timestamp}] [main]`;
-    
+
     switch (entry.level) {
       case LogLevel.DEBUG:
         this.safeConsole.debug(`${prefix} 🐛`, entry.message, entry.data || '');

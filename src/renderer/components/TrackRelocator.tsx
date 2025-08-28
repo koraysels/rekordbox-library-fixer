@@ -18,26 +18,26 @@ import {
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useAppContext } from '../AppWithRouter';
+import type {
+  RelocationCandidate
+} from '../types';
 import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
 import { AutoRelocateProgressDialog } from './ui/AutoRelocateProgressDialog';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
 import { RelocationHistoryPanel } from './RelocationHistoryPanel';
-import { useAppContext } from '../AppWithRouter';
-import type {
-  RelocationCandidate
-} from '../types';
 
 const TrackRelocator: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
-  
+
   // Get settings store first, before initializing the hook
   const relocationOptions = useSettingsStore((state) => state.relocationOptions);
   const setRelocationOptions = useSettingsStore((state) => state.setRelocationOptions);
   const addRelocationSearchPath = useSettingsStore((state) => state.addRelocationSearchPath);
   const removeRelocationSearchPath = useSettingsStore((state) => state.removeRelocationSearchPath);
-  
+
   const {
     // State
     missingTracks,
@@ -147,10 +147,10 @@ const TrackRelocator: React.FC = () => {
 
     setIsAutoRelocating(true);
     setShowProgressDialog(true);
-    
+
     // Debug: Log current search options being used
     console.log('🚀 Starting auto-relocation with settings:', searchOptions);
-    
+
     try {
       // Use the autoRelocateTracks function from the hook which properly updates state
       await autoRelocateTracks(selectedTracks);
@@ -277,8 +277,8 @@ const TrackRelocator: React.FC = () => {
               icon={Zap}
               title="Auto Relocate Tracks"
               description={
-                "Automatically find and relocate selected tracks using AI-powered matching " +
-                "(80%+ confidence required)"
+                'Automatically find and relocate selected tracks using AI-powered matching ' +
+                '(80%+ confidence required)'
               }
               variant="success"
               className="w-full"
@@ -293,8 +293,8 @@ const TrackRelocator: React.FC = () => {
               icon={RotateCcw}
               title="Reset Track Locations"
               description={
-                "Reset selected tracks to make them relocatable again. Tracks stay in " +
-                "playlists but marked as needing relocation"
+                'Reset selected tracks to make them relocatable again. Tracks stay in ' +
+                'playlists but marked as needing relocation'
               }
               variant="secondary"
               className="w-full"
@@ -342,8 +342,8 @@ const TrackRelocator: React.FC = () => {
               onClick={clearSelection}
               disabled={selectedMissingTracks.size === 0}
               className={
-                "px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 " +
-                "disabled:opacity-50 text-white rounded text-sm transition-colors"
+                'px-3 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-700 ' +
+                'disabled:opacity-50 text-white rounded text-sm transition-colors'
               }
             >
               Clear Selection
@@ -450,8 +450,8 @@ const TrackRelocator: React.FC = () => {
                   <div
                     key={index}
                     className={
-                      "bg-gray-800 rounded-lg p-3 border border-gray-700 " +
-                      "hover:border-gray-600 cursor-pointer transition-colors"
+                      'bg-gray-800 rounded-lg p-3 border border-gray-700 ' +
+                      'hover:border-gray-600 cursor-pointer transition-colors'
                     }
                     onClick={() => selectCandidate(candidate)}
                   >
@@ -465,8 +465,8 @@ const TrackRelocator: React.FC = () => {
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
                           <span className={`text-xs px-2 py-0.5 rounded ${
-                            candidate.confidence > 0.8 
-                              ? 'bg-green-600 text-white' 
+                            candidate.confidence > 0.8
+                              ? 'bg-green-600 text-white'
                               : candidate.confidence > 0.6
                                 ? 'bg-yellow-600 text-white'
                                 : 'bg-red-600 text-white'
