@@ -331,7 +331,8 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ might be supported
 
 ### 📅 **v0.1.0** *(Major Release)*
 - [ ] **Multi-format Support**: Serato, VirtualDJ, Traktor
-- [ ] **Audio Analysis**: Automatic BPM/key detection
+- [ ] ***Maintenance Mode**
+- [ ] ***Auto Import Mode*** import new tracks, preventing duplicates and replacing lower bitrate tracks with better quality ones. Update all playlists to include the new, higher quality audio file
 
 ### 📅 **v1.0.0** *(Full Release)*
 - [ ] **Stability & Performance is fine-tuned**: 
@@ -378,7 +379,7 @@ This project is licensed under a **custom non-commercial license** - see the [LI
 
 <div align="center">
 
-**Made by some DJs who got tired of messy libraries**
+**Made by a DJ who got tired of messy libraries**
 
 *If this thing actually helped you, maybe give it a star so other DJs can find it? No pressure though! 😊*
 
