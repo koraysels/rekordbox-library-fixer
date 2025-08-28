@@ -52,7 +52,7 @@ export class TrackRelocator {
     const missingTracks: MissingTrack[] = [];
 
     for (const [id, track] of tracks.entries()) {
-      if (!track.location) continue;
+      if (!track.location) {continue;}
 
       try {
         // Check if file exists at original location
@@ -78,9 +78,9 @@ export class TrackRelocator {
       }
     }
 
-    this.logger.info('TRACK_RELOCATOR_SCAN_COMPLETE', { 
+    this.logger.info('TRACK_RELOCATOR_SCAN_COMPLETE', {
       missingTracks: missingTracks.length,
-      totalTracks: tracks.size 
+      totalTracks: tracks.size
     });
 
     return missingTracks;
@@ -107,19 +107,19 @@ export class TrackRelocator {
         }
 
         // Build glob pattern for audio files
-        const extensions = options.fileExtensions.length > 0 
-          ? options.fileExtensions 
+        const extensions = options.fileExtensions.length > 0
+          ? options.fileExtensions
           : this.audioExtensions;
-        
+
         const globPattern = path.join(
           searchPath,
           options.includeSubdirectories ? '**' : '',
           `*.{${extensions.map(ext => ext.replace('.', '')).join(',')}}`
         );
 
-        const files = await glob(globPattern, { 
+        const files = await glob(globPattern, {
           maxDepth: options.searchDepth,
-          nocase: true 
+          nocase: true
         });
 
         // 1. Exact filename match
@@ -151,7 +151,7 @@ export class TrackRelocator {
         const fuzzyMatches = fuzzySearcher.search(originalFileName);
         for (let i = 0; i < Math.min(5, fuzzyMatches.length); i++) {
           const match = fuzzyMatches[i];
-          if (candidates.some(c => c.path === match.path)) continue;
+          if (candidates.some(c => c.path === match.path)) {continue;}
 
           const similarity = this.calculateStringSimilarity(originalFileName, match.name);
           if (similarity >= options.matchThreshold) {
@@ -166,15 +166,14 @@ export class TrackRelocator {
 
         // 3. Metadata-based matching (artist + title)
         if (track.artist && track.name) {
-          const metadataSearchTerm = `${track.artist} ${track.name}`.toLowerCase();
           const metadataMatches = fileNames.filter(file => {
             const fileName = file.name.toLowerCase();
-            return fileName.includes(track.artist.toLowerCase()) && 
+            return fileName.includes(track.artist.toLowerCase()) &&
                    fileName.includes(track.name.toLowerCase());
           });
 
           for (const match of metadataMatches.slice(0, 3)) {
-            if (candidates.some(c => c.path === match.path)) continue;
+            if (candidates.some(c => c.path === match.path)) {continue;}
 
             candidates.push({
               path: match.path,
@@ -188,12 +187,12 @@ export class TrackRelocator {
         // 4. File size matching (if available)
         if (track.size) {
           for (const file of files.slice(0, 20)) { // Limit to avoid performance issues
-            if (candidates.some(c => c.path === file)) continue;
+            if (candidates.some(c => c.path === file)) {continue;}
 
             try {
               const stats = fs.statSync(file);
               const sizeDifference = Math.abs(stats.size - track.size) / track.size;
-              
+
               if (sizeDifference <= 0.05) { // Within 5% size difference
                 candidates.push({
                   path: file,
@@ -219,7 +218,7 @@ export class TrackRelocator {
 
     // Sort candidates by score (descending) and remove duplicates
     const uniqueCandidates = candidates
-      .filter((candidate, index, self) => 
+      .filter((candidate, index, self) =>
         self.findIndex(c => c.path === candidate.path) === index
       )
       .sort((a, b) => b.score - a.score)
@@ -301,12 +300,12 @@ export class TrackRelocator {
     for (const relocation of relocations) {
       const result = await this.relocateTrack(
         relocation.trackId,
-        relocation.oldLocation, 
+        relocation.oldLocation,
         relocation.newLocation
       );
-      
+
       results.push(result);
-      if (result.success) successCount++;
+      if (result.success) {successCount++;}
 
       // Add small delay to prevent overwhelming the file system
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -325,9 +324,9 @@ export class TrackRelocator {
     // Simple Levenshtein distance-based similarity
     const longer = str1.length > str2.length ? str1 : str2;
     const shorter = str1.length > str2.length ? str2 : str1;
-    
-    if (longer.length === 0) return 1.0;
-    
+
+    if (longer.length === 0) {return 1.0;}
+
     const distance = this.levenshteinDistance(longer.toLowerCase(), shorter.toLowerCase());
     return (longer.length - distance) / longer.length;
   }
@@ -335,15 +334,15 @@ export class TrackRelocator {
   private levenshteinDistance(str1: string, str2: string): number {
     const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
 
-    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    for (let i = 0; i <= str1.length; i++) {matrix[0][i] = i;}
+    for (let j = 0; j <= str2.length; j++) {matrix[j][0] = j;}
 
     for (let j = 1; j <= str2.length; j++) {
       for (let i = 1; i <= str1.length; i++) {
         const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
         matrix[j][i] = Math.min(
           matrix[j][i - 1] + 1,     // deletion
-          matrix[j - 1][i] + 1,     // insertion  
+          matrix[j - 1][i] + 1,     // insertion
           matrix[j - 1][i - 1] + cost // substitution
         );
       }

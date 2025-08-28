@@ -89,7 +89,7 @@ export const useDuplicates = (
 
     // Filtered duplicates based on debounced search
     const filteredDuplicates = useMemo(() => {
-        if (!debouncedSearchFilter.trim()) return duplicates;
+        if (!debouncedSearchFilter.trim()) {return duplicates;}
 
         const filter = debouncedSearchFilter.toLowerCase();
         return duplicates.filter(duplicate =>
@@ -125,7 +125,7 @@ export const useDuplicates = (
 
     // Debounced save function using Dexie
     const saveDuplicateResults = useCallback(async () => {
-        if (!libraryPath) return;
+        if (!libraryPath) {return;}
 
         // Clear existing timeout
         if (debouncedSaveRef.current) {

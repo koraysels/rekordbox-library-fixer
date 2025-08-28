@@ -36,25 +36,25 @@ const AppWithRouter: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
   const location = useLocation();
-  
+
   // Derive active tab from route
   const activeTab = pathToTab[location.pathname] || 'duplicates';
-  
+
   // Custom hooks
   const { notification, showNotification } = useNotifications();
-  const { 
-    libraryPath, 
-    libraryData, 
-    isLoading, 
-    selectLibrary, 
+  const {
+    libraryPath,
+    libraryData,
+    isLoading,
+    selectLibrary,
     loadLibrary,
     clearStoredData,
-    setLibraryData 
+    setLibraryData
   } = useLibrary(showNotification);
-  
+
   // Fetch route-specific cached data from Dexie
-  const { 
-    isLoading: isLoadingCached 
+  const {
+    isLoading: isLoadingCached
     // duplicateResults, relocationResults, settings // Unused for now
   } = useRouteData(location.pathname, libraryPath);
 
@@ -89,10 +89,10 @@ const AppWithRouter: React.FC = () => {
     <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
       {/* Title Bar for Window Controls */}
       <div className="h-7 bg-gray-800 app-drag-region flex-shrink-0"></div>
-      
+
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation */}
-      <Sidebar 
+      <Sidebar
         activeTab={activeTab}
         libraryData={libraryData}
         libraryPath={libraryPath}
@@ -146,7 +146,7 @@ const AppWithRouter: React.FC = () => {
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
-      
+
       {/* Native Drop Handler */}
       <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />
     </div>

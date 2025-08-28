@@ -32,19 +32,19 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
 
   const variantClasses = {
     primary: 'btn-primary',
-    secondary: 'btn-secondary', 
+    secondary: 'btn-secondary',
     danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors',
     success: 'btn-primary bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500'
   };
 
   const updatePopoverPosition = useCallback(() => {
-    if (!buttonRef.current) return;
+    if (!buttonRef.current) {return;}
 
     const rect = buttonRef.current.getBoundingClientRect();
     const popoverWidth = 256; // w-64 = 16rem = 256px
     const popoverHeight = 80; // approximate height
     const gap = 12; // space between button and popover
-    
+
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight
@@ -180,7 +180,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
       clearTimeout(hideTimeoutRef.current);
       hideTimeoutRef.current = undefined;
     }
-    
+
     updatePopoverPosition();
     setShowPopover(true);
   }, [updatePopoverPosition]);
@@ -225,7 +225,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
     if (showPopover) {
       window.addEventListener('scroll', handleScrollResize, true);
       window.addEventListener('resize', handleScrollResize);
-      
+
       return () => {
         window.removeEventListener('scroll', handleScrollResize, true);
         window.removeEventListener('resize', handleScrollResize);
@@ -252,7 +252,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
       </button>
 
       {showPopover && createPortal(
-        <div 
+        <div
           className="fixed w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl pointer-events-auto"
           onMouseEnter={handlePopoverMouseEnter}
           onMouseLeave={handlePopoverMouseLeave}
@@ -271,7 +271,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
             </div>
           </div>
           {/* Arrow */}
-          <div 
+          <div
             className="absolute w-2 h-2 bg-gray-900 border border-gray-700"
             style={getArrowStyle(popoverPosition.placement)}
           ></div>

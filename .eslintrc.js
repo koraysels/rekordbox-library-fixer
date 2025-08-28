@@ -7,7 +7,7 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:jsx-a11y/recommended',
@@ -45,8 +45,8 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-non-null-assertion': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
     '@typescript-eslint/no-var-requires': 'off', // Allow require in main process
+    '@typescript-eslint/no-require-imports': 'off', // Allow require imports in main process
 
     // React rules
     'react/react-in-jsx-scope': 'off', // Not needed in React 17+
@@ -69,15 +69,14 @@ module.exports = {
     'jsx-a11y/click-events-have-key-events': 'warn',
     'jsx-a11y/no-static-element-interactions': 'warn',
 
-    // Import rules
-    'import/no-unresolved': 'off', // TypeScript handles this
-    'import/order': [
-      'error',
-      {
-        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-        'newlines-between': 'never',
-      },
-    ],
+    // Import rules - Disable all due to TypeScript resolver issues
+    'import/no-unresolved': 'off',
+    'import/namespace': 'off',
+    'import/no-duplicates': 'off',
+    'import/order': 'off',
+    'import/default': 'off',
+    'import/no-named-as-default': 'off',
+    'import/no-named-as-default-member': 'off',
 
     // General rules
     'no-console': 'off', // Allow console in Electron app
@@ -91,8 +90,8 @@ module.exports = {
     'comma-dangle': ['error', 'only-multiline'],
     'semi': ['error', 'always'],
     'quotes': ['error', 'single', { avoidEscape: true }],
-    'indent': ['error', 2, { SwitchCase: 1 }],
-    'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true }],
+    'indent': 'off', // Disable due to JSX complexity
+    'max-len': ['warn', { code: 120, ignoreUrls: true, ignoreStrings: true, ignoreTemplateLiterals: true }],
   },
   overrides: [
     {

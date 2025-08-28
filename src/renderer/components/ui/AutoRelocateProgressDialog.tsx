@@ -35,12 +35,12 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     // Set up progress listener
     const unsubscribe = window.electronAPI.onAutoRelocateProgress((progressData: ProgressInfo) => {
       setProgress(progressData);
-      
+
       if (progressData.operationId) {
         setOperationId(progressData.operationId);
       }
@@ -57,7 +57,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
         setLogs(prev => [...prev, `✅ ${progressData.message}`]);
       } else if (progressData.type === 'cancelled') {
         setIsComplete(true);
-        setLogs(prev => [...prev, `⚠️ Operation cancelled`]);
+        setLogs(prev => [...prev, '⚠️ Operation cancelled']);
       } else if (progressData.type === 'error') {
         setIsComplete(true);
         setLogs(prev => [...prev, `❌ Error: ${progressData.error}`]);
@@ -91,7 +91,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const progressPercentage = progress ? Math.round((progress.current / progress.total) * 100) : 0;
 
@@ -120,7 +120,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
               <span>{progressPercentage}%</span>
             </div>
             <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden">
-              <div 
+              <div
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-full transition-all duration-300"
                 style={{ width: `${progressPercentage}%` }}
               />
@@ -140,7 +140,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
                 {progress.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
                 <span className="text-sm text-gray-300">{progress.message}</span>
               </div>
-              
+
               {/* Worker Stats */}
               {progress.queued !== undefined && progress.processing !== undefined && (
                 <div className="mt-2 text-xs text-gray-500">

@@ -239,8 +239,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </label>
 
               <label className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
-                watchedResolutionStrategy === 'keep-preferred-path' 
-                  ? 'border-rekordbox-purple bg-rekordbox-purple/10' 
+                watchedResolutionStrategy === 'keep-preferred-path'
+                  ? 'border-rekordbox-purple bg-rekordbox-purple/10'
                   : 'border-zinc-700 hover:border-zinc-600'
               }`}>
                 <input

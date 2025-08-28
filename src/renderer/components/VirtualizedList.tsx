@@ -26,13 +26,13 @@ export const VirtualizedList = <T,>({
   if (items.length === 0 && emptyState) {
     return <>{emptyState}</>;
   }
-  
+
   if (items.length === 0) {
     return <div className="p-5 text-white">No items to show</div>;
   }
-  
+
   return (
-    <div 
+    <div
       className={`h-full overflow-y-auto overflow-x-hidden py-2 ${className}`}
       style={style}
     >

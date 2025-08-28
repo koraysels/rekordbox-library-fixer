@@ -6,7 +6,7 @@ interface EmptyLibraryStateProps {
   onLoadLibrary: (filePath: string) => void;
 }
 
-export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({ 
+export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onSelectLibrary,
   onLoadLibrary
 }) => {
@@ -15,9 +15,9 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
       <div className="text-center max-w-2xl w-full">
         {/* App Logo */}
         <div className="mb-8">
-          <img 
-            src="/icons/64x64.png" 
-            alt="Rekordbox Library Manager" 
+          <img
+            src="/icons/64x64.png"
+            alt="Rekordbox Library Manager"
             className="w-24 h-24 mx-auto mb-4 bg-white rounded-3xl p-3 shadow-lg"
           />
           <h2 className="text-3xl font-bold text-white mb-2">Welcome to Rekordbox Library Manager</h2>
@@ -37,8 +37,8 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
             <button
               type="button"
               onClick={onSelectLibrary}
-              className="bg-rekordbox-purple hover:bg-rekordbox-purple/90 
-                       text-white font-semibold py-4 px-8 rounded-xl 
+              className="bg-rekordbox-purple hover:bg-rekordbox-purple/90
+                       text-white font-semibold py-4 px-8 rounded-xl
                        transition-colors duration-200 flex items-center space-x-3"
             >
               <FolderOpen className="w-5 h-5" />

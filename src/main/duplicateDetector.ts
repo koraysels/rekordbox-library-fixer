@@ -27,7 +27,7 @@ export class DuplicateDetector {
   }
 
   async findDuplicates(
-    tracks: Track[], 
+    tracks: Track[],
     options: DuplicateOptions
   ): Promise<DuplicateSet[]> {
     const duplicateSets: DuplicateSet[] = [];
@@ -65,10 +65,10 @@ export class DuplicateDetector {
     // Create metadata map if using metadata matching
     if (options.useMetadata) {
       const metadataMap = new Map<string, Track[]>();
-      
+
       for (const track of tracks) {
         // Skip if already found as fingerprint duplicate
-        if (processedTracks.has(track.id)) continue;
+        if (processedTracks.has(track.id)) {continue;}
 
         const metadataKey = this.generateMetadataKey(track, options.metadataFields);
         if (!metadataMap.has(metadataKey)) {
@@ -103,10 +103,10 @@ export class DuplicateDetector {
     try {
       // Check if file exists
       await fs.promises.access(track.location);
-      
+
       // Get audio metadata for fingerprinting
       const metadata = await mm.parseBuffer(await fs.promises.readFile(track.location));
-      
+
       // Create a simplified fingerprint based on:
       // - Duration (rounded to nearest second)
       // - Average bitrate
@@ -115,21 +115,21 @@ export class DuplicateDetector {
       const duration = Math.round(metadata.format.duration || 0);
       const bitrate = metadata.format.bitrate || 0;
       const fileStats = await fs.promises.stat(track.location);
-      
+
       // Read first 1MB for content hash
       const buffer = Buffer.alloc(1024 * 1024);
       const fd = await fs.promises.open(track.location, 'r');
       await fd.read(buffer, 0, buffer.length, 0);
       await fd.close();
-      
+
       const contentHash = crypto.createHash('sha256').update(buffer).digest('hex');
-      
+
       const fingerprint = `${duration}_${bitrate}_${fileStats.size}_${contentHash}`;
       const hash = crypto.createHash('md5').update(fingerprint).digest('hex');
-      
+
       // Cache the result
       this.fingerprintCache.set(track.location, hash);
-      
+
       return hash;
     } catch (error) {
       // If file doesn't exist or can't be read, use metadata fallback
@@ -140,7 +140,7 @@ export class DuplicateDetector {
 
   private generateMetadataKey(track: Track, fields: string[]): string {
     const keyParts: string[] = [];
-    
+
     for (const field of fields) {
       switch (field) {
         case 'artist':
@@ -150,20 +150,20 @@ export class DuplicateDetector {
           keyParts.push(this.normalizeString(track.name));
           break;
         case 'album':
-          if (track.album) keyParts.push(this.normalizeString(track.album));
+          if (track.album) {keyParts.push(this.normalizeString(track.album));}
           break;
         case 'duration':
-          if (track.duration) keyParts.push(Math.round(track.duration).toString());
+          if (track.duration) {keyParts.push(Math.round(track.duration).toString());}
           break;
         case 'bpm':
-          if (track.bpm) keyParts.push(Math.round(track.bpm).toString());
+          if (track.bpm) {keyParts.push(Math.round(track.bpm).toString());}
           break;
         case 'key':
-          if (track.key) keyParts.push(track.key);
+          if (track.key) {keyParts.push(track.key);}
           break;
       }
     }
-    
+
     return keyParts.join('_');
   }
 
@@ -178,7 +178,7 @@ export class DuplicateDetector {
     // Calculate confidence based on how many fields match
     let totalMatches = 0;
     let totalComparisons = 0;
-    
+
     for (let i = 0; i < tracks.length - 1; i++) {
       for (let j = i + 1; j < tracks.length; j++) {
         for (const field of fields) {
@@ -189,7 +189,7 @@ export class DuplicateDetector {
         }
       }
     }
-    
+
     return Math.round((totalMatches / totalComparisons) * 100);
   }
 
@@ -200,7 +200,7 @@ export class DuplicateDetector {
       case 'title':
         return this.normalizeString(track1.name) === this.normalizeString(track2.name);
       case 'album':
-        return track1.album && track2.album 
+        return track1.album && track2.album
           ? this.normalizeString(track1.album) === this.normalizeString(track2.album)
           : track1.album === track2.album;
       case 'duration':
@@ -225,10 +225,10 @@ export class DuplicateDetector {
     pathPreferences?: string[];
   }): Promise<Map<string, Track>> {
     const tracksToKeep = new Map<string, Track>();
-    
+
     for (const duplicateSet of resolution.duplicates) {
       let keepTrack: Track | undefined;
-      
+
       switch (resolution.strategy) {
         case 'keep-highest-quality':
           keepTrack = this.selectHighestQuality(duplicateSet.tracks);
@@ -249,17 +249,17 @@ export class DuplicateDetector {
           }
           break;
       }
-      
+
       if (keepTrack) {
         // Merge metadata from all duplicates into the kept track
         keepTrack = this.mergeTrackMetadata(keepTrack, duplicateSet.tracks);
         tracksToKeep.set(keepTrack.id, keepTrack);
       }
     }
-    
+
     const totalTracksRemoved = resolution.duplicates.reduce((sum, set) => sum + set.tracks.length, 0) - tracksToKeep.size;
     this.logger.logDuplicateResolution(resolution.strategy, resolution.duplicates, tracksToKeep, totalTracksRemoved);
-    
+
     return tracksToKeep;
   }
 
@@ -273,35 +273,35 @@ export class DuplicateDetector {
 
   private calculateQualityScore(track: Track): number {
     let score = 0;
-    
+
     // Bitrate is most important
-    if (track.bitrate) score += track.bitrate * 10;
-    
+    if (track.bitrate) {score += track.bitrate * 10;}
+
     // File size as secondary indicator
-    if (track.size) score += track.size / 1000000; // MB
-    
+    if (track.size) {score += track.size / 1000000;} // MB
+
     // Bonus for having metadata
-    if (track.bpm) score += 100;
-    if (track.key) score += 100;
-    if (track.cues && track.cues.length > 0) score += 200;
-    if (track.loops && track.loops.length > 0) score += 150;
-    if (track.beatgrid) score += 150;
-    
+    if (track.bpm) {score += 100;}
+    if (track.key) {score += 100;}
+    if (track.cues && track.cues.length > 0) {score += 200;}
+    if (track.loops && track.loops.length > 0) {score += 150;}
+    if (track.beatgrid) {score += 150;}
+
     return score;
   }
 
   private selectNewest(tracks: Track[]): Track {
     return tracks.reduce((newest, current) => {
-      if (!newest.dateModified) return current;
-      if (!current.dateModified) return newest;
+      if (!newest.dateModified) {return current;}
+      if (!current.dateModified) {return newest;}
       return current.dateModified > newest.dateModified ? current : newest;
     });
   }
 
   private selectOldest(tracks: Track[]): Track {
     return tracks.reduce((oldest, current) => {
-      if (!oldest.dateAdded) return current;
-      if (!current.dateAdded) return oldest;
+      if (!oldest.dateAdded) {return current;}
+      if (!current.dateAdded) {return oldest;}
       return current.dateAdded < oldest.dateAdded ? current : oldest;
     });
   }
@@ -315,7 +315,7 @@ export class DuplicateDetector {
     // Score tracks based on path preference order
     const scoredTracks = tracks.map(track => {
       let pathScore = pathPreferences.length; // Default score if no match
-      
+
       // Find the highest priority path that matches
       for (let i = 0; i < pathPreferences.length; i++) {
         const preference = pathPreferences[i];
@@ -324,7 +324,7 @@ export class DuplicateDetector {
           break;
         }
       }
-      
+
       return {
         track,
         pathScore,
@@ -345,7 +345,7 @@ export class DuplicateDetector {
 
   private mergeTrackMetadata(keepTrack: Track, allTracks: Track[]): Track {
     const merged = { ...keepTrack };
-    
+
     // Merge cues from all tracks
     const allCues = new Map<string, any>();
     for (const track of allTracks) {
@@ -359,7 +359,7 @@ export class DuplicateDetector {
       }
     }
     merged.cues = Array.from(allCues.values());
-    
+
     // Merge loops from all tracks
     const allLoops = new Map<string, any>();
     for (const track of allTracks) {
@@ -373,7 +373,7 @@ export class DuplicateDetector {
       }
     }
     merged.loops = Array.from(allLoops.values());
-    
+
     // Merge playlists
     const allPlaylists = new Set<string>();
     for (const track of allTracks) {
@@ -382,13 +382,13 @@ export class DuplicateDetector {
       }
     }
     merged.playlists = Array.from(allPlaylists);
-    
+
     // Keep highest play count
     merged.playCount = Math.max(...allTracks.map(t => t.playCount || 0));
-    
+
     // Keep highest rating
     merged.rating = Math.max(...allTracks.map(t => t.rating || 0));
-    
+
     return merged;
   }
 }

@@ -69,10 +69,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // File operations
-  saveDroppedFile: (data: { content: string, fileName: string }) => 
+  saveDroppedFile: (data: { content: string, fileName: string }) =>
     ipcRenderer.invoke('save-dropped-file', data),
   openFileDialog: (options?: any) => ipcRenderer.invoke('open-file-dialog', options),
-  
+
   // Native drag-and-drop
   handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
   onNativeFileDrop: (callback: (filePaths: string[]) => void) => {

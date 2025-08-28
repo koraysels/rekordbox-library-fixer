@@ -10,7 +10,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 export function useRouteData(route: string, libraryPath?: string) {
   // Get settings from Zustand - currently unused, commented for performance
   // const settings = useSettingsStore();
-  
+
   // Fetch cached duplicate results
   const duplicateResults = useLiveQuery(
     async () => {
@@ -21,7 +21,7 @@ export function useRouteData(route: string, libraryPath?: string) {
     },
     [route, libraryPath]
   );
-  
+
   // Fetch cached relocation results
   const relocationResults = useLiveQuery(
     async () => {
@@ -32,7 +32,7 @@ export function useRouteData(route: string, libraryPath?: string) {
     },
     [route, libraryPath]
   );
-  
+
   // Return loading state and data
   return {
     isLoading: duplicateResults === undefined || relocationResults === undefined,
@@ -52,7 +52,7 @@ export function usePrefetchRouteData() {
       // Trigger Dexie query to warm cache
       await duplicateStorage.getDuplicateResult(libraryPath);
     },
-    
+
     prefetchRelocations: async (libraryPath: string) => {
       // Trigger Dexie query to warm cache
       await relocationStorage.getRelocationResult(libraryPath);

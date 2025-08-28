@@ -93,7 +93,7 @@ export class RekordboxParser {
   async parseLibrary(xmlPath: string): Promise<RekordboxLibrary> {
     const xmlContent = await fs.promises.readFile(xmlPath, 'utf-8');
     const result = await this.parser.parseStringPromise(xmlContent);
-    
+
     const library: RekordboxLibrary = {
       version: result.DJ_PLAYLISTS?.Version || '1.0.0',
       tracks: new Map(),
@@ -102,8 +102,8 @@ export class RekordboxParser {
 
     // Parse tracks from COLLECTION
     if (result.DJ_PLAYLISTS?.COLLECTION?.TRACK) {
-      const tracks = Array.isArray(result.DJ_PLAYLISTS.COLLECTION.TRACK) 
-        ? result.DJ_PLAYLISTS.COLLECTION.TRACK 
+      const tracks = Array.isArray(result.DJ_PLAYLISTS.COLLECTION.TRACK)
+        ? result.DJ_PLAYLISTS.COLLECTION.TRACK
         : [result.DJ_PLAYLISTS.COLLECTION.TRACK];
 
       for (const track of tracks) {
@@ -158,8 +158,8 @@ export class RekordboxParser {
 
     // Parse position marks (cues and loops)
     if (trackNode.POSITION_MARK) {
-      const marks = Array.isArray(trackNode.POSITION_MARK) 
-        ? trackNode.POSITION_MARK 
+      const marks = Array.isArray(trackNode.POSITION_MARK)
+        ? trackNode.POSITION_MARK
         : [trackNode.POSITION_MARK];
 
       for (const mark of marks) {
@@ -182,17 +182,17 @@ export class RekordboxParser {
 
     // Parse ALL tempo elements, not just the first one
     if (trackNode.TEMPO) {
-      const tempos = Array.isArray(trackNode.TEMPO) 
-        ? trackNode.TEMPO 
+      const tempos = Array.isArray(trackNode.TEMPO)
+        ? trackNode.TEMPO
         : [trackNode.TEMPO];
-      
+
       track.tempos = tempos.map((tempo: any) => ({
         bpm: parseFloat(tempo.Bpm || trackNode.AverageBpm || '120'),
         inizio: parseFloat(tempo.Inizio || '0'),
         metro: tempo.Metro,
         battito: tempo.Battito ? parseInt(tempo.Battito) : undefined,
       }));
-      
+
       // Keep the first tempo as beatgrid for backward compatibility
       if (tempos[0]) {
         track.beatgrid = {
@@ -217,18 +217,18 @@ export class RekordboxParser {
 
       // Parse tracks in playlist
       if (node.TRACK) {
-        const playlistTracks = Array.isArray(node.TRACK) 
-          ? node.TRACK 
+        const playlistTracks = Array.isArray(node.TRACK)
+          ? node.TRACK
           : [node.TRACK];
-        
+
         for (const trackRef of playlistTracks) {
           const trackId = trackRef.Key || '';
           playlist.tracks.push(trackId);
-          
+
           // Add playlist reference to track
           const track = tracks.get(trackId);
           if (track) {
-            if (!track.playlists) track.playlists = [];
+            if (!track.playlists) {track.playlists = [];}
             track.playlists.push(playlist.name);
           }
         }
@@ -236,8 +236,8 @@ export class RekordboxParser {
 
       // Parse child nodes (subfolders/playlists)
       if (node.NODE) {
-        const childNodes = Array.isArray(node.NODE) 
-          ? node.NODE 
+        const childNodes = Array.isArray(node.NODE)
+          ? node.NODE
           : [node.NODE];
         playlist.children = this.parsePlaylists(childNodes, tracks);
       }
@@ -300,7 +300,7 @@ export class RekordboxParser {
 
     // Add position marks
     const positionMarks: any[] = [];
-    
+
     if (track.cues) {
       for (const cue of track.cues) {
         const mark: any = {
@@ -309,8 +309,8 @@ export class RekordboxParser {
             Start: cue.start.toString(),
           },
         };
-        if (cue.name) mark.$.Name = cue.name;
-        if (cue.hotcue !== undefined) mark.$.Num = cue.hotcue.toString();
+        if (cue.name) {mark.$.Name = cue.name;}
+        if (cue.hotcue !== undefined) {mark.$.Num = cue.hotcue.toString();}
         positionMarks.push(mark);
       }
     }
@@ -324,7 +324,7 @@ export class RekordboxParser {
             End: loop.end.toString(),
           },
         };
-        if (loop.name) mark.$.Name = loop.name;
+        if (loop.name) {mark.$.Name = loop.name;}
         positionMarks.push(mark);
       }
     }
@@ -342,8 +342,8 @@ export class RekordboxParser {
             Bpm: tempo.bpm.toString(),
           },
         };
-        if (tempo.metro) tempoElement.$.Metro = tempo.metro;
-        if (tempo.battito) tempoElement.$.Battito = tempo.battito.toString();
+        if (tempo.metro) {tempoElement.$.Metro = tempo.metro;}
+        if (tempo.battito) {tempoElement.$.Battito = tempo.battito.toString();}
         return tempoElement;
       });
     } else if (track.beatgrid) {

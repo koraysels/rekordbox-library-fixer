@@ -1,0 +1,10 @@
+dist/
+node_modules/
+*.d.ts
+**/*.test.js
+**/*.test.ts
+**/*.test.tsx
+coverage/
+build/
+assets/
+tests/fixtures/

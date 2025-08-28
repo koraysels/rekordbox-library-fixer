@@ -73,15 +73,15 @@ export class TrackOwnershipFixer {
         this.currentComputerUUID = crypto.randomUUID();
       }
 
-      this.logger.info('OWNERSHIP_FIXER_UUID_GENERATED', { 
-        uuid: this.currentComputerUUID 
+      this.logger.info('OWNERSHIP_FIXER_UUID_GENERATED', {
+        uuid: this.currentComputerUUID
       });
 
     } catch (error) {
       this.logger.error('OWNERSHIP_FIXER_UUID_FAILED', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
-      
+
       // Fallback to random UUID
       this.currentComputerUUID = crypto.randomUUID();
     }
@@ -91,9 +91,9 @@ export class TrackOwnershipFixer {
     tracks: Map<string, any>,
     computers: Map<string, ComputerInfo>
   ): Promise<OwnershipIssue[]> {
-    this.logger.info('OWNERSHIP_FIXER_SCAN_START', { 
+    this.logger.info('OWNERSHIP_FIXER_SCAN_START', {
       totalTracks: tracks.size,
-      computers: computers.size 
+      computers: computers.size
     });
 
     const issues: OwnershipIssue[] = [];
@@ -115,9 +115,9 @@ export class TrackOwnershipFixer {
       }
     }
 
-    this.logger.info('OWNERSHIP_FIXER_SCAN_COMPLETE', { 
+    this.logger.info('OWNERSHIP_FIXER_SCAN_COMPLETE', {
       issuesFound: issues.length,
-      totalTracks: tracks.size 
+      totalTracks: tracks.size
     });
 
     return issues;
@@ -235,8 +235,8 @@ export class TrackOwnershipFixer {
     for (const issue of issues) {
       const result = await this.fixTrackOwnership(issue);
       results.push(result);
-      
-      if (result.success) successCount++;
+
+      if (result.success) {successCount++;}
     }
 
     this.logger.info('OWNERSHIP_FIXER_BATCH_COMPLETE', {
@@ -256,7 +256,7 @@ export class TrackOwnershipFixer {
       let updatedCount = 0;
 
       for (const fix of ownershipFixes) {
-        if (!fix.success) continue;
+        if (!fix.success) {continue;}
 
         const track = library.tracks.get(fix.trackId);
         if (track) {
@@ -346,7 +346,7 @@ export class TrackOwnershipFixer {
     for (const [_, track] of tracks.entries()) {
       if (track.owner) {
         tracksWithOwners++;
-        
+
         if (activeComputerUUIDs.includes(track.owner)) {
           tracksWithValidOwners++;
         } else {

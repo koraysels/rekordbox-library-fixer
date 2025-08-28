@@ -85,7 +85,7 @@ export class CloudSyncFixer {
         return false;
       }
 
-      this.dropbox = new Dropbox({ 
+      this.dropbox = new Dropbox({
         accessToken: config.accessToken,
         clientId: config.clientId,
         clientSecret: config.clientSecret
@@ -93,9 +93,9 @@ export class CloudSyncFixer {
 
       // Test the connection
       const account = await this.dropbox.usersGetCurrentAccount();
-      this.logger.info('CLOUD_SYNC_DROPBOX_CONNECTED', { 
+      this.logger.info('CLOUD_SYNC_DROPBOX_CONNECTED', {
         accountId: account.result.account_id,
-        name: account.result.name.display_name 
+        name: account.result.name.display_name
       });
 
       return true;
@@ -112,7 +112,7 @@ export class CloudSyncFixer {
     const issues: CloudSyncIssue[] = [];
 
     for (const [id, track] of tracks.entries()) {
-      if (!track.location) continue;
+      if (!track.location) {continue;}
 
       try {
         const issue = await this.analyzeTrackForCloudIssues(id, track);
@@ -128,9 +128,9 @@ export class CloudSyncFixer {
       }
     }
 
-    this.logger.info('CLOUD_SYNC_SCAN_COMPLETE', { 
+    this.logger.info('CLOUD_SYNC_SCAN_COMPLETE', {
       issuesFound: issues.length,
-      totalTracks: tracks.size 
+      totalTracks: tracks.size
     });
 
     return issues;
@@ -138,7 +138,7 @@ export class CloudSyncFixer {
 
   private async analyzeTrackForCloudIssues(trackId: string, track: any): Promise<CloudSyncIssue | null> {
     const location = track.location;
-    
+
     // Check if it's a Dropbox path
     if (!this.isDropboxPath(location)) {
       return null; // Not a cloud sync issue
@@ -198,16 +198,16 @@ export class CloudSyncFixer {
       switch (issue.issueType) {
         case 'online-only':
           return await this.fixOnlineOnlyFile(issue);
-        
+
         case 'path-mismatch':
           return await this.fixPathMismatch(issue);
-        
+
         case 'missing-local':
           return await this.downloadFromDropbox(issue);
-        
+
         case 'sync-conflict':
           return await this.resolveSyncConflict(issue);
-        
+
         default:
           return {
             trackId: issue.trackId,
@@ -240,10 +240,10 @@ export class CloudSyncFixer {
         // macOS: Try to trigger download by accessing file metadata
         const { execSync } = require('child_process');
         execSync(`xattr -l "${issue.originalLocation}"`, { stdio: 'ignore' });
-        
+
         // Wait a bit for the download to start
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
         if (fs.existsSync(issue.originalLocation) && !await this.isOnlineOnlyFile(issue.originalLocation)) {
           return {
             trackId: issue.trackId,
@@ -274,7 +274,7 @@ export class CloudSyncFixer {
         originalLocation: issue.originalLocation,
         success: false,
         action: 'manual-required',
-        error: 'Failed to access online-only file'
+        error: `Failed to access online-only file: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -332,7 +332,7 @@ export class CloudSyncFixer {
         originalLocation: issue.originalLocation,
         success: false,
         action: 'manual-required',
-        error: 'Dropbox download failed'
+        error: `Dropbox download failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       };
     }
   }
@@ -350,13 +350,13 @@ export class CloudSyncFixer {
   }
 
   private isDropboxPath(filePath: string): boolean {
-    if (!this.dropboxPath) return false;
+    if (!this.dropboxPath) {return false;}
     return filePath.toLowerCase().includes(this.dropboxPath.toLowerCase());
   }
 
   private convertToDropboxPath(localPath: string): string {
-    if (!this.dropboxPath) return localPath;
-    
+    if (!this.dropboxPath) {return localPath;}
+
     const relativePath = path.relative(this.dropboxPath, localPath);
     return '/' + relativePath.replace(/\\/g, '/');
   }
@@ -367,16 +367,16 @@ export class CloudSyncFixer {
   }
 
   private async isOnlineOnlyFile(filePath: string): Promise<boolean> {
-    if (os.platform() !== 'darwin') return false;
+    if (os.platform() !== 'darwin') {return false;}
 
     try {
       const { execSync } = require('child_process');
       const result = execSync(`xattr -l "${filePath}"`, { encoding: 'utf8' });
-      
+
       // Check for Dropbox online-only attributes
-      return result.includes('com.dropbox.ignored') || 
+      return result.includes('com.dropbox.ignored') ||
              result.includes('com.dropbox.attrs');
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -390,8 +390,8 @@ export class CloudSyncFixer {
     for (const issue of issues) {
       const result = await this.fixCloudSyncIssue(issue);
       results.push(result);
-      
-      if (result.success) successCount++;
+
+      if (result.success) {successCount++;}
 
       // Add delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 100));

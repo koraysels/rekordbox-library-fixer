@@ -52,10 +52,10 @@ class RelocationsDatabase extends Dexie {
   cloudSyncResults!: EntityTable<StoredCloudSyncResult, 'id'>;
   ownershipResults!: EntityTable<StoredOwnershipResult, 'id'>;
   relocationHistory!: EntityTable<RelocationHistoryEntry, 'id'>;
-  
+
   constructor() {
     super('RekordboxRelocationsDB');
-    
+
     // Define schema
     this.version(1).stores({
       relocationResults: '++id, libraryPath, updatedAt',
@@ -70,7 +70,7 @@ class RelocationsDatabase extends Dexie {
       ownershipResults: '++id, libraryPath, updatedAt',
       relocationHistory: '++id, libraryPath, trackId, timestamp, [libraryPath+timestamp]'
     });
-    
+
     // Note: Map serialization is handled in the storage helper functions
   }
 }
@@ -93,7 +93,7 @@ class StoredRelocationResultClass implements StoredRelocationResult {
   hasScanCompleted: boolean = false;
   createdAt: Date = new Date();
   updatedAt: Date = new Date();
-  
+
   // Custom serialization for Maps
   toJSON() {
     return {
@@ -102,7 +102,7 @@ class StoredRelocationResultClass implements StoredRelocationResult {
       relocations: Array.from(this.relocations.entries())
     };
   }
-  
+
   static fromJSON(json: any): StoredRelocationResultClass {
     const instance = new StoredRelocationResultClass();
     Object.assign(instance, json);
@@ -122,20 +122,20 @@ async function ensureDatabaseConnection(): Promise<RelocationsDatabase> {
     if (relocationsDb.isOpen()) {
       return relocationsDb;
     }
-    
+
     // If not open, try to open it
     await relocationsDb.open();
     return relocationsDb;
   } catch (error) {
     console.warn('Database connection issue, attempting to reopen:', error);
-    
+
     // Close and reopen the database
     try {
       await relocationsDb.close();
     } catch (closeError) {
       console.warn('Error closing database:', closeError);
     }
-    
+
     // Create a new instance if needed
     const newDb = new RelocationsDatabase();
     await newDb.open();
@@ -149,24 +149,24 @@ export const relocationStorage = {
     try {
       const db = await ensureDatabaseConnection();
       const now = new Date();
-      
+
       // Convert Maps to arrays for storage
       const storableResult = {
         ...result,
         relocationCandidates: Array.from(result.relocationCandidates.entries()),
         relocations: Array.from(result.relocations.entries())
       };
-      
+
       // Check if record exists
       const existing = await db.relocationResults
         .where('libraryPath')
         .equals(result.libraryPath)
         .first();
-      
+
       const recordToSave = existing
         ? { ...existing, ...storableResult, updatedAt: now }
         : { ...storableResult, createdAt: now, updatedAt: now };
-      
+
       // Use put for better performance (handles both insert and update)
       await db.relocationResults.put(recordToSave);
     } catch (error) {
@@ -174,7 +174,7 @@ export const relocationStorage = {
       throw error;
     }
   },
-  
+
   async getRelocationResult(libraryPath: string): Promise<StoredRelocationResult | null> {
     try {
       const db = await ensureDatabaseConnection();
@@ -182,7 +182,7 @@ export const relocationStorage = {
         .where('libraryPath')
         .equals(libraryPath)
         .first();
-      
+
       if (result) {
         // Convert arrays back to Maps
         return {
@@ -191,34 +191,34 @@ export const relocationStorage = {
           relocations: new Map(result.relocations as any)
         };
       }
-      
+
       return null;
     } catch (error) {
       console.error('Failed to get relocation result:', error);
       return null;
     }
   },
-  
+
   async deleteRelocationResult(libraryPath: string): Promise<void> {
     const result = await relocationsDb.relocationResults
       .where('libraryPath')
       .equals(libraryPath)
       .first();
-    
+
     if (result?.id) {
       await relocationsDb.relocationResults.delete(result.id);
     }
   },
-  
+
   async clearAllRelocationResults(): Promise<void> {
     await relocationsDb.relocationResults.clear();
   },
 
-  
+
   // Bulk operations for improved performance
   async bulkSaveRelocationResults(results: Omit<StoredRelocationResult, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> {
     const now = new Date();
-    
+
     // Prepare records for bulk insert/update
     const recordsToSave = await Promise.all(
       results.map(async (result) => {
@@ -228,18 +228,18 @@ export const relocationStorage = {
           relocationCandidates: Array.from(result.relocationCandidates.entries()),
           relocations: Array.from(result.relocations.entries())
         };
-        
+
         const existing = await relocationsDb.relocationResults
           .where('libraryPath')
           .equals(result.libraryPath)
           .first();
-        
+
         return existing
           ? { ...existing, ...storableResult, updatedAt: now }
           : { ...storableResult, createdAt: now, updatedAt: now };
       })
     );
-    
+
     // Use bulkPut for better performance
     const db = await ensureDatabaseConnection();
     await db.relocationResults.bulkPut(recordsToSave);
@@ -250,41 +250,41 @@ export const relocationStorage = {
 export const cloudSyncStorage = {
   async saveCloudSyncResult(result: Omit<StoredCloudSyncResult, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
     const now = new Date();
-    
+
     // Check if record exists
     const existing = await relocationsDb.cloudSyncResults
       .where('libraryPath')
       .equals(result.libraryPath)
       .first();
-    
+
     const recordToSave = existing
       ? { ...existing, ...result, updatedAt: now }
       : { ...result, createdAt: now, updatedAt: now };
-    
+
     // Use put for better performance (handles both insert and update)
     await relocationsDb.cloudSyncResults.put(recordToSave);
   },
-  
+
   async getCloudSyncResult(libraryPath: string): Promise<StoredCloudSyncResult | null> {
     const result = await relocationsDb.cloudSyncResults
       .where('libraryPath')
       .equals(libraryPath)
       .first();
-    
+
     return result || null;
   },
-  
+
   async deleteCloudSyncResult(libraryPath: string): Promise<void> {
     const result = await relocationsDb.cloudSyncResults
       .where('libraryPath')
       .equals(libraryPath)
       .first();
-    
+
     if (result?.id) {
       await relocationsDb.cloudSyncResults.delete(result.id);
     }
   },
-  
+
   async clearAllCloudSyncResults(): Promise<void> {
     await relocationsDb.cloudSyncResults.clear();
   }
@@ -294,41 +294,41 @@ export const cloudSyncStorage = {
 export const ownershipStorage = {
   async saveOwnershipResult(result: Omit<StoredOwnershipResult, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
     const now = new Date();
-    
+
     // Check if record exists
     const existing = await relocationsDb.ownershipResults
       .where('libraryPath')
       .equals(result.libraryPath)
       .first();
-    
+
     const recordToSave = existing
       ? { ...existing, ...result, updatedAt: now }
       : { ...result, createdAt: now, updatedAt: now };
-    
+
     // Use put for better performance (handles both insert and update)
     await relocationsDb.ownershipResults.put(recordToSave);
   },
-  
+
   async getOwnershipResult(libraryPath: string): Promise<StoredOwnershipResult | null> {
     const result = await relocationsDb.ownershipResults
       .where('libraryPath')
       .equals(libraryPath)
       .first();
-    
+
     return result || null;
   },
-  
+
   async deleteOwnershipResult(libraryPath: string): Promise<void> {
     const result = await relocationsDb.ownershipResults
       .where('libraryPath')
       .equals(libraryPath)
       .first();
-    
+
     if (result?.id) {
       await relocationsDb.ownershipResults.delete(result.id);
     }
   },
-  
+
   async clearAllOwnershipResults(): Promise<void> {
     await relocationsDb.ownershipResults.clear();
   }

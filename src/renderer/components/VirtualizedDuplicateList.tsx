@@ -1,7 +1,7 @@
 import React from 'react';
+import type { DuplicateItem as DuplicateItemType, ResolutionStrategy } from '../types';
 import DuplicateItem from './DuplicateItem';
 import { VirtualizedList } from './VirtualizedList';
-import type { DuplicateItem as DuplicateItemType, ResolutionStrategy } from '../types';
 
 interface VirtualizedDuplicateListProps {
   duplicates: DuplicateItemType[];
@@ -16,12 +16,12 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
   onToggleSelection,
   resolutionStrategy
 }) => {
-  console.log('🎯 VirtualizedDuplicateList render:', { 
+  console.log('🎯 VirtualizedDuplicateList render:', {
     duplicatesCount: duplicates.length,
     firstDuplicate: duplicates[0]?.id,
     selectedCount: selectedDuplicates.size
   });
-  
+
   return (
     <VirtualizedList
       items={duplicates}

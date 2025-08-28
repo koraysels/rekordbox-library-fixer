@@ -6,9 +6,9 @@ interface SkeletonProps {
   animate?: boolean;
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({ 
-  className = '', 
-  animate = true 
+export const Skeleton: React.FC<SkeletonProps> = ({
+  className = '',
+  animate = true
 }) => {
   return (
     <motion.div
@@ -19,7 +19,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
       transition={{
         duration: 1.5,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: 'easeInOut'
       }}
     />
   );
@@ -29,9 +29,9 @@ export const SkeletonText: React.FC<{ lines?: number }> = ({ lines = 3 }) => {
   return (
     <div className="space-y-2">
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton 
-          key={i} 
-          className={`h-4 ${i === lines - 1 ? 'w-2/3' : 'w-full'}`} 
+        <Skeleton
+          key={i}
+          className={`h-4 ${i === lines - 1 ? 'w-2/3' : 'w-full'}`}
         />
       ))}
     </div>

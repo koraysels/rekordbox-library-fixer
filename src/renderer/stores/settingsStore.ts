@@ -7,14 +7,14 @@ interface SettingsState {
   scanOptions: ScanOptions;
   resolutionStrategy: ResolutionStrategy;
   relocationOptions: RelocationOptions;
-  
+
   // Actions
   setScanOptions: (options: ScanOptions) => void;
   setResolutionStrategy: (strategy: ResolutionStrategy) => void;
   updateScanOption: <K extends keyof ScanOptions>(key: K, value: ScanOptions[K]) => void;
   addPathPreference: (path: string) => void;
   removePathPreference: (index: number) => void;
-  
+
   // Track Relocation Actions
   setRelocationOptions: (options: RelocationOptions) => void;
   updateRelocationOption: <K extends keyof RelocationOptions>(key: K, value: RelocationOptions[K]) => void;
@@ -64,13 +64,13 @@ export const useSettingsStore = create<SettingsState>()(
 
       addPathPreference: (path) => {
         const trimmedPath = path.trim();
-        if (!trimmedPath) return;
-        
+        if (!trimmedPath) {return;}
+
         set((state) => {
           if (state.scanOptions.pathPreferences.includes(trimmedPath)) {
             return state; // Already exists, no change
           }
-          
+
           console.log('📁 Zustand: Adding path preference:', trimmedPath);
           return {
             scanOptions: {
@@ -109,13 +109,13 @@ export const useSettingsStore = create<SettingsState>()(
 
       addRelocationSearchPath: (path) => {
         const trimmedPath = path.trim();
-        if (!trimmedPath) return;
-        
+        if (!trimmedPath) {return;}
+
         set((state) => {
           if (state.relocationOptions.searchPaths.includes(trimmedPath)) {
             return state; // Already exists, no change
           }
-          
+
           console.log('📂 Zustand: Adding relocation search path:', trimmedPath);
           return {
             relocationOptions: {

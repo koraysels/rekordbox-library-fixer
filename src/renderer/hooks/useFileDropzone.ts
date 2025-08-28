@@ -15,16 +15,16 @@ interface ElectronFile extends File {
 // Custom file getter to access native file paths in Electron
 const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
   const files: FileWithPath[] = [];
-  
+
   if (event.dataTransfer) {
     const fileList = Array.from(event.dataTransfer.files || []) as File[];
     console.log('DataTransfer files found:', fileList.length);
-    
+
     fileList.forEach((file, index) => {
-      
+
       // In Electron, the file should have a 'path' property
-      let fullPath = (file as any).path || file.name;
-      
+      const fullPath = (file as any).path || file.name;
+
       // Create file with path property
       const fileWithPath = Object.assign(file, { path: fullPath }) as FileWithPath;
       files.push(fileWithPath);
@@ -33,15 +33,15 @@ const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
     // Handle regular file input (click to select)
     const fileList = Array.from(event.target.files) as File[];
     console.log('Input files found:', fileList.length);
-    
+
     fileList.forEach((file, index) => {
-      
+
       const filePath = (file as any).path || file.name;
       const fileWithPath = Object.assign(file, { path: filePath }) as FileWithPath;
       files.push(fileWithPath);
     });
   }
-  
+
   console.log('Processed files count:', files.length);
   return files;
 };
@@ -55,11 +55,11 @@ export const useFileDropzone = ({
   maxFiles = 1,
   disabled = false
 }: UseFileDropzoneOptions) => {
-  
+
   const handleDrop = useCallback(async (acceptedFiles: FileWithPath[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
-      
+
       try {
         // Prefer native file path when available (more efficient)
         if (file.path) {
@@ -67,7 +67,7 @@ export const useFileDropzone = ({
             const result = await window.electronAPI.saveDroppedFile({
               filePath: file.path
             });
-            
+
             if (result.success && result.data?.filePath) {
               onDrop(result.data.filePath);
               return;
@@ -78,15 +78,15 @@ export const useFileDropzone = ({
             console.warn('Direct file path access failed, falling back to content read:', pathError);
           }
         }
-        
+
         // Fallback: read file content and send to main process
         const content = await file.text();
-        
+
         const result = await window.electronAPI.saveDroppedFile({
           content,
           fileName: file.name
         });
-        
+
         if (result.success && result.data?.filePath) {
           onDrop(result.data.filePath);
         } else {
@@ -100,7 +100,7 @@ export const useFileDropzone = ({
 
   const validateFile = useCallback((file: File) => {
     const fileName = file.name.toLowerCase();
-    
+
     // Validate that it's an XML file with Rekordbox-related content
     if (!fileName.endsWith('.xml')) {
       return {
@@ -108,7 +108,7 @@ export const useFileDropzone = ({
         message: 'Only XML files are accepted'
       };
     }
-    
+
     // Use configurable patterns for file name validation
     const patterns = fileNamePatterns && fileNamePatterns.length > 0
       ? fileNamePatterns
@@ -127,7 +127,7 @@ export const useFileDropzone = ({
         message: 'Please drop a Rekordbox XML library file (e.g., rekordbox.xml, Collection.xml)'
       };
     }
-    
+
     return null;
   }, []);
 
@@ -148,7 +148,7 @@ export const useFileDropzone = ({
     // Expose some additional useful states
     hasFiles: dropzoneProps.acceptedFiles.length > 0,
     hasRejectedFiles: dropzoneProps.fileRejections.length > 0,
-    rejectionErrors: dropzoneProps.fileRejections.flatMap(rejection => 
+    rejectionErrors: dropzoneProps.fileRejections.flatMap(rejection =>
       rejection.errors.map(error => error.message)
     )
   };
