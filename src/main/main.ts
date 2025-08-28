@@ -1255,7 +1255,7 @@ ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
           await fs.promises.access(filePath, fs.constants.R_OK);
           validPaths.push(filePath);
           safeConsole.log('✅ Valid native file path:', filePath);
-        } catch (error) {
+        } catch {
           safeConsole.warn('❌ Cannot access file:', filePath);
         }
       } else {

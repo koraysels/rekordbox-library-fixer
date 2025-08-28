@@ -4,8 +4,6 @@ import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
 interface SettingsPanelProps {
-  isOpen: boolean;
-  onClose: () => void;
   scanOptions: ScanOptions;
   setScanOptions: (options: ScanOptions) => void;
   resolutionStrategy: ResolutionStrategy;
@@ -19,8 +17,6 @@ interface FormData {
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
-  isOpen,
-  onClose,
   scanOptions,
   setScanOptions,
   resolutionStrategy,

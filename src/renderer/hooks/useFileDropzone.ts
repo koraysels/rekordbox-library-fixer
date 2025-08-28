@@ -8,9 +8,6 @@ interface UseFileDropzoneOptions {
   disabled?: boolean;
 }
 
-interface ElectronFile extends File {
-  path?: string;
-}
 
 // Custom file getter to access native file paths in Electron
 const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
@@ -20,7 +17,7 @@ const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
     const fileList = Array.from(event.dataTransfer.files || []) as File[];
     console.log('DataTransfer files found:', fileList.length);
 
-    fileList.forEach((file, index) => {
+    fileList.forEach((file) => {
 
       // In Electron, the file should have a 'path' property
       const fullPath = (file as any).path || file.name;
@@ -34,7 +31,7 @@ const getFilesFromEvent = async (event: any): Promise<FileWithPath[]> => {
     const fileList = Array.from(event.target.files) as File[];
     console.log('Input files found:', fileList.length);
 
-    fileList.forEach((file, index) => {
+    fileList.forEach((file) => {
 
       const filePath = (file as any).path || file.name;
       const fileWithPath = Object.assign(file, { path: filePath }) as FileWithPath;

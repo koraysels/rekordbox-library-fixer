@@ -61,7 +61,8 @@
       "mcp__playwright__browser_console_messages",
       "Bash(npm run:*)",
       "Bash(git rm:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

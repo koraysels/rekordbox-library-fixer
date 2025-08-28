@@ -7,7 +7,7 @@ interface AppHeaderProps {
   onSelectLibrary: () => void;
 }
 
-export const AppHeader: React.FC<AppHeaderProps> = React.memo(({
+const AppHeaderComponent: React.FC<AppHeaderProps> = React.memo(({
   libraryPath,
   isLoading,
   onSelectLibrary
@@ -46,3 +46,7 @@ export const AppHeader: React.FC<AppHeaderProps> = React.memo(({
     </header>
   );
 });
+
+AppHeaderComponent.displayName = 'AppHeader';
+
+export const AppHeader = AppHeaderComponent;
