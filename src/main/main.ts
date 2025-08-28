@@ -445,14 +445,29 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       library.tracks.delete(trackId);
     });
 
-    // Remove from playlists
-    library.playlists.forEach((playlist: any) => {
-      if (playlist.tracks) {
-        playlist.tracks = playlist.tracks.filter((trackId: string) =>
-          !tracksToRemove.includes(trackId)
-        );
-      }
-    });
+    // Remove from playlists (recursive function to handle nested playlist structure)
+    const removeTracksFromPlaylists = (playlists: any[]) => {
+      playlists.forEach((playlist: any) => {
+        // Filter tracks from current playlist
+        if (playlist.tracks) {
+          const originalCount = playlist.tracks.length;
+          playlist.tracks = playlist.tracks.filter((trackId: string) =>
+            !tracksToRemove.includes(trackId)
+          );
+          const removedCount = originalCount - playlist.tracks.length;
+          if (removedCount > 0) {
+            safeConsole.log(`🎵 Removed ${removedCount} duplicate tracks from playlist "${playlist.name}"`);
+          }
+        }
+        
+        // Recursively process child playlists
+        if (playlist.children && playlist.children.length > 0) {
+          removeTracksFromPlaylists(playlist.children);
+        }
+      });
+    };
+
+    removeTracksFromPlaylists(library.playlists);
 
     // Step 5: Save updated library
     await rekordboxParser.saveLibrary(library, resolution.libraryPath);
