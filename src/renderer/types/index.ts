@@ -17,6 +17,7 @@ export interface Playlist {
 }
 
 export interface LibraryData {
+  libraryPath: string;
   tracks: Map<string, any>;
   playlists: Playlist[];
 }
@@ -69,6 +70,7 @@ export interface MissingTrack {
   size?: number;
   duration?: number;
   dateAdded?: string;
+  isUnlocatable?: boolean; // Track marked as unlocatable after failed auto-relocation
 }
 
 export interface RelocationCandidate {
@@ -149,10 +151,10 @@ declare global {
       // Track Relocation APIs
       findMissingTracks: (tracks: any) => Promise<any>;
       resetTrackLocations: (trackIds: string[]) => Promise<any>;
-      autoRelocateTracks: (tracks: any[], options: any) => Promise<any>;
+      autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) => Promise<any>;
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
-      batchRelocateTracks: (relocations: any[]) => Promise<any>;
+      batchRelocateTracks: (data: { libraryPath: string; relocations: any[] }) => Promise<any>;
       // Cloud Sync APIs
       detectCloudSyncIssues: (tracks: any) => Promise<any>;
       fixCloudSyncIssue: (issue: CloudSyncIssue) => Promise<any>;
@@ -165,6 +167,9 @@ declare global {
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // File Drop APIs
+      handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
+      onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
       // Event listeners
       onShowAbout: (callback: () => void) => () => void;
     };

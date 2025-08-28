@@ -18,7 +18,7 @@ describe('Import Validation - All Imports Should Work', () => {
       expect(uiModule.ConfidenceBadge).toBeDefined();
       expect(uiModule.AppHeader).toBeDefined();
       expect(uiModule.AppFooter).toBeDefined();
-      expect(uiModule.NavigationTabs).toBeDefined();
+      // NavigationTabs removed - replaced by Sidebar component
       expect(uiModule.SettingsSlideout).toBeDefined();
       
       // Test that TypeScript interfaces are properly exported

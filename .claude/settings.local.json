@@ -56,12 +56,12 @@
       "Bash(release/Rekordbox Library Manager-0.0.2-alpha-arm64.AppImage )",
       "Bash(release/rekordbox-library-manager_0.0.2-alpha_arm64.deb)",
       "Bash(gh release:*)",
-      "Bash(\"release/Rekordbox Library Manager-0.0.3-alpha-arm64.dmg\" )",
-      "Bash(\"release/Rekordbox Library Manager-0.0.3-alpha-arm64-mac.zip\" )",
-      "Bash(\"release/Rekordbox Library Manager-0.0.3-alpha-mac.zip\" )",
-      "Bash(\"release/Rekordbox Library Manager Setup 0.0.3-alpha.exe\" )",
-      "Bash(\"release/Rekordbox Library Manager-0.0.3-alpha-win.zip\" )",
-      "Bash(\"release/Rekordbox Library Manager-0.0.3-alpha-ia32-win.zip\" )"
+      "Bash(pkill:*)",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_console_messages",
+      "Bash(npm run:*)",
+      "Bash(git rm:*)",
+      "Bash(lsof:*)"
     ],
     "deny": [],
     "ask": []

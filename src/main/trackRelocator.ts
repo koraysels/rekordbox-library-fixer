@@ -56,7 +56,7 @@ export class TrackRelocator {
 
       try {
         // Check if file exists at original location
-        const exists = fs.existsSync(track.location);
+        const exists = await this.fileExists(track.location);
         if (!exists) {
           missingTracks.push({
             id,
@@ -101,7 +101,7 @@ export class TrackRelocator {
 
     for (const searchPath of options.searchPaths) {
       try {
-        if (!fs.existsSync(searchPath)) {
+        if (!(await this.fileExists(searchPath))) {
           this.logger.warning('TRACK_RELOCATOR_PATH_NOT_FOUND', { searchPath });
           continue;
         }
@@ -240,7 +240,7 @@ export class TrackRelocator {
   ): Promise<RelocationResult> {
     try {
       // Verify new location exists
-      if (!fs.existsSync(newLocation)) {
+      if (!(await this.fileExists(newLocation))) {
         return {
           trackId,
           oldLocation,
@@ -350,5 +350,14 @@ export class TrackRelocator {
     }
 
     return matrix[str2.length][str1.length];
+  }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.promises.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

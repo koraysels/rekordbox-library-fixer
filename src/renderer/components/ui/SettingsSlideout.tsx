@@ -28,7 +28,7 @@ export const SettingsSlideout: React.FC<SettingsSlideoutProps> = ({
   return (
     <>
       {/* Slide-out Panel */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full ${widthClasses[width]} bg-zinc-900 border-l border-zinc-700 transform transition-transform duration-300 ease-in-out z-50 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -52,19 +52,19 @@ export const SettingsSlideout: React.FC<SettingsSlideoutProps> = ({
               <X size={24} />
             </button>
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-6">
+            <div className="">
               {children}
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40"
           onClick={onClose}
         />

@@ -6,36 +6,42 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
   const [libraryData, setLibraryData] = useState<LibraryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const selectLibrary = useCallback(async () => {
-    try {
-      const path = await window.electronAPI.selectRekordboxXML();
-      if (path) {
-        // Clear previous library data when selecting new library
-        setLibraryData(null);
-        setLibraryPath(path);
-        await loadLibrary(path);
-      }
-    } catch (error) {
-      showNotification('error', 'Failed to select library file');
-    }
-  }, [showNotification]);
-
   const loadLibrary = useCallback(async (path: string) => {
     setIsLoading(true);
     try {
+      // Clear previous library data when loading new library
+      setLibraryData(null);
+      // Set the new library path immediately
+      setLibraryPath(path);
+      
       const result = await window.electronAPI.parseRekordboxLibrary(path);
       if (result.success) {
         setLibraryData(result.data);
         showNotification('success', `Loaded ${result.data.tracks.size} tracks from library`);
       } else {
         showNotification('error', result.error || 'Failed to parse library');
+        // Reset path if loading failed
+        setLibraryPath('');
       }
     } catch (error) {
       showNotification('error', 'Failed to load library');
+      // Reset path if loading failed
+      setLibraryPath('');
     } finally {
       setIsLoading(false);
     }
   }, [showNotification]);
+
+  const selectLibrary = useCallback(async () => {
+    try {
+      const path = await window.electronAPI.selectRekordboxXML();
+      if (path) {
+        await loadLibrary(path);
+      }
+    } catch (error) {
+      showNotification('error', 'Failed to select library file');
+    }
+  }, [loadLibrary, showNotification]);
 
   const clearStoredData = useCallback(() => {
     localStorage.removeItem('rekordboxLibraryPath');
