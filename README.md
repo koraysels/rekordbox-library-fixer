@@ -22,11 +22,11 @@
 Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
 
 This little tool is just our attempt to help fellow DJs deal with the chaos. Will it solve all your problems? Probably not. But hopefully it'll save you some time and headaches.
-excellent Rekordbox Collection Tool (RCT), but is Mac only and not open-source. 
+excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
 
 ### 😤 The Stuff That's Annoying:
 - 🎵 **Too Many Duplicates**: Same track, but with slightly different names, cluttering everything
-- 📁 **Missing Files**: You know, those dreaded "!" tracks that mess up your flow  
+- 📁 **Missing Files**: You know, those dreaded "!" tracks that mess up your flow ![rekordbox-missing-track.png](screenshots/rekordbox-missing-track.png)   
 - ⏰ **Time Sink**: Spending more time organizing music than actually mixing it
 - 💸 **Expensive Tools**: Why pay hundreds when it should just... work?
 - 🔒 **No Control**: Can't tweak things the way *you* want them
@@ -48,7 +48,7 @@ Make a simple, free tool that might help you get your library back under control
 - **🔎 Smart Search**: Tries to find your moved music files automatically  
 - **🎯 Similarity Matching**: Matches tracks even when filenames are different
 - **📁 Bulk Operations**: Fix hundreds of tracks at once (if you're lucky!)
-- **⚡ Pretty Fast**: Scans through lots of files without making you wait forever
+- **⚡ Fast Enough**: Scans through lots of files without making you wait forever
 - **⚠️ Unlocatable Tracking**: Marks tracks that couldn't be auto-relocated so you can retry or handle them manually
 
 ### 🛠️ **Resolution Options**
@@ -99,7 +99,10 @@ Make a simple, free tool that might help you get your library back under control
    - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.3-alpha.exe`
    - **macOS**: `Rekordbox-Library-Manager-0.0.3-alpha.dmg`
 3. Install and launch the app
-4. Load your Rekordbox XML file and start cleaning!
+4. Export you collection as xml using Rekordbox.  
+![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)
+5Load your Rekordbox XML file and start cleaning!  
+
 
 #### Option 2: Build from Source
 ```bash
