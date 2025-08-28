@@ -6,6 +6,7 @@ import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
+import { mainLogger as appLogger } from './appLogger';
 
 // Safe console logging to prevent EPIPE errors
 const safeConsole = {
@@ -64,8 +65,61 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
+
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Handle navigation for security
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url !== mainWindow?.webContents.getURL()) {
+      event.preventDefault();
+    }
+  });
+
+  // Enable native drag-and-drop handling in main process
+  mainWindow.webContents.on('dom-ready', () => {
+    // Override the default file drag behavior to capture native paths
+    mainWindow?.webContents.executeJavaScript(`
+      // Remove any existing listeners
+      document.removeEventListener('dragover', window.__electronDragOver);
+      document.removeEventListener('drop', window.__electronDrop);
+      
+      // Add new listeners that capture native file paths
+      window.__electronDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      
+      window.__electronDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const files = Array.from(e.dataTransfer.files);
+        console.log('Native drop detected, files:', files.length);
+        
+        // Extract native file paths
+        const filePaths = files.map(file => {
+          console.log('File object:', {
+            name: file.name,
+            path: file.path,
+            size: file.size,
+            type: file.type
+          });
+          return file.path;
+        }).filter(path => path && path.length > 0);
+        
+        if (filePaths.length > 0) {
+          console.log('Sending native paths to main process:', filePaths);
+          window.electronAPI?.handleNativeDrop?.(filePaths);
+        }
+      };
+      
+      document.addEventListener('dragover', window.__electronDragOver);
+      document.addEventListener('drop', window.__electronDrop);
+      
+      console.log('✅ Native drag-and-drop handlers installed');
+    `);
   });
 }
 
@@ -90,13 +144,23 @@ function createMenu() {
         { type: 'separator' },
         { role: 'quit' }
       ]
-    }
-  ] as Electron.MenuItemConstructorOptions[];
-
-  // Don't show developer menu in production
-  if (process.env.NODE_ENV === 'development') {
-    template.push({
-      label: 'Developer',
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+        { type: 'separator' },
+        { role: 'delete' }
+      ]
+    },
+    {
+      label: 'View',
       submenu: [
         { role: 'reload' },
         { role: 'forceReload' },
@@ -108,7 +172,53 @@ function createMenu() {
         { type: 'separator' },
         { role: 'togglefullscreen' }
       ]
-    });
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'close' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Open Log File',
+          click: () => {
+            const logPath = logger.getLogPath();
+            shell.openPath(logPath).catch(err => {
+              appLogger.error('Failed to open log file:', err);
+            });
+          }
+        },
+        {
+          label: 'Open Logs Directory',
+          click: () => {
+            const logsDir = logger.getLogsDirectory();
+            shell.openPath(logsDir).catch(err => {
+              appLogger.error('Failed to open logs directory:', err);
+            });
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'About Rekordbox Library Manager',
+          click: () => {
+            mainWindow?.webContents.send('show-about');
+          }
+        }
+      ]
+    }
+  ] as Electron.MenuItemConstructorOptions[];
+
+  // Add developer menu in development only
+  if (process.env.NODE_ENV === 'development') {
+    // Find View menu and add separator + dev tools if not already there
+    const viewMenu = template.find(menu => menu.label === 'View');
+    if (viewMenu && viewMenu.submenu && Array.isArray(viewMenu.submenu)) {
+      // Dev tools already added above in View menu for consistency
+    }
   }
 
   const menu = Menu.buildFromTemplate(template);
@@ -201,11 +311,19 @@ ipcMain.handle('select-folder', async () => {
   return null;
 });
 
+
 ipcMain.handle('parse-rekordbox-library', async (_, xmlPath: string) => {
   try {
     const library = await rekordboxParser.parseLibrary(xmlPath);
     logger.logLibraryParsing(xmlPath, library.tracks.size, library.playlists.length);
-    return { success: true, data: library };
+    
+    // Include the libraryPath in the returned data to match LibraryData interface
+    const libraryData = {
+      ...library,
+      libraryPath: xmlPath
+    };
+    
+    return { success: true, data: libraryData };
   } catch (error) {
     logger.error('LIBRARY_PARSING_FAILED', {
       xmlPath,
@@ -431,15 +549,25 @@ ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
   }
 });
 
-ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) => {
-  safeConsole.log(`🤖 IPC: Auto-relocating ${tracks.length} tracks`);
+ipcMain.handle('auto-relocate-tracks', async (_, data: {
+  tracks: any[];
+  options: any;
+  libraryPath: string;
+}) => {
+  appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks`);
   try {
     let successCount = 0;
-    const results = [];
+    const results: any[] = [];
+    const successfulRelocations: Array<{
+      trackId: string;
+      oldLocation: string;
+      newLocation: string;
+    }> = [];
 
-    for (const track of tracks) {
+    // Step 1: Find candidates and build relocations for high-confidence matches
+    for (const track of data.tracks) {
       // Find candidates for this track
-      const candidatesResult = await trackRelocator.findRelocationCandidates(track, options);
+      const candidatesResult = await trackRelocator.findRelocationCandidates(track, data.options);
 
       if (candidatesResult.length > 0) {
         // Use the best candidate (highest confidence)
@@ -447,32 +575,32 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
           current.confidence > best.confidence ? current : best
         );
 
-        // Only auto-relocate if confidence is high enough (>80%)
-        if (bestCandidate.confidence > 0.8) {
-          const relocResult = await trackRelocator.relocateTrack(
-            track.id,
-            track.originalLocation,
-            bestCandidate.path
-          );
-
-          if (relocResult.success) {
-            successCount++;
-          }
+        // Only auto-relocate if confidence is high enough (use client threshold with fallback)
+        const matchThreshold = typeof data.options.matchThreshold === 'number' ? data.options.matchThreshold : 0.8;
+        if (bestCandidate.confidence > matchThreshold) {
+          successfulRelocations.push({
+            trackId: track.id,
+            oldLocation: track.originalLocation,
+            newLocation: bestCandidate.path
+          });
 
           results.push({
             trackId: track.id,
             trackName: track.name,
-            success: relocResult.success,
-            newLocation: relocResult.success ? bestCandidate.path : undefined,
+            success: true,
+            newLocation: bestCandidate.path,
             confidence: bestCandidate.confidence,
-            error: relocResult.error
+            oldLocation: track.originalLocation
           });
+          
+          successCount++;
         } else {
           results.push({
             trackId: track.id,
             trackName: track.name,
             success: false,
-            error: 'No high-confidence candidate found'
+            error: 'No high-confidence candidate found',
+            confidence: bestCandidate.confidence
           });
         }
       } else {
@@ -485,19 +613,94 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
       }
     }
 
-    safeConsole.log(`✅ Auto-relocation complete: ${successCount}/${tracks.length} successful`);
+    // Step 2: Apply the relocations using batch relocation logic
+    let batchResult: {
+      success: boolean;
+      data?: any;
+      xmlUpdated?: boolean;
+      tracksUpdated?: number;
+      backupPath?: string;
+      error?: string;
+    } | null = null;
+    
+    if (successfulRelocations.length > 0 && data.libraryPath) {
+      safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
+      
+      try {
+        // Step 2a: Verify relocations first (without XML update)
+        const verificationResults = await trackRelocator.batchRelocate(successfulRelocations);
+        const verifiedSuccessful = verificationResults.filter(r => r.success);
+        
+        if (verifiedSuccessful.length === 0) {
+          safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+          batchResult = { success: true, data: verificationResults, xmlUpdated: false, tracksUpdated: 0 };
+        } else {
+          // Step 2b: Create backup of original XML
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+
+          const fs = require('fs');
+          fs.copyFileSync(data.libraryPath, backupPath);
+          safeConsole.log(`💾 Backup created: ${backupPath}`);
+
+          // Step 2c: Parse current library
+          const library = await rekordboxParser.parseLibrary(data.libraryPath);
+          safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
+
+          // Step 2d: Update track locations in the library
+          let tracksUpdated = 0;
+          for (const relocation of verifiedSuccessful) {
+            const track = library.tracks.get(relocation.trackId);
+            if (track && relocation.newLocation) {
+              // Update the track location 
+              track.location = relocation.newLocation;
+              library.tracks.set(relocation.trackId, track);
+              tracksUpdated++;
+              safeConsole.log(`🎵 Auto-updated track "${track.name}": ${relocation.oldLocation} -> ${relocation.newLocation}`);
+            }
+          }
+
+          // Step 2e: Save updated library back to XML
+          if (tracksUpdated > 0) {
+            await rekordboxParser.saveLibrary(library, data.libraryPath);
+            safeConsole.log(`✅ XML updated with ${tracksUpdated} auto-relocated tracks`);
+            logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+          }
+          
+          batchResult = { 
+            success: true, 
+            data: verificationResults,
+            backupPath,
+            xmlUpdated: tracksUpdated > 0,
+            tracksUpdated
+          };
+        }
+      } catch (error) {
+        safeConsole.error('❌ Auto-relocate batch processing failed:', error);
+        batchResult = {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred'
+        };
+      }
+    }
+
+    appLogger.info(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful`);
+    
     return {
       success: true,
       data: {
-        totalTracks: tracks.length,
+        totalTracks: data.tracks.length,
         successfulRelocations: successCount,
-        results
+        results,
+        xmlUpdated: batchResult?.xmlUpdated || false,
+        tracksUpdated: batchResult?.tracksUpdated || 0,
+        backupPath: batchResult?.backupPath
       }
     };
   } catch (error) {
-    safeConsole.error('❌ Auto-relocate tracks failed:', error);
+    appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
-      trackCount: tracks.length,
+      trackCount: data.tracks.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
     return {
@@ -508,14 +711,14 @@ ipcMain.handle('auto-relocate-tracks', async (_, tracks: any[], options: any) =>
 });
 
 ipcMain.handle('find-missing-tracks', async (_, tracks: any) => {
-  safeConsole.log('🔍 IPC: Finding missing tracks');
+  appLogger.info('🔍 IPC: Finding missing tracks');
   try {
     const tracksMap = new Map(Object.entries(tracks));
     const missingTracks = await trackRelocator.findMissingTracks(tracksMap);
-    safeConsole.log(`✅ Found ${missingTracks.length} missing tracks`);
+    appLogger.info(`✅ Found ${missingTracks.length} missing tracks`);
     return { success: true, data: missingTracks };
   } catch (error) {
-    safeConsole.error('❌ Find missing tracks failed:', error);
+    appLogger.error('❌ Find missing tracks failed:', error);
     logger.error('FIND_MISSING_TRACKS_FAILED', {
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
@@ -570,17 +773,74 @@ ipcMain.handle('relocate-track', async (_, trackId: string, oldLocation: string,
   }
 });
 
-ipcMain.handle('batch-relocate-tracks', async (_, relocations: any[]) => {
-  safeConsole.log(`📁 IPC: Batch relocating ${relocations.length} tracks`);
+ipcMain.handle('batch-relocate-tracks', async (_, data: {
+  libraryPath: string;
+  relocations: any[];
+}) => {
+  safeConsole.log(`📁 IPC: Batch relocating ${data.relocations.length} tracks`);
   try {
-    const results = await trackRelocator.batchRelocate(relocations);
-    const successCount = results.filter(r => r.success).length;
-    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${relocations.length} successful`);
-    return { success: true, data: results };
+    // Step 1: Verify relocations first (without XML update)
+    const verificationResults = await trackRelocator.batchRelocate(data.relocations);
+    const successfulRelocations = verificationResults.filter(r => r.success);
+    
+    if (successfulRelocations.length === 0) {
+      safeConsole.log(`⚠️ No successful relocations to apply to XML`);
+      return { success: true, data: verificationResults };
+    }
+
+    // Step 2: Create backup of original XML
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+
+    const fs = require('fs');
+    fs.copyFileSync(data.libraryPath, backupPath);
+    safeConsole.log(`📄 Backup created: ${backupPath}`);
+
+    // Step 3: Parse current library
+    const library = await rekordboxParser.parseLibrary(data.libraryPath);
+    safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
+
+    // Step 4: Update track locations in the library (keep tracks in playlists)
+    let tracksUpdated = 0;
+    for (const relocation of successfulRelocations) {
+      const track = library.tracks.get(relocation.trackId);
+      if (track && relocation.newLocation) {
+        // Update the track location 
+        track.location = relocation.newLocation;
+        library.tracks.set(relocation.trackId, track);
+        tracksUpdated++;
+        safeConsole.log(`🎵 Updated track "${track.name}" location: ${relocation.oldLocation} -> ${relocation.newLocation}`);
+      } else {
+        if (!track) {
+          safeConsole.warn(`⚠️ Track ${relocation.trackId} not found in library`);
+        }
+        if (!relocation.newLocation) {
+          safeConsole.warn(`⚠️ No new location provided for track ${relocation.trackId}`);
+        }
+      }
+    }
+
+    // Step 5: Save updated library back to XML
+    if (tracksUpdated > 0) {
+      await rekordboxParser.saveLibrary(library, data.libraryPath);
+      safeConsole.log(`✅ Updated XML saved with ${tracksUpdated} track location changes`);
+      logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+    }
+
+    const successCount = verificationResults.filter(r => r.success).length;
+    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${data.relocations.length} successful, XML updated with ${tracksUpdated} changes`);
+    
+    return { 
+      success: true, 
+      data: verificationResults,
+      backupPath,
+      xmlUpdated: tracksUpdated > 0,
+      tracksUpdated
+    };
   } catch (error) {
     safeConsole.error('❌ Batch relocate tracks failed:', error);
     logger.error('BATCH_RELOCATE_TRACKS_FAILED', {
-      count: relocations.length,
+      count: data.relocations.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
     return {
@@ -767,10 +1027,101 @@ ipcMain.handle('get-app-version', async () => {
   try {
     const packageJsonPath = path.join(__dirname, '../../package.json');
     const fs = require('fs');
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const packageJsonContent = await fs.promises.readFile(packageJsonPath, 'utf-8');
+    const packageJson = JSON.parse(packageJsonContent);
     return { success: true, data: { version: packageJson.version } };
   } catch (error) {
     safeConsole.error('❌ Failed to read app version:', error);
     return { success: false, error: 'Failed to read version' };
+  }
+});
+
+// Native file dialog for opening files with absolute paths
+ipcMain.handle('open-file-dialog', async (_, options = {}) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openFile', 'multiSelections'],
+      filters: options.filters || [
+        { name: 'Rekordbox XML', extensions: ['xml'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
+      ...options
+    });
+    
+    if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+      return { success: false, error: 'User cancelled or no files selected' };
+    }
+    
+    // Return absolute file paths
+    return { 
+      success: true, 
+      data: { 
+        filePaths: result.filePaths,
+        filePath: result.filePaths[0] // For backward compatibility
+      } 
+    };
+  } catch (error) {
+    safeConsole.error('❌ Failed to open file dialog:', error);
+    return { success: false, error: 'Failed to open file dialog' };
+  }
+});
+
+
+// Handle native file drop with real file paths (event-based only)
+ipcMain.handle('handle-native-drop', async (_, filePaths: string[]) => {
+  try {
+    safeConsole.log('🎯 Processing native file drop:', filePaths);
+    
+    // Validate that all paths are absolute and files exist
+    const fs = require('fs');
+    const validPaths: string[] = [];
+    
+    for (const filePath of filePaths) {
+      if (path.isAbsolute(filePath)) {
+        try {
+          await fs.promises.access(filePath, fs.constants.R_OK);
+          validPaths.push(filePath);
+          safeConsole.log('✅ Valid native file path:', filePath);
+        } catch (error) {
+          safeConsole.warn('❌ Cannot access file:', filePath);
+        }
+      } else {
+        safeConsole.warn('❌ Path is not absolute:', filePath);
+      }
+    }
+    
+    if (validPaths.length > 0) {
+      // Send the validated native paths to renderer via event (single notification path)
+      mainWindow?.webContents.send('native-file-dropped', validPaths);
+      return { success: true, data: { filePaths: validPaths, filePath: validPaths[0] } };
+    } else {
+      return { success: false, error: 'No valid file paths found' };
+    }
+  } catch (error) {
+    safeConsole.error('❌ Failed to handle native drop:', error);
+    return { success: false, error: 'Failed to handle native drop' };
+  }
+});
+
+// Save dropped file content to temp directory (fallback)
+ipcMain.handle('save-dropped-file', async (_, { content, fileName }) => {
+  try {
+    const fs = require('fs');
+    const os = require('os');
+    
+    // Create a temporary file path
+    const tempDir = path.join(os.tmpdir(), 'rekordbox-library-manager');
+    await fs.promises.mkdir(tempDir, { recursive: true });
+    
+    const tempFilePath = path.join(tempDir, fileName);
+    
+    // Write the file content
+    await fs.promises.writeFile(tempFilePath, content, 'utf8');
+    
+    safeConsole.log('✅ Dropped file saved to:', tempFilePath);
+    return { success: true, data: { filePath: tempFilePath } };
+  } catch (error) {
+    safeConsole.error('❌ Failed to save dropped file:', error);
+    return { success: false, error: 'Failed to save dropped file' };
   }
 });

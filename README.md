@@ -145,8 +145,19 @@ Before using this tool, you need to export your Rekordbox collection as an XML f
 
 #### 📁 **Step 2: Load Your Library**
 
+You can load your library in two convenient ways:
+
+**Option A: Drag & Drop** *(Easy & Fast)*
 1. **Launch Rekordbox Library Manager**
-2. **Click "Load Library"** in the main interface  
+2. **Simply drag your XML file** directly onto the application window
+3. **Drop it anywhere** on the interface - the app will automatically detect and load it
+4. **Wait for parsing** - the tool will analyze your library structure
+
+![Drag & Drop Interface](screenshots/06-drag-drop-library.png)
+
+**Option B: Browse for File** *(Traditional)*
+1. **Launch Rekordbox Library Manager**
+2. **Click "Browse for XML File"** in the main interface  
 3. **Select your XML file** from where you saved it
 4. **Wait for parsing** - the tool will analyze your library structure
 

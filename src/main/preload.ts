@@ -22,8 +22,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('find-missing-tracks', tracks),
   resetTrackLocations: (trackIds: string[]) =>
     ipcRenderer.invoke('reset-track-locations', trackIds),
-  autoRelocateTracks: (tracks: any[], options: any) =>
-    ipcRenderer.invoke('auto-relocate-tracks', tracks, options),
+  autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) =>
+    ipcRenderer.invoke('auto-relocate-tracks', data),
   findRelocationCandidates: (track: any, options: any) =>
     ipcRenderer.invoke('find-relocation-candidates', track, options),
   relocateTrack: (trackId: string, oldLocation: string, newLocation: string) =>
@@ -58,6 +58,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onShowAbout: (callback: () => void) => {
     ipcRenderer.on('show-about', callback);
     return () => ipcRenderer.removeListener('show-about', callback);
+  },
+
+  // File operations
+  saveDroppedFile: (data: { content: string, fileName: string }) => 
+    ipcRenderer.invoke('save-dropped-file', data),
+  openFileDialog: (options?: any) => ipcRenderer.invoke('open-file-dialog', options),
+  
+  // Native drag-and-drop
+  handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
+  onNativeFileDrop: (callback: (filePaths: string[]) => void) => {
+    const handler = (_: any, filePaths: string[]) => callback(filePaths);
+    ipcRenderer.on('native-file-dropped', handler);
+    return () => ipcRenderer.removeListener('native-file-dropped', handler);
   }
 });
 
