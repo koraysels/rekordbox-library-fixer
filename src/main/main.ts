@@ -549,12 +549,20 @@ ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
   }
 });
 
-ipcMain.handle('auto-relocate-tracks', async (_, data: {
+// Store active operations for cancellation
+const activeOperations = new Map<string, { cancelled: boolean }>();
+
+ipcMain.handle('auto-relocate-tracks', async (event, data: {
   tracks: any[];
   options: any;
   libraryPath: string;
 }) => {
-  appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks`);
+  appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks using manual logic`);
+  
+  const operationId = Date.now().toString();
+  const cancelToken = { cancelled: false };
+  activeOperations.set(operationId, cancelToken);
+  
   try {
     let successCount = 0;
     const results: any[] = [];
@@ -564,52 +572,153 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
       newLocation: string;
     }> = [];
 
-    // Step 1: Find candidates and build relocations for high-confidence matches
-    for (const track of data.tracks) {
-      // Find candidates for this track
-      const candidatesResult = await trackRelocator.findRelocationCandidates(track, data.options);
+    // Send initial progress
+    if (mainWindow) {
+      mainWindow.webContents.send('auto-relocate-progress', {
+        operationId,
+        type: 'start',
+        total: data.tracks.length,
+        current: 0,
+        message: 'Starting auto-relocation...'
+      });
+    }
 
-      if (candidatesResult.length > 0) {
-        // Use the best candidate (highest confidence)
-        const bestCandidate = candidatesResult.reduce((best, current) =>
-          current.confidence > best.confidence ? current : best
-        );
-
-        // Only auto-relocate if confidence is high enough (use client threshold with fallback)
-        const matchThreshold = typeof data.options.matchThreshold === 'number' ? data.options.matchThreshold : 0.8;
-        if (bestCandidate.confidence > matchThreshold) {
-          successfulRelocations.push({
-            trackId: track.id,
-            oldLocation: track.originalLocation,
-            newLocation: bestCandidate.path
+    // Process tracks sequentially using the SAME logic as manual relocation
+    for (let i = 0; i < data.tracks.length; i++) {
+      // Check if cancelled
+      if (cancelToken.cancelled) {
+        appLogger.info(`⚠️ Auto-relocation cancelled by user`);
+        if (mainWindow) {
+          mainWindow.webContents.send('auto-relocate-progress', {
+            operationId,
+            type: 'cancelled',
+            total: data.tracks.length,
+            current: i,
+            message: 'Auto-relocation cancelled'
           });
+        }
+        break;
+      }
 
-          results.push({
-            trackId: track.id,
-            trackName: track.name,
-            success: true,
-            newLocation: bestCandidate.path,
-            confidence: bestCandidate.confidence,
-            oldLocation: track.originalLocation
-          });
+      const track = data.tracks[i];
+      
+      // Send progress update for searching
+      if (mainWindow) {
+        mainWindow.webContents.send('auto-relocate-progress', {
+          operationId,
+          type: 'searching',
+          total: data.tracks.length,
+          current: i + 1,
+          trackName: track.name,
+          trackArtist: track.artist,
+          message: `Searching for: ${track.name}`
+        });
+      }
+      
+      try {
+        // Use the EXACT same logic as manual relocation
+        appLogger.info(`🔍 Auto-relocating track ${i+1}/${data.tracks.length}: "${track.name}" by ${track.artist}`);
+        const candidatesResult = await trackRelocator.findRelocationCandidates(track, data.options);
+        
+        if (candidatesResult.length > 0) {
+          // Use the best candidate (highest confidence) - same as manual
+          const bestCandidate = candidatesResult.reduce((best, current) =>
+            current.confidence > best.confidence ? current : best
+          );
           
-          successCount++;
+          appLogger.info(`   Found ${candidatesResult.length} candidates, best: ${bestCandidate.path} (confidence: ${bestCandidate.confidence})`);
+
+          // Only auto-relocate if confidence is high enough
+          if (bestCandidate.confidence >= data.options.matchThreshold) {
+            successfulRelocations.push({
+              trackId: track.id,
+              oldLocation: track.originalLocation,
+              newLocation: bestCandidate.path
+            });
+
+            results.push({
+              trackId: track.id,
+              trackName: track.name,
+              success: true,
+              newLocation: bestCandidate.path,
+              confidence: bestCandidate.confidence,
+              oldLocation: track.originalLocation
+            });
+            
+            successCount++;
+            
+            // Send success update
+            if (mainWindow) {
+              mainWindow.webContents.send('auto-relocate-progress', {
+                operationId,
+                type: 'found',
+                total: data.tracks.length,
+                current: i + 1,
+                trackName: track.name,
+                confidence: bestCandidate.confidence,
+                newLocation: bestCandidate.path,
+                message: `Found: ${track.name} (${Math.round(bestCandidate.confidence * 100)}%)`,
+                successCount
+              });
+            }
+            
+            appLogger.info(`   ✅ Auto-relocating: confidence ${bestCandidate.confidence} >= threshold ${data.options.matchThreshold}`);
+          } else {
+            results.push({
+              trackId: track.id,
+              trackName: track.name,
+              success: false,
+              error: 'No high-confidence candidate found',
+              confidence: bestCandidate.confidence
+            });
+            
+            // Send low confidence update
+            if (mainWindow) {
+              mainWindow.webContents.send('auto-relocate-progress', {
+                operationId,
+                type: 'low-confidence',
+                total: data.tracks.length,
+                current: i + 1,
+                trackName: track.name,
+                confidence: bestCandidate.confidence,
+                message: `Low confidence: ${track.name}`,
+                successCount
+              });
+            }
+            
+            appLogger.info(`   ❌ Confidence too low: ${bestCandidate.confidence} < ${data.options.matchThreshold}`);
+          }
         } else {
           results.push({
             trackId: track.id,
             trackName: track.name,
             success: false,
-            error: 'No high-confidence candidate found',
-            confidence: bestCandidate.confidence
+            error: 'No candidates found'
           });
+          
+          // Send not found update
+          if (mainWindow) {
+            mainWindow.webContents.send('auto-relocate-progress', {
+              operationId,
+              type: 'not-found',
+              total: data.tracks.length,
+              current: i + 1,
+              trackName: track.name,
+              message: `Not found: ${track.name}`,
+              successCount
+            });
+          }
+          
+          appLogger.info(`   ❌ No candidates found for "${track.name}"`);
         }
-      } else {
+      } catch (error) {
         results.push({
           trackId: track.id,
           trackName: track.name,
           success: false,
-          error: 'No candidates found'
+          error: error instanceof Error ? error.message : 'Processing error'
         });
+        appLogger.error(`   ❌ Error processing track "${track.name}":`, error);
       }
     }
 
@@ -684,10 +793,39 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
       }
     }
 
-    appLogger.info(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful`);
+    // Send XML update notification if needed
+    if (successfulRelocations.length > 0 && data.libraryPath) {
+      if (mainWindow) {
+        mainWindow.webContents.send('auto-relocate-progress', {
+          operationId,
+          type: 'updating-xml',
+          total: data.tracks.length,
+          current: data.tracks.length,
+          message: `Updating XML with ${successfulRelocations.length} relocations...`
+        });
+      }
+    }
+
+    // Clean up cancel token
+    activeOperations.delete(operationId);
+
+    // Send completion
+    if (mainWindow) {
+      mainWindow.webContents.send('auto-relocate-progress', {
+        operationId,
+        type: 'complete',
+        total: data.tracks.length,
+        current: data.tracks.length,
+        successCount,
+        message: `Complete: ${successCount}/${data.tracks.length} tracks relocated`
+      });
+    }
+
+    appLogger.info(`✅ Auto-relocation complete: ${successCount}/${data.tracks.length} successful (using manual logic)`);
     
     return {
       success: true,
+      operationId,
       data: {
         totalTracks: data.tracks.length,
         successfulRelocations: successCount,
@@ -698,16 +836,51 @@ ipcMain.handle('auto-relocate-tracks', async (_, data: {
       }
     };
   } catch (error) {
+    // Clean up active operation
+    activeOperations.delete(operationId);
+    
     appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
       trackCount: data.tracks.length,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     });
+    
+    // Send error notification
+    if (mainWindow) {
+      mainWindow.webContents.send('auto-relocate-progress', {
+        operationId,
+        type: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
+    }
+    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
+});
+
+// Add cancel handler
+ipcMain.handle('cancel-auto-relocate', async (_, operationId: string) => {
+  const cancelToken = activeOperations.get(operationId);
+  if (cancelToken) {
+    cancelToken.cancelled = true;
+    activeOperations.delete(operationId);
+    
+    appLogger.info(`⚠️ Auto-relocation ${operationId} cancelled by user`);
+    
+    if (mainWindow) {
+      mainWindow.webContents.send('auto-relocate-progress', {
+        operationId,
+        type: 'cancelled',
+        message: 'Auto-relocation cancelled'
+      });
+    }
+    
+    return { success: true };
+  }
+  return { success: false, error: 'Operation not found' };
 });
 
 ipcMain.handle('find-missing-tracks', async (_, tracks: any) => {

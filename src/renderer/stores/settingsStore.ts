@@ -35,8 +35,8 @@ export const useSettingsStore = create<SettingsState>()(
       resolutionStrategy: 'keep-highest-quality',
       relocationOptions: {
         searchPaths: [],
-        searchDepth: 3,
-        matchThreshold: 0.8,
+        searchDepth: 8,
+        matchThreshold: 0.7,
         includeSubdirectories: true,
         fileExtensions: ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif']
       },
