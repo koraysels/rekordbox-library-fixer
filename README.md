@@ -11,9 +11,11 @@
 
 **🤞 Just trying to make DJs' lives a bit easier, one library at a time**
 
+> ## 🚨 Relocation of missing tracks might be a broken .. a fix will become available soon. 
+
 *Maybe this will help you clean up those pesky duplicates and find your missing tracks*
 
-[Download Latest Release](https://github.com/koraysels/rekordbox-library-manager/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-manager/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-manager/issues)
+[Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-fixer/issues)
 
 </div>
 
@@ -22,7 +24,7 @@
 Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
 
 This little tool is just our attempt to help fellow DJs deal with the chaos. Will it solve all your problems? Probably not. But hopefully it'll save you some time and headaches.
-excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
+I am aware of other (commercial) tools available, like the excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
 
 ### 😤 The Stuff That's Annoying:
 - 🎵 **Too Many Duplicates**: Same track, but with slightly different names, cluttering everything
@@ -100,8 +102,8 @@ Make a simple, free tool that might help you get your library back under control
    - **macOS**: `Rekordbox-Library-Manager-0.0.3-alpha.dmg`
 3. Install and launch the app
 4. Export you collection as xml using Rekordbox.  
-![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)
-5Load your Rekordbox XML file and start cleaning!  
+![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)  
+5. Load your Rekordbox XML file and start cleaning!  
 
 
 #### Option 2: Build from Source
@@ -331,7 +333,8 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ might be supported
 
 ### 📅 **v0.1.0** *(Major Release)*
 - [ ] **Multi-format Support**: Serato, VirtualDJ, Traktor
-- [ ] **Audio Analysis**: Automatic BPM/key detection
+- [ ] ***Maintenance Mode**
+- [ ] ***Auto Import Mode*** import new tracks, preventing duplicates and replacing lower bitrate tracks with better quality ones. Update all playlists to include the new, higher quality audio file
 
 ### 📅 **v1.0.0** *(Full Release)*
 - [ ] **Stability & Performance is fine-tuned**: 
@@ -378,7 +381,7 @@ This project is licensed under a **custom non-commercial license** - see the [LI
 
 <div align="center">
 
-**Made by some DJs who got tired of messy libraries**
+**Made by a DJ who got tired of messy libraries**
 
 *If this thing actually helped you, maybe give it a star so other DJs can find it? No pressure though! 😊*
 
