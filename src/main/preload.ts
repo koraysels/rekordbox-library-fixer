@@ -70,6 +70,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('show-about', callback);
     return () => ipcRenderer.removeListener('show-about', callback);
   },
+  onShowTutorial: (callback: () => void) => {
+    ipcRenderer.on('show-tutorial', callback);
+    return () => ipcRenderer.removeListener('show-tutorial', callback);
+  },
 
   // File operations
   saveDroppedFile: (data: { content: string, fileName: string }) =>

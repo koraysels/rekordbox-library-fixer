@@ -135,6 +135,12 @@ function createMenu() {
             mainWindow?.webContents.send('show-about');
           }
         },
+        {
+          label: 'XML Export & Import Tutorial',
+          click: () => {
+            mainWindow?.webContents.send('show-tutorial');
+          }
+        },
         { type: 'separator' },
         { role: 'services', submenu: [] },
         { type: 'separator' },
@@ -199,6 +205,13 @@ function createMenu() {
             shell.openPath(logsDir).catch(err => {
               appLogger.error('Failed to open logs directory:', err);
             });
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'XML Export & Import Tutorial',
+          click: () => {
+            mainWindow?.webContents.send('show-tutorial');
           }
         },
         { type: 'separator' },
