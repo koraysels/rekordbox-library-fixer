@@ -113,6 +113,7 @@ const AppWithRouter: React.FC = () => {
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
         onUnloadLibrary={clearStoredData}
+        onShowTutorial={() => setShowTutorial(true)}
       />
 
       {/* Main Content Area */}

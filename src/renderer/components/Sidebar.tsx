@@ -5,7 +5,8 @@ import {
     Wrench,
     Copy,
     FolderOpen,
-    X
+    X,
+    HelpCircle
 } from 'lucide-react';
 import {motion} from 'framer-motion';
 import type {TabType, LibraryData} from '../types';
@@ -48,6 +49,7 @@ interface SidebarProps {
     isLoading: boolean;
     onSelectLibrary: () => void;
     onUnloadLibrary?: () => void;
+    onShowTutorial?: () => void;
 }
 
 export function Sidebar({
@@ -55,7 +57,8 @@ export function Sidebar({
                             libraryData,
                             libraryPath,
                             onSelectLibrary,
-                            onUnloadLibrary
+                            onUnloadLibrary,
+                            onShowTutorial
                         }: SidebarProps) {
     return (
         <nav className="w-64 bg-te-grey-200 border-r-2 border-te-grey-300 flex flex-col pb-6">
@@ -190,9 +193,21 @@ export function Sidebar({
 
             {/* Footer - Minimal TE */}
             <div className="p-te-lg border-t-2 border-te-grey-300">
-                <p className="text-xs text-te-grey-500 text-center font-te-mono tracking-wider">
-                    🖤 FOR DJs
-                </p>
+                <div className="text-center">
+                    <p className="text-xs text-te-grey-500 font-te-mono tracking-wider mb-2">
+                        🖤 FOR DJs
+                    </p>
+                    {onShowTutorial && (
+                        <button
+                            onClick={onShowTutorial}
+                            className="inline-flex items-center space-x-1 text-xs text-te-grey-400 hover:text-te-orange transition-colors font-te-mono"
+                            title="Show XML Export & Import Tutorial"
+                        >
+                            <HelpCircle className="w-3 h-3" />
+                            <span>Help</span>
+                        </button>
+                    )}
+                </div>
             </div>
         </nav>
     );
