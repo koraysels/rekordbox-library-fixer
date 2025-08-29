@@ -267,3 +267,4 @@ src/renderer/
 - **Settings Sync**: Zustand store automatically syncs between UI and processing operations
 - **Progress Tracking**: Real-time updates with cancellation support for long-running operations
 - **Error Handling**: Comprehensive logging and graceful fallbacks for all critical operations
+- look up how to resize images for github markdown files

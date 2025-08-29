@@ -72,22 +72,22 @@ Make a simple, free tool that might help you get your library back under control
 ### 🏠 **Main Dashboard**
 *The main screen - nothing fancy, just gets the job done*
 
-<img src="screenshots/01-main-interface.png" alt="Main Interface" />
+<img src="screenshots/01-main-interface.png" alt="Main Interface" width="600" />
 
 ### 🔍 **Duplicate Detection**
 *This is where the magic happens (hopefully)*
 
-<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" />
+<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" width="600" />
 
 ### 📍 **Track Relocation**
 *For when your tracks decide to play hide and seek*
 
-<img src="screenshots/04-track-relocation.png" alt="Track Relocation" />
+<img src="screenshots/04-track-relocation.png" alt="Track Relocation" width="600" />
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
 
-<img src="screenshots/02-loaded-library.png" alt="Settings Panel" />
+<img src="screenshots/02-loaded-library.png" alt="Settings Panel" width="600" />
 
 ---
 
@@ -155,7 +155,7 @@ You can load your library in two convenient ways:
 3. **Drop it anywhere** on the interface - the app will automatically detect and load it
 4. **Wait for parsing** - the tool will analyze your library structure
 
-![Drag & Drop Interface](screenshots/06-drag-drop-library.png)
+<img src="screenshots/06-drag-drop-library.png" alt="Drag & Drop Interface" width="600" />
 
 **Option B: Browse for File** *(Traditional)*
 1. **Launch Rekordbox Library Manager**
@@ -210,7 +210,7 @@ Before you can import XML files, you need to enable the XML import feature in Re
 2. **Go to View Settings**: Navigate to the top menu and access the view preferences
 3. **Enable "rekordbox xml" in Tree View**: Make sure the checkbox for "rekordbox xml" is checked
 
-<img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" />
+<img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" width="600" />
 
 > **💡 Important**: The "rekordbox xml" option must be enabled in the Tree View section for XML import to work properly.
 
@@ -220,7 +220,7 @@ Before you can import XML files, you need to enable the XML import feature in Re
 2. **Access Library Sync**: Look for the "Library Sync" section 
 3. **Select Your Updated XML**: Click "Browse" and select your cleaned XML file (the tool creates a new file with "_cleaned" suffix)
 
-<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" />
+<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" width="600" />
 
 4. **Configure Import Options**:
    - ✅ **BPM change points**: Keep this checked to preserve tempo analysis
@@ -237,7 +237,7 @@ After the XML file is imported, you need to import the playlists:
 3. **Right-click on "Playlists"** under the rekordbox xml section
 4. **Select "Import Playlist"** from the context menu
 
-<img src="screenshots/import-xml-step-3.jpg" alt="Import Playlists" />
+<img src="screenshots/import-xml-step-3.jpg" alt="Import Playlists" width="400" />
 
 5. **Confirm the import**: Your playlists will be imported with all tracks properly linked
 6. **Verify playlist contents**: Check that all playlists now show the correct track counts

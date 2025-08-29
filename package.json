@@ -10,10 +10,11 @@
     "build:check": "npm run lint:check && npm run build",
     "build:vite": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
-    "dist": "npm run build && electron-builder",
-    "dist:mac": "npm run build && electron-builder --mac",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:all": "npm run build && electron-builder --mac --win",
+    "dist": "npm run clean:release && npm run build && electron-builder",
+    "dist:mac": "npm run clean:release && npm run build && electron-builder --mac",
+    "dist:win": "npm run clean:release && npm run build && electron-builder --win",
+    "dist:linux": "npm run clean:release && npm run build && electron-builder --linux",
+    "dist:all": "npm run clean:release && npm run build && electron-builder --mac --win --linux",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
@@ -23,6 +24,7 @@
     "lint": "eslint src --ext .js,.ts,.tsx",
     "lint:fix": "eslint src --ext .js,.ts,.tsx --fix",
     "lint:check": "eslint src --ext .js,.ts,.tsx --max-warnings 0",
+    "clean:release": "rm -rf release/*",
     "postinstall": "echo 'Post install complete'"
   },
   "keywords": [
