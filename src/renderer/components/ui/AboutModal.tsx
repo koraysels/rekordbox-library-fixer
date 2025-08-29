@@ -59,7 +59,12 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           {/* Links */}
           <div className="mb-3 flex flex-col space-y-2">
             <button
-              onClick={() => window.electronAPI.openExternal('https://github.com/koraysels/rekordbox-library-fixer')}
+              onClick={async () => {
+                const result = await window.electronAPI.openExternal('https://github.com/koraysels/rekordbox-library-fixer');
+                if (!result.success) {
+                  console.error('Failed to open GitHub:', result.error);
+                }
+              }}
               className="inline-flex items-center justify-center space-x-2 px-3 py-1.5 bg-te-grey-700 hover:bg-te-grey-600 text-te-grey-300 hover:text-te-cream rounded-te border border-te-grey-600 transition-colors font-te-mono text-sm"
             >
               <Github className="w-4 h-4" />
@@ -67,7 +72,12 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             </button>
             
             <button
-              onClick={() => window.electronAPI.openExternal('https://ko-fi.com/koraysels')}
+              onClick={async () => {
+                const result = await window.electronAPI.openExternal('https://ko-fi.com/koraysels');
+                if (!result.success) {
+                  console.error('Failed to open Ko-fi:', result.error);
+                }
+              }}
               className="inline-flex items-center justify-center space-x-2 px-3 py-1.5 bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border border-te-orange transition-colors font-te-mono text-sm"
             >
               <Coffee className="w-4 h-4" />
