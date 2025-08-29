@@ -129,9 +129,9 @@ Before using this tool, you need to export your Rekordbox collection as an XML f
 2. **Navigate to File Menu**: 
    - Click **File** in the top menu bar
    - Select **Export Collection in xml format**
-   
-   <img src="screenshots/rekordbox-export-menu.png" alt="Export Menu" />
-   
+   - 
+    ![Export Menu](screenshots/export-collection-as-xml.png)
+
 3. **Choose Export Location**:
    - A dialog box will appear
    - Choose where to save your XML file (Desktop is recommended for easy access)
