@@ -243,13 +243,56 @@ src/renderer/
 
 - Development mode loads from `http://localhost:3000` - ensure Electron listens on same port as Vite
 - Production builds load from `dist/renderer/index.html`
-- Dark theme with Tailwind CSS and purple accent (`rekordbox-purple`)
+- TE theme with Tailwind CSS and orange accent (`te-orange`)
 - Uses strict TypeScript configuration
 - Path resolution configured for clean imports
 - Settings persist automatically across sessions via Zustand store
 - Avoid `position: fixed` on headers - use native app-style static positioning
 - Follow DRY, KISS, and SoC principles for all new code
 - Use barrel exports for clean import paths
+
+## Release Template
+
+Always use this format for GitHub releases:
+
+--start template
+
+## ✨ Features
+- [ ] Feature 1
+- [ ] Feature 2
+
+## 🐛 Fixes
+- [ ] Fix 1
+- [ ] Fix 2
+
+## ⚠️ Known Issues
+- [ ] Issue 1
+- [ ] Issue 2
+
+---
+
+## ⚠️ macOS Users – Important Note
+Since this app is **not signed or notarized by Apple**, macOS may warn that it is “damaged” or “cannot be opened.”  
+This is normal for unsigned apps and does **not mean the app is broken**.
+
+### How to open the app:
+#### Option 1 – Right-click Open (Recommended)
+1. Download and install the `.dmg` or `.zip`.
+2. Right-click the app → **Open**.
+3. macOS will show a warning, but you’ll also see an **Open** button.
+4. Click it. From now on, macOS will remember the app as safe.
+
+#### Option 2 – Remove quarantine via Terminal
+If you prefer, you can also run this command after installing:
+```bash
+xattr -dr com.apple.quarantine /Applications/Rekordbox\ Library\ Manager.app
+```
+
+---
+*Built with ❤️ for DJs*
+
+
+--end template
 
 ## Rekordbox XML Format Compliance
 
