@@ -34,10 +34,10 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       <div className="mb-8">
         <img
           src="/icons/64x64.png"
-          alt="Rekordbox Library Manager"
+          alt="Rekordbox Library Fixer"
           className="w-24 h-24 mx-auto mb-4 bg-white rounded-3xl p-3 shadow-lg"
         />
-        <h2 className="text-3xl font-bold text-te-cream mb-2 font-te-display">Welcome to Rekordbox Library Manager</h2>
+        <h2 className="text-3xl font-bold text-te-cream mb-2 font-te-display">Welcome to Rekordbox Library Fixer</h2>
         <p className="te-value text-lg font-te-mono">
           Manage, clean, and optimize your Rekordbox music library
         </p>
@@ -51,7 +51,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
             ${isDragAccept
               ? 'border-te-orange bg-te-orange/10 scale-105'
               : isDragReject
-                ? 'border-te-red bg-te-red/10 scale-105'
+                ? 'border-te-red-500 bg-te-red-500/10 scale-105'
                 : isDragActive
                   ? 'border-te-orange bg-te-orange/10 scale-102'
                   : disabled
@@ -71,9 +71,9 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
             </>
           ) : isDragReject ? (
             <>
-              <AlertCircle className="w-16 h-16 text-te-red mb-4" />
-              <h3 className="text-2xl font-semibold text-te-red mb-2 font-te-display">Invalid file type</h3>
-              <p className="text-te-red font-te-mono">Please drop a valid Rekordbox XML file</p>
+              <AlertCircle className="w-16 h-16 text-te-red-500 mb-4" />
+              <h3 className="text-2xl font-semibold text-te-red-500 mb-2 font-te-display">Invalid file type</h3>
+              <p className="text-te-red-500 font-te-mono">Please drop a valid Rekordbox XML file</p>
             </>
           ) : isDragActive ? (
             <>
@@ -109,12 +109,12 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
 
       {/* Error Messages */}
       {hasRejectedFiles && (
-        <div className="mb-4 p-4 bg-te-red/20 border-2 border-te-red/30 rounded-te">
-          <div className="flex items-center space-x-2 text-te-red">
+        <div className="mb-4 p-4 bg-te-red-500/20 border-2 border-te-red-500/30 rounded-te">
+          <div className="flex items-center space-x-2 text-te-red-500">
             <AlertCircle className="w-4 h-4" />
             <span className="text-sm font-medium font-te-display">File Rejected</span>
           </div>
-          <ul className="mt-2 text-sm text-te-red font-te-mono">
+          <ul className="mt-2 text-sm text-te-red-500 font-te-mono">
             {rejectionErrors.map((error, index) => (
               <li key={index}>• {error}</li>
             ))}

@@ -81,7 +81,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
               </p>
             )}
             {hasRelocation && relocationPath && (
-              <p className="text-te-green text-xs font-te-mono mt-1">
+              <p className="text-te-green-500 text-xs font-te-mono mt-1">
                 → Relocate to: {relocationPath}
               </p>
             )}

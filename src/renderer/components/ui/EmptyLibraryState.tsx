@@ -18,12 +18,12 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
           <div className="w-16 h-16 mx-auto mb-te-lg bg-white rounded-te flex items-center justify-center">
             <img
               src="/icons/64x64.png"
-              alt="Rekordbox Library Manager"
+              alt="Rekordbox Library Fixer"
               className="w-12 h-12 opacity-90"
             />
           </div>
           <h2 className="font-te-display text-xl font-bold text-te-grey-800 mb-te-sm uppercase tracking-tight">
-            REKORDBOX LIBRARY MGR
+            REKORDBOX LIBRARY FIXER
           </h2>
           <p className="text-te-grey-500 font-te-mono text-sm tracking-wider">
             MANAGE • CLEAN • OPTIMIZE

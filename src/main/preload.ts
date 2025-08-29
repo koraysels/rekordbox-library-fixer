@@ -61,6 +61,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  
+  // Open external URLs
+  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
 
   // Event listeners for menu actions
   onShowAbout: (callback: () => void) => {

@@ -127,10 +127,10 @@ function createWindow() {
 function createMenu() {
   const template = [
     {
-      label: 'Rekordbox Library Manager',
+      label: 'Rekordbox Library Fixer',
       submenu: [
         {
-          label: 'About Rekordbox Library Manager',
+          label: 'About Rekordbox Library Fixer',
           click: () => {
             mainWindow?.webContents.send('show-about');
           }
@@ -203,7 +203,7 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'About Rekordbox Library Manager',
+          label: 'About Rekordbox Library Fixer',
           click: () => {
             mainWindow?.webContents.send('show-about');
           }
@@ -459,7 +459,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
             safeConsole.log(`🎵 Removed ${removedCount} duplicate tracks from playlist "${playlist.name}"`);
           }
         }
-        
+
         // Recursively process child playlists
         if (playlist.children && playlist.children.length > 0) {
           removeTracksFromPlaylists(playlist.children);
@@ -1224,6 +1224,18 @@ ipcMain.handle('get-app-version', async () => {
   }
 });
 
+// Open external URLs in the default browser
+ipcMain.handle('open-external', async (_, url: string) => {
+  try {
+    const { shell } = require('electron');
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    safeConsole.error('❌ Failed to open external URL:', error);
+    return { success: false, error: 'Failed to open URL' };
+  }
+});
+
 // Native file dialog for opening files with absolute paths
 ipcMain.handle('open-file-dialog', async (_, options = {}) => {
   try {
@@ -1298,7 +1310,7 @@ ipcMain.handle('save-dropped-file', async (_, { content, fileName }) => {
     const os = require('os');
 
     // Create a temporary file path
-    const tempDir = path.join(os.tmpdir(), 'rekordbox-library-manager');
+    const tempDir = path.join(os.tmpdir(), 'rekordbox-library-fixer');
     await fs.promises.mkdir(tempDir, { recursive: true });
 
     const tempFilePath = path.join(tempDir, fileName);

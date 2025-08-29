@@ -1,10 +1,10 @@
-# 🎧 Rekordbox Library Manager
+# 🎧 Rekordbox Library Fixer
 
 <div align="center">
 
-<img src="assets/icons/256x256.png" alt="Rekordbox Library Manager" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+<img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
-![Rekordbox Library Manager](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
+![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
 ![Version](https://img.shields.io/badge/version-0.0.4--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
@@ -176,7 +176,7 @@ Before using this tool, you need to export your Rekordbox collection as an XML f
 You can load your library in two convenient ways:
 
 **Option A: Drag & Drop** *(Easy & Fast)*
-1. **Launch Rekordbox Library Manager**
+1. **Launch Rekordbox Library Fixer**
 2. **Simply drag your XML file** directly onto the application window
 3. **Drop it anywhere** on the interface - the app will automatically detect and load it
 4. **Wait for parsing** - the tool will analyze your library structure
@@ -184,7 +184,7 @@ You can load your library in two convenient ways:
 <img src="screenshots/06-drag-drop-library.png" alt="Drag & Drop Interface" width="600" />
 
 **Option B: Browse for File** *(Traditional)*
-1. **Launch Rekordbox Library Manager**
+1. **Launch Rekordbox Library Fixer**
 2. **Click "Browse for XML File"** in the main interface  
 3. **Select your XML file** from where you saved it
 4. **Wait for parsing** - the tool will analyze your library structure
