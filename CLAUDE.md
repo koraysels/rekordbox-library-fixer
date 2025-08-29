@@ -268,4 +268,4 @@ src/renderer/
 - **Progress Tracking**: Real-time updates with cancellation support for long-running operations
 - **Error Handling**: Comprehensive logging and graceful fallbacks for all critical operations
 - look up how to resize images for github markdown files
-- repo link is https://github.com/koraysels/rekordbox-library-fixer/ DONT forget this!
+- Repository: [koraysels/rekordbox-library-fixer](https://github.com/koraysels/rekordbox-library-fixer)
