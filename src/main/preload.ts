@@ -62,8 +62,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
-  // Open external URLs
-  openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  // Open external URLs with validation
+  openExternal: (url: string) => {
+    // Validate URL scheme for security
+    const allowedSchemes = /^https?:\/\//i;
+    const mailtoScheme = /^mailto:/i;
+    
+    if (!allowedSchemes.test(url) && !mailtoScheme.test(url)) {
+      return Promise.resolve({ success: false, error: 'Invalid URL scheme' });
+    }
+    
+    return ipcRenderer.invoke('open-external', url);
+  },
 
   // Event listeners for menu actions
   onShowAbout: (callback: () => void) => {
