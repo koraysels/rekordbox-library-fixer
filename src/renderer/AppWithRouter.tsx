@@ -3,7 +3,7 @@ import { useLocation, Outlet } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
-import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard, NativeDropHandler } from './components/ui';
+import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import type { TabType, LibraryData, NotificationType } from './types';
 
@@ -35,6 +35,7 @@ const pathToTab: Record<string, TabType> = {
 const AppWithRouter: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
 
   // Derive active tab from route
@@ -76,6 +77,19 @@ const AppWithRouter: React.FC = () => {
 
       return () => {
         removeAboutListener();
+      };
+    }
+  }, []);
+
+  // Set up tutorial menu event listener
+  useEffect(() => {
+    if (window.electronAPI?.onShowTutorial) {
+      const removeTutorialListener = window.electronAPI.onShowTutorial(() => {
+        setShowTutorial(true);
+      });
+
+      return () => {
+        removeTutorialListener();
       };
     }
   }, []);
@@ -146,6 +160,9 @@ const AppWithRouter: React.FC = () => {
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+
+      {/* Tutorial Modal */}
+      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
       {/* Native Drop Handler */}
       <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />

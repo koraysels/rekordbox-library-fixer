@@ -113,7 +113,7 @@ Make a simple, free tool that might help you get your library back under control
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
 
-<img src="screenshots/02-loaded-library.png" alt="Settings Panel" width="600" />
+<img src="screenshots/02-settings-library.png" alt="Settings Panel" width="400" />
 
 ---
 
