@@ -8,11 +8,11 @@ interface NotificationToastProps {
 
 export const NotificationToast: React.FC<NotificationToastProps> = ({ notification }) => {
   return (
-    <div className={`fixed top-28 right-6 z-40 p-4 rounded-lg shadow-xl flex items-center space-x-3 ${
-      notification.type === 'success' ? 'bg-green-600' :
-      notification.type === 'error' ? 'bg-red-600' :
-      'bg-blue-600'
-    } text-white`}>
+    <div className={`fixed top-28 right-6 z-40 p-4 rounded-te shadow-xl flex items-center space-x-3 border-2 ${
+      notification.type === 'success' ? 'bg-te-green border-te-green' :
+      notification.type === 'error' ? 'bg-te-red border-te-red' :
+      'bg-te-orange border-te-orange'
+    } text-te-cream font-te-mono`}>
       {notification.type === 'success' ? (
         <CheckCircle className="w-5 h-5" />
       ) : (

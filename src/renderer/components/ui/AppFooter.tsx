@@ -39,19 +39,19 @@ const PlaylistTree: React.FC<{ playlists: Playlist[]; level?: number }> = ({
   level = 0
 }) => {
   return (
-    <div className={`${level > 0 ? 'ml-4' : ''}`}>
+    <div className={`${level > 0 ? 'ml-te-md' : ''}`}>
       {playlists.map((playlist) => (
         <div key={playlist.name}>
-          <div className="flex items-center justify-between py-1">
-            <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-between py-te-xs">
+            <div className="flex items-center gap-te-xs">
               {playlist.type === 'FOLDER' ? (
-                <Folder className="w-3 h-3 text-zinc-500" />
+                <Folder className="w-3 h-3 text-te-grey-500" />
               ) : (
-                <Music className="w-3 h-3 text-rekordbox-purple" />
+                <Music className="w-3 h-3 text-te-orange" />
               )}
-              <span className="text-sm text-zinc-300 truncate">{playlist.name}</span>
+              <span className="font-te-mono text-xs text-te-grey-700 truncate tracking-wide">{playlist.name}</span>
             </div>
-            <span className="text-xs text-zinc-500 whitespace-nowrap">{playlist.tracks.length} tracks</span>
+            <span className="font-te-mono text-xs text-te-grey-400 whitespace-nowrap">{playlist.tracks.length}</span>
           </div>
           {playlist.children && playlist.children.length > 0 && (
             <PlaylistTree playlists={playlist.children} level={level + 1} />
@@ -82,69 +82,69 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
   }, [loadVersion]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 px-6 py-3">
+    <div className="fixed bottom-0 left-0 right-0 bg-te-grey-300 border-t-2 border-te-grey-400 px-te-lg py-te-sm">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-zinc-400">
+        <div className="font-te-mono text-xs text-te-grey-600">
           {libraryData && (
-            <div className="flex items-center space-x-4">
-              <span>Library: {libraryData.tracks.size} tracks</span>
+            <div className="flex items-center gap-te-lg">
+              <span className="uppercase tracking-wider">{libraryData.tracks.size} TRACKS</span>
 
               <Popover.Root>
                 <Popover.Trigger asChild>
-                  <button className="flex items-center space-x-1 hover:text-zinc-200 transition-colors">
-                    <span>{playlistStats.totalPlaylists} playlists</span>
+                  <button className="flex items-center gap-te-xs hover:text-te-orange transition-colors uppercase tracking-wider">
+                    <span>{playlistStats.totalPlaylists} PLAYLISTS</span>
                     <ChevronDown className="w-3 h-3" />
                   </button>
                 </Popover.Trigger>
 
                 <Popover.Portal>
                   <Popover.Content
-                    className="z-50 w-80 max-h-96 overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl p-4"
+                    className="z-50 w-80 max-h-96 overflow-y-auto bg-te-cream border-2 border-te-grey-300 rounded-te-lg shadow-xl p-te-lg"
                     sideOffset={5}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-te-md">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-white">Playlist Overview</h3>
+                        <h3 className="font-te-display font-semibold text-te-grey-800 text-sm uppercase tracking-wide">Playlist Overview</h3>
                         <Popover.Close asChild>
-                          <button className="text-zinc-400 hover:text-zinc-200">
+                          <button className="text-te-grey-500 hover:text-te-orange transition-colors">
                             <X className="w-4 h-4" />
                           </button>
                         </Popover.Close>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="bg-zinc-900 rounded p-3">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Music className="w-4 h-4 text-rekordbox-purple" />
-                            <span className="text-zinc-300">Playlists</span>
+                      <div className="grid grid-cols-2 gap-te-md text-xs">
+                        <div className="bg-te-grey-200 rounded-te p-te-md border border-te-grey-300">
+                          <div className="flex items-center gap-te-xs mb-te-xs">
+                            <Music className="w-3 h-3 text-te-orange" />
+                            <span className="text-te-grey-700 font-te-display uppercase tracking-wider">Playlists</span>
                           </div>
-                          <div className="text-xl font-bold text-white">{playlistStats.totalPlaylists}</div>
+                          <div className="text-lg font-bold text-te-grey-800 font-te-display">{playlistStats.totalPlaylists}</div>
                         </div>
 
-                        <div className="bg-zinc-900 rounded p-3">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Folder className="w-4 h-4 text-zinc-500" />
-                            <span className="text-zinc-300">Folders</span>
+                        <div className="bg-te-grey-200 rounded-te p-te-md border border-te-grey-300">
+                          <div className="flex items-center gap-te-xs mb-te-xs">
+                            <Folder className="w-3 h-3 text-te-grey-500" />
+                            <span className="text-te-grey-700 font-te-display uppercase tracking-wider">Folders</span>
                           </div>
-                          <div className="text-xl font-bold text-white">{playlistStats.folders}</div>
+                          <div className="text-lg font-bold text-te-grey-800 font-te-display">{playlistStats.folders}</div>
                         </div>
                       </div>
 
                       <div>
-                        <h4 className="text-sm font-medium text-zinc-300 mb-2">Playlist Structure</h4>
-                        <div className="max-h-48 overflow-y-auto bg-zinc-900 rounded p-3">
+                        <h4 className="font-te-display text-xs font-medium text-te-grey-700 mb-te-sm uppercase tracking-wide">Structure</h4>
+                        <div className="max-h-48 overflow-y-auto bg-te-grey-100 rounded-te border border-te-grey-300 p-te-md">
                           {libraryData.playlists.length > 0 ? (
                             <PlaylistTree playlists={libraryData.playlists} />
                           ) : (
-                            <div className="text-center text-zinc-500 py-4">
-                              <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No playlists found</p>
+                            <div className="text-center text-te-grey-500 py-te-md">
+                              <Music className="w-6 h-6 mx-auto mb-te-sm opacity-50" />
+                              <p className="font-te-mono text-xs uppercase tracking-wide">No playlists</p>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    <Popover.Arrow className="fill-zinc-700" />
+                    <Popover.Arrow className="fill-te-grey-300" />
                   </Popover.Content>
                 </Popover.Portal>
               </Popover.Root>
@@ -152,8 +152,8 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
           )}
         </div>
 
-        <div className="text-xs text-zinc-500">
-          Version {version} • Made with ❤️ for DJs
+        <div className="font-te-mono text-xs text-te-grey-500 uppercase tracking-wider">
+          V{version} • FOR DJs
         </div>
       </div>
     </div>

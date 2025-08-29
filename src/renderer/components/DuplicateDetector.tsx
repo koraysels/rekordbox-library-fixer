@@ -248,7 +248,7 @@ const DuplicateDetector: React.FC = () => {
   // Memoize expensive calculations
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-rekordbox-dark">
+    <div className="flex-1 flex flex-col h-full bg-te-grey-100">
       {/* Header */}
       <PageHeader
         title="Duplicate Detection"
@@ -269,7 +269,7 @@ const DuplicateDetector: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Actions Bar */}
-        <div className="flex-shrink-0 py-4 px-0 bg-gray-800 border-b border-gray-700">
+        <div className="flex-shrink-0 py-4 px-0 bg-te-grey-200 border-b-2 border-te-grey-300">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <PopoverButton
@@ -313,9 +313,7 @@ const DuplicateDetector: React.FC = () => {
                 value={searchFilter}
                 onChange={(e) => setSearchFilter(e.target.value)}
                 placeholder="Search duplicates..."
-                className="px-4 py-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white w-72
-                         focus:border-rekordbox-purple focus:ring-1 focus:ring-rekordbox-purple/50
-                         transition-colors"
+                className="input w-72"
               />
             </div>
           </div>
@@ -325,10 +323,10 @@ const DuplicateDetector: React.FC = () => {
             <div className="flex items-center space-x-4">
               {duplicates.length > 0 && (
                 <>
-                  <span className="text-sm text-zinc-400">
+                  <span className="te-value">
                     {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
                   </span>
-                  <span className="text-sm text-zinc-400">
+                  <span className="te-value">
                     {selectedDuplicates.size} selected
                   </span>
                 </>
@@ -358,9 +356,9 @@ const DuplicateDetector: React.FC = () => {
               {isSearching ? (
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <Loader2 className="w-4 h-4 text-rekordbox-purple animate-spin spinner-loading" />
+                    <Loader2 className="w-4 h-4 text-te-orange animate-spin spinner-loading" />
                   </div>
-                  <div className="pl-10 text-sm text-rekordbox-purple">Filtering duplicates...</div>
+                  <div className="pl-10 text-sm text-te-orange font-te-mono">Filtering duplicates...</div>
                 </div>
               ) : null}
             </div>
@@ -375,7 +373,7 @@ const DuplicateDetector: React.FC = () => {
           </div>
         ) : hasScanned ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
+            <div className="text-center te-value">
               <CheckCircle2 size={48} className="mx-auto mb-4 text-green-500" />
               <h3 className="text-lg font-medium mb-2">No Duplicates Found</h3>
               <p>Your library appears to be clean! No duplicate tracks were detected.</p>
@@ -383,15 +381,15 @@ const DuplicateDetector: React.FC = () => {
           </div>
         ) : isLoadingDuplicates ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <Loader2 size={48} className="mx-auto mb-4 text-rekordbox-purple animate-spin spinner-loading" />
-              <h3 className="text-lg font-medium mb-2 text-rekordbox-purple">Loading Duplicates</h3>
+            <div className="text-center te-value">
+              <Loader2 size={48} className="mx-auto mb-4 text-te-orange animate-spin spinner-loading" />
+              <h3 className="te-title mb-2">Loading Duplicates</h3>
               <p>Reading duplicate results from database...</p>
             </div>
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
+            <div className="text-center te-value">
               <Search size={48} className="mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">Ready to Scan</h3>
               <p>Click "Scan for Duplicates" to analyze your library for duplicate tracks.</p>

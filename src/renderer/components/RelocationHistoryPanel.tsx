@@ -114,7 +114,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   if (!libraryPath) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="text-center text-gray-400">
+        <div className="text-center te-label">
           <History size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No Library Loaded</h3>
           <p>Load a library to view relocation history</p>
@@ -133,26 +133,26 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
           <div className="flex items-center justify-between space-x-6 mb-3">
             <div className="flex items-center space-x-2">
               <BarChart3 size={16} className="text-blue-400" />
-              <span className="text-sm text-gray-400">Total:</span>
-              <span className="text-lg font-bold text-white">{stats.totalRelocations}</span>
+              <span className="text-sm te-label">Total:</span>
+              <span className="text-lg font-bold te-value">{stats.totalRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
               <Zap size={16} className="text-green-400" />
-              <span className="text-sm text-gray-400">Auto:</span>
-              <span className="text-lg font-bold text-white">{stats.autoRelocations}</span>
+              <span className="text-sm te-label">Auto:</span>
+              <span className="text-lg font-bold te-value">{stats.autoRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Target size={16} className="text-purple-400" />
-              <span className="text-sm text-gray-400">Manual:</span>
-              <span className="text-lg font-bold text-white">{stats.manualRelocations}</span>
+              <Target size={16} className="text-te-orange" />
+              <span className="text-sm te-label">Manual:</span>
+              <span className="text-lg font-bold te-value">{stats.manualRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
               <TrendingUp size={16} className="text-yellow-400" />
-              <span className="text-sm text-gray-400">Avg Confidence:</span>
-              <span className="text-lg font-bold text-white">
+              <span className="text-sm te-label">Avg Confidence:</span>
+              <span className="text-lg font-bold te-value">
                 {stats.averageConfidence > 0 ? `${Math.round(stats.averageConfidence * 100)}%` : 'N/A'}
               </span>
             </div>
@@ -168,7 +168,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                 onClick={() => setFilter(filterType)}
                 className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                   filter === filterType
-                    ? 'bg-rekordbox-purple text-white'
+                    ? 'bg-te-orange text-te-cream'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
@@ -202,10 +202,10 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
         <div className="h-full overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <RefreshCw size={24} className="animate-spin text-rekordbox-purple" />
+              <RefreshCw size={24} className="animate-spin text-te-orange" />
             </div>
           ) : filteredHistory.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center te-label py-8">
               <History size={48} className="mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No History Found</h3>
               <p>
@@ -227,18 +227,18 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                       {entry.relocationMethod === 'auto' ? (
                         <Zap size={16} className="text-green-400" />
                       ) : (
-                        <Target size={16} className="text-purple-400" />
+                        <Target size={16} className="text-te-orange" />
                       )}
-                      <span className="text-sm font-medium text-gray-400 uppercase">
+                      <span className="text-sm font-medium te-label uppercase">
                         {entry.relocationMethod}
                       </span>
                       {entry.confidence && (
                         <span className={`text-sm px-2 py-0.5 rounded ${
                           entry.confidence > 0.8
-                            ? 'bg-green-600 text-white'
+                            ? 'bg-green-600 te-value'
                             : entry.confidence > 0.6
-                              ? 'bg-yellow-600 text-white'
-                              : 'bg-red-600 text-white'
+                              ? 'bg-yellow-600 te-value'
+                              : 'bg-red-600 te-value'
                         }`}>
                           {Math.round(entry.confidence * 100)}%
                         </span>
@@ -256,14 +256,14 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                   </div>
 
                   <div className="mb-3">
-                    <h4 className="text-sm text-white font-medium truncate">{entry.trackName}</h4>
-                    <p className="text-xs text-gray-400 truncate">{entry.trackArtist}</p>
+                    <h4 className="text-sm te-value font-medium truncate">{entry.trackName}</h4>
+                    <p className="text-xs te-label truncate">{entry.trackArtist}</p>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-gray-500">From:</span>
-                      <p className="text-xs text-gray-400 font-mono truncate flex-1" title={entry.originalLocation}>
+                      <p className="text-xs te-label font-mono truncate flex-1" title={entry.originalLocation}>
                         {entry.originalLocation}
                       </p>
                     </div>
@@ -279,7 +279,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                           className="p-1 hover:bg-gray-700 rounded transition-colors"
                           title="Show in Finder/Explorer"
                         >
-                          <ExternalLink size={12} className="text-gray-400" />
+                          <ExternalLink size={12} className="te-label" />
                         </button>
                       )}
                     </div>

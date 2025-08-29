@@ -86,9 +86,9 @@ const AppWithRouter: React.FC = () => {
   }
 
   return (
-    <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
+    <div className="h-screen bg-te-grey-100 flex flex-col overflow-hidden font-te-sans">
       {/* Title Bar for Window Controls */}
-      <div className="h-7 bg-gray-800 app-drag-region flex-shrink-0"></div>
+      <div className="h-7 bg-te-grey-700 app-drag-region flex-shrink-0"></div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation */}
@@ -107,7 +107,7 @@ const AppWithRouter: React.FC = () => {
         {notification && <NotificationToast notification={notification} />}
 
         {/* Content with route-based rendering */}
-        <div className="flex-1 py-4 overflow-hidden">
+        <div className="flex-1 py-4 pb-6 overflow-hidden">
         {!libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (

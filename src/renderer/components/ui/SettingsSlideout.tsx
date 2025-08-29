@@ -38,8 +38,8 @@ export const SettingsSlideout: React.FC<SettingsSlideoutProps> = ({
           <div className="flex items-center justify-between p-6 border-b border-zinc-700">
             <div>
               <div className="flex items-center space-x-3 mb-1">
-                <Settings className="text-rekordbox-purple" size={24} />
-                <h2 className="text-xl font-bold text-white">{title}</h2>
+                <Settings className="text-te-orange" size={24} />
+                <h2 className="text-xl font-bold te-value">{title}</h2>
               </div>
               {subtitle && (
                 <p className="text-sm text-zinc-400 ml-9">{subtitle}</p>
@@ -47,7 +47,7 @@ export const SettingsSlideout: React.FC<SettingsSlideoutProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-zinc-800 rounded-lg"
+              className="text-zinc-400 hover:te-value transition-colors p-1 hover:bg-zinc-800 rounded-lg"
             >
               <X size={24} />
             </button>
