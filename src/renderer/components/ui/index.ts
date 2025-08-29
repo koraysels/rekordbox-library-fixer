@@ -7,6 +7,7 @@ export { NativeDropHandler } from './NativeDropHandler';
 export { AppFooter } from './AppFooter';
 export { SplashScreen } from './SplashScreen';
 export { AboutModal } from './AboutModal';
+export { TutorialModal } from './TutorialModal';
 export { SettingsSlideout } from './SettingsSlideout';
 export { PopoverButton } from './PopoverButton';
 export type { PopoverButtonProps } from './PopoverButton';

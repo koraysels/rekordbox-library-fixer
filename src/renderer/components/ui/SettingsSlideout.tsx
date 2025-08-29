@@ -29,25 +29,25 @@ export const SettingsSlideout: React.FC<SettingsSlideoutProps> = ({
     <>
       {/* Slide-out Panel */}
       <div
-        className={`fixed top-0 right-0 h-full ${widthClasses[width]} bg-zinc-900 border-l border-zinc-700 transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed top-0 right-0 h-full ${widthClasses[width]} bg-te-cream border-l-2 border-te-grey-300 transform transition-transform duration-300 ease-in-out z-50 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-zinc-700">
+          <div className="flex items-center justify-between p-6 border-b-2 border-te-grey-300 bg-te-grey-200">
             <div>
               <div className="flex items-center space-x-3 mb-1">
-                <Settings className="text-rekordbox-purple" size={24} />
-                <h2 className="text-xl font-bold text-white">{title}</h2>
+                <Settings className="text-te-orange" size={24} />
+                <h2 className="text-xl font-bold text-te-grey-800 font-te-display tracking-te-display">{title}</h2>
               </div>
               {subtitle && (
-                <p className="text-sm text-zinc-400 ml-9">{subtitle}</p>
+                <p className="text-sm text-te-grey-600 ml-9 font-te-mono">{subtitle}</p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="text-zinc-400 hover:text-white transition-colors p-1 hover:bg-zinc-800 rounded-lg"
+              className="text-te-grey-600 hover:text-te-orange transition-colors p-1 hover:bg-te-grey-300 rounded-te"
             >
               <X size={24} />
             </button>

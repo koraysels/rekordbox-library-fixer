@@ -34,7 +34,7 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
           resolutionStrategy={resolutionStrategy}
         />
       )}
-      emptyState={<div className="p-5 text-white">No duplicates to show</div>}
+      emptyState={<div className="p-5 te-value">No duplicates to show</div>}
       className="px-4"
     />
   );

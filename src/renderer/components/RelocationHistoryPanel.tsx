@@ -114,7 +114,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   if (!libraryPath) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
-        <div className="text-center text-gray-400">
+        <div className="text-center te-label">
           <History size={48} className="mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">No Library Loaded</h3>
           <p>Load a library to view relocation history</p>
@@ -124,35 +124,35 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-850">
+    <div className="flex-1 flex flex-col h-full bg-te-grey-100">
       {/* Sticky Header with bigger stats */}
-      <div className="sticky top-0 z-10 flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900">
+      <div className="sticky top-0 z-10 flex-shrink-0 p-4 border-b-2 border-te-grey-300 bg-te-grey-200">
 
         {/* Stats - Bigger and more prominent */}
         {stats && (
           <div className="flex items-center justify-between space-x-6 mb-3">
             <div className="flex items-center space-x-2">
-              <BarChart3 size={16} className="text-blue-400" />
-              <span className="text-sm text-gray-400">Total:</span>
-              <span className="text-lg font-bold text-white">{stats.totalRelocations}</span>
+              <BarChart3 size={16} className="text-te-grey-600" title="Total number of relocated tracks" />
+              <span className="text-sm te-label">Total:</span>
+              <span className="text-lg font-bold te-value">{stats.totalRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Zap size={16} className="text-green-400" />
-              <span className="text-sm text-gray-400">Auto:</span>
-              <span className="text-lg font-bold text-white">{stats.autoRelocations}</span>
+              <Zap size={16} className="text-te-green-500" title="Automatically relocated tracks" />
+              <span className="text-sm te-label">Auto:</span>
+              <span className="text-lg font-bold te-value">{stats.autoRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Target size={16} className="text-purple-400" />
-              <span className="text-sm text-gray-400">Manual:</span>
-              <span className="text-lg font-bold text-white">{stats.manualRelocations}</span>
+              <Target size={16} className="text-te-orange" title="Manually relocated tracks" />
+              <span className="text-sm te-label">Manual:</span>
+              <span className="text-lg font-bold te-value">{stats.manualRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <TrendingUp size={16} className="text-yellow-400" />
-              <span className="text-sm text-gray-400">Avg Confidence:</span>
-              <span className="text-lg font-bold text-white">
+              <TrendingUp size={16} className="text-te-amber-500" title="Average confidence score of auto-relocations" />
+              <span className="text-sm te-label">Avg Confidence:</span>
+              <span className="text-lg font-bold te-value">
                 {stats.averageConfidence > 0 ? `${Math.round(stats.averageConfidence * 100)}%` : 'N/A'}
               </span>
             </div>
@@ -166,10 +166,10 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
               <button
                 key={filterType}
                 onClick={() => setFilter(filterType)}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded-te text-sm font-medium transition-colors border-2 ${
                   filter === filterType
-                    ? 'bg-rekordbox-purple text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? 'bg-te-orange text-te-cream border-te-orange'
+                    : 'bg-te-grey-300 text-te-grey-700 border-te-grey-400 hover:bg-te-grey-400'
                 }`}
               >
                 {filterType === 'all' ? 'All' : filterType === 'auto' ? 'Auto' : 'Manual'}
@@ -181,17 +181,17 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
             <button
                 onClick={loadHistory}
                 disabled={isLoading}
-                className="p-2 bg-gray-700 hover:bg-gray-600 rounded transition-colors disabled:opacity-50"
+                className="p-2 bg-te-grey-300 hover:bg-te-grey-400 rounded-te border-2 border-te-grey-400 transition-colors disabled:opacity-50"
                 title="Refresh History"
             >
-              <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+              <RefreshCw size={16} className={`text-te-grey-700 ${isLoading ? 'animate-spin' : ''}`} title="Refresh history" />
             </button>
             <button
                 onClick={clearHistory}
-                className="p-2 bg-red-600 hover:bg-red-500 rounded transition-colors"
+                className="p-2 bg-te-red-500 hover:bg-te-red-600 rounded-te border-2 border-te-red-500 text-te-cream transition-colors"
                 title="Clear History"
             >
-              <Trash2 size={16} />
+              <Trash2 size={16} title="Clear all history" />
             </button>
           </div>
         </div>
@@ -202,10 +202,10 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
         <div className="h-full overflow-y-auto p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <RefreshCw size={24} className="animate-spin text-rekordbox-purple" />
+              <RefreshCw size={24} className="animate-spin text-te-orange" />
             </div>
           ) : filteredHistory.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center te-label py-8">
               <History size={48} className="mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No History Found</h3>
               <p>
@@ -220,66 +220,66 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
               {filteredHistory.map((entry) => (
                 <div
                   key={entry.id}
-                  className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors"
+                  className="bg-te-cream rounded-te p-4 border-2 border-te-grey-300 hover:border-te-grey-400 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       {entry.relocationMethod === 'auto' ? (
-                        <Zap size={16} className="text-green-400" />
+                        <Zap size={16} className="text-te-green-500" title="Automatically relocated tracks" />
                       ) : (
-                        <Target size={16} className="text-purple-400" />
+                        <Target size={16} className="text-te-orange" title="Manually relocated tracks" />
                       )}
-                      <span className="text-sm font-medium text-gray-400 uppercase">
+                      <span className="text-sm font-medium te-label uppercase">
                         {entry.relocationMethod}
                       </span>
                       {entry.confidence && (
-                        <span className={`text-sm px-2 py-0.5 rounded ${
+                        <span className={`text-sm px-2 py-0.5 rounded-te border ${
                           entry.confidence > 0.8
-                            ? 'bg-green-600 text-white'
+                            ? 'bg-te-green-100 text-te-green-600 border-te-green-200'
                             : entry.confidence > 0.6
-                              ? 'bg-yellow-600 text-white'
-                              : 'bg-red-600 text-white'
-                        }`}>
+                              ? 'bg-te-amber-100 text-te-amber-600 border-te-amber-200'
+                              : 'bg-te-red-100 text-te-red-500 border-te-red-200'
+                        } font-te-mono font-medium`}>
                           {Math.round(entry.confidence * 100)}%
                         </span>
                       )}
                       {entry.xmlUpdated && (
-                        <FileText size={12} className="text-blue-400" title="XML Updated" />
+                        <FileText size={12} className="text-te-grey-600" title="Library XML file was updated with new location" />
                       )}
                       {entry.backupCreated && (
-                        <Shield size={12} className="text-green-400" title="Backup Created" />
+                        <Shield size={12} className="text-te-green-500" title="Backup of original XML was created before changes" />
                       )}
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-te-grey-500">
                       {formatTimeAgo(entry.timestamp)}
                     </span>
                   </div>
 
                   <div className="mb-3">
-                    <h4 className="text-sm text-white font-medium truncate">{entry.trackName}</h4>
-                    <p className="text-xs text-gray-400 truncate">{entry.trackArtist}</p>
+                    <h4 className="text-sm te-value font-medium truncate">{entry.trackName}</h4>
+                    <p className="text-xs te-label truncate">{entry.trackArtist}</p>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">From:</span>
-                      <p className="text-xs text-gray-400 font-mono truncate flex-1" title={entry.originalLocation}>
+                      <span className="text-xs text-te-grey-500">From:</span>
+                      <p className="text-xs te-label font-te-mono truncate flex-1" title={entry.originalLocation}>
                         {entry.originalLocation}
                       </p>
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">To:</span>
-                      <p className="text-xs text-green-400 font-mono truncate flex-1" title={entry.newLocation}>
+                      <span className="text-xs text-te-grey-500">To:</span>
+                      <p className="text-xs text-te-green-500 font-te-mono truncate flex-1" title={entry.newLocation}>
                         {entry.newLocation}
                       </p>
                       {onShowFileInFolder && (
                         <button
                           onClick={() => onShowFileInFolder(entry.newLocation)}
-                          className="p-1 hover:bg-gray-700 rounded transition-colors"
+                          className="p-1 bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border border-te-orange transition-colors"
                           title="Show in Finder/Explorer"
                         >
-                          <ExternalLink size={12} className="text-gray-400" />
+                          <ExternalLink size={12} />
                         </button>
                       )}
                     </div>

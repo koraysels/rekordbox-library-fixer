@@ -22,15 +22,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   children
 }) => {
   return (
-    <div className="flex-shrink-0 py-4 px-0 border-b border-gray-700">
+    <div className="flex-shrink-0 py-te-lg px-0 border-b-2 border-te-grey-300 bg-te-cream">
       <div className="flex items-center justify-between mx-4">
         <div className="flex items-center space-x-6">
           <div className="flex items-center space-x-3">
-            <Icon className="text-rekordbox-purple" size={24} />
-            <h1 className="text-2xl font-bold text-white">{title}</h1>
+            <Icon className="text-te-orange" size={24} />
+            <h1 className="te-title">{title}</h1>
           </div>
           {stats && (
-            <div className="text-sm text-gray-400 bg-gray-800 px-3 py-1.5 rounded-full">
+            <div className="te-label bg-te-grey-200 px-te-md py-te-sm rounded-te border border-te-grey-300">
               {stats}
             </div>
           )}

@@ -3,7 +3,7 @@ import { useLocation, Outlet } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
-import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, SkeletonCard, NativeDropHandler } from './components/ui';
+import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import type { TabType, LibraryData, NotificationType } from './types';
 
@@ -35,6 +35,7 @@ const pathToTab: Record<string, TabType> = {
 const AppWithRouter: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
 
   // Derive active tab from route
@@ -80,15 +81,28 @@ const AppWithRouter: React.FC = () => {
     }
   }, []);
 
+  // Set up tutorial menu event listener
+  useEffect(() => {
+    if (window.electronAPI?.onShowTutorial) {
+      const removeTutorialListener = window.electronAPI.onShowTutorial(() => {
+        setShowTutorial(true);
+      });
+
+      return () => {
+        removeTutorialListener();
+      };
+    }
+  }, []);
+
   // Show splash screen during initial load
   if (showSplash) {
     return <SplashScreen />;
   }
 
   return (
-    <div className="h-screen bg-rekordbox-dark flex flex-col overflow-hidden">
+    <div className="h-screen bg-te-grey-100 flex flex-col overflow-hidden font-te-sans">
       {/* Title Bar for Window Controls */}
-      <div className="h-7 bg-gray-800 app-drag-region flex-shrink-0"></div>
+      <div className="h-10 bg-te-grey-700 app-drag-region flex-shrink-0"></div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation */}
@@ -99,6 +113,7 @@ const AppWithRouter: React.FC = () => {
         isLoading={isLoading}
         onSelectLibrary={selectLibrary}
         onUnloadLibrary={clearStoredData}
+        onShowTutorial={() => setShowTutorial(true)}
       />
 
       {/* Main Content Area */}
@@ -107,7 +122,7 @@ const AppWithRouter: React.FC = () => {
         {notification && <NotificationToast notification={notification} />}
 
         {/* Content with route-based rendering */}
-        <div className="flex-1 py-4 overflow-hidden">
+        <div className="flex-1 pt-3 pb-6 overflow-hidden">
         {!libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (
@@ -146,6 +161,9 @@ const AppWithRouter: React.FC = () => {
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+
+      {/* Tutorial Modal */}
+      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
       {/* Native Drop Handler */}
       <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />

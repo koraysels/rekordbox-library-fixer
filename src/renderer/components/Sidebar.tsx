@@ -1,204 +1,214 @@
-import { Link } from '@tanstack/react-router';
+import {Link} from '@tanstack/react-router';
 import {
-  MapPin,
-  Download,
-  Wrench,
-  Copy,
-  FolderOpen,
-  X
+    MapPin,
+    Download,
+    Wrench,
+    Copy,
+    FolderOpen,
+    X,
+    HelpCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import type { TabType, LibraryData } from '../types';
+import {motion} from 'framer-motion';
+import type {TabType, LibraryData} from '../types';
 
 const navItems = [
-  {
-    id: 'duplicates' as TabType,
-    path: '/',
-    label: 'Duplicate Detection',
-    icon: Copy,
-    description: 'Find and resolve duplicate tracks'
-  },
-  {
-    id: 'relocate' as TabType,
-    path: '/relocate',
-    label: 'Track Relocation',
-    icon: MapPin,
-    description: 'Fix missing and moved tracks'
-  },
-  {
-    id: 'import' as TabType,
-    path: '/import',
-    label: 'Auto Import',
-    icon: Download,
-    description: 'Automatic track importing'
-  },
-  {
-    id: 'maintenance' as TabType,
-    path: '/maintenance',
-    label: 'Maintenance',
-    icon: Wrench,
-    description: 'Library maintenance tools'
-  }
+    {
+        id: 'duplicates' as TabType,
+        path: '/',
+        label: 'Duplicate Detection',
+        icon: Copy,
+        description: 'Find and resolve duplicate tracks'
+    },
+    {
+        id: 'relocate' as TabType,
+        path: '/relocate',
+        label: 'Track Relocation',
+        icon: MapPin,
+        description: 'Fix missing and moved tracks'
+    },
+    {
+        id: 'import' as TabType,
+        path: '/import',
+        label: 'Auto Import',
+        icon: Download,
+        description: 'Automatic track importing'
+    },
+    {
+        id: 'maintenance' as TabType,
+        path: '/maintenance',
+        label: 'Maintenance',
+        icon: Wrench,
+        description: 'Library maintenance tools'
+    }
 ];
 
 interface SidebarProps {
-  activeTab: TabType;
-  libraryData: LibraryData | null;
-  libraryPath?: string;
-  isLoading: boolean;
-  onSelectLibrary: () => void;
-  onUnloadLibrary?: () => void;
+    activeTab: TabType;
+    libraryData: LibraryData | null;
+    libraryPath?: string;
+    isLoading: boolean;
+    onSelectLibrary: () => void;
+    onUnloadLibrary?: () => void;
+    onShowTutorial?: () => void;
 }
 
 export function Sidebar({
-  activeTab,
-  libraryData,
-  libraryPath,
-  onSelectLibrary,
-  onUnloadLibrary
-}: SidebarProps) {
-  return (
-    <nav className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-      {/* App Header */}
-      <div className="p-4 border-b border-gray-700">
-        <div className="flex items-center gap-3">
-
-          <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center">
-            <img
-                src="./icons/48x48.png"
-                alt="Rekordbox Library Manager"
-                className="w-10 h-10"
-            />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg">Rekordbox</h1>
-            <p className="text-xs text-gray-400">Library Manager</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Links */}
-      <div className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navItems.map((item) => {
-            const isDisabled = !libraryData && item.id !== 'duplicates';
-
-            if (isDisabled) {
-              return (
-                <li key={item.path}>
-                  <div className="flex items-center gap-3 p-3 rounded-lg text-gray-600 cursor-not-allowed opacity-50">
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-gray-600 truncate">
-                        {item.description}
-                      </p>
+                            activeTab,
+                            libraryData,
+                            libraryPath,
+                            onSelectLibrary,
+                            onUnloadLibrary,
+                            onShowTutorial
+                        }: SidebarProps) {
+    return (
+        <nav className="w-64 bg-te-grey-200 border-r-2 border-te-grey-300 flex flex-col pb-6">
+            {/* App Header - Minimalist TE Style */}
+            <div className="p-te-lg border-b-2 border-te-grey-300">
+                <div className="flex items-center gap-te-md">
+                    <div className="w-10 h-10 bg-white rounded-te flex items-center justify-center">
+                        <img
+                            src="./icons/48x48.png"
+                            alt="Rekordbox Library Fixer"
+                            className="w-8 h-8 opacity-90"
+                        />
                     </div>
-                  </div>
-                </li>
-              );
-            }
-
-            return (
-              <li key={item.path}>
-                <Link to={item.path} preload="intent">
-                  <motion.div
-                    whileHover={{ x: 4 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`
-                      flex items-center gap-3 p-3 rounded-lg
-                      transition-colors duration-200
-                      ${activeTab === item.id
-                        ? 'bg-rekordbox-purple/20 text-rekordbox-purple'
-                        : 'hover:bg-gray-700 text-gray-300 hover:text-white'
-                      }
-                    `}
-                  >
-                    <item.icon className="w-5 h-5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {item.label}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {item.description}
-                      </p>
+                    <div>
+                        <h1 className="font-te-display text-te-grey-800 font-bold text-sm tracking-te-display">REKORDBOX</h1>
+                        <p className="text-xs text-te-grey-500 font-te-mono tracking-wider">LIBRARY FIXER</p>
                     </div>
-                    {activeTab === item.id && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="w-1 h-8 bg-rekordbox-purple rounded-full"
-                        initial={false}
-                        transition={{
-                          type: 'spring',
-                          stiffness: 500,
-                          damping: 30
-                        }}
-                      />
-                    )}
-                  </motion.div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Quick Actions */}
-      {!libraryPath && (
-        <div className="p-4 border-t border-gray-700">
-          <button
-            onClick={onSelectLibrary}
-            className="w-full flex items-center gap-3 p-3 bg-rekordbox-purple/20 hover:bg-rekordbox-purple/30
-                     text-rekordbox-purple rounded-lg transition-colors"
-          >
-            <FolderOpen className="w-5 h-5" />
-            <span className="font-medium text-sm">Open Library</span>
-          </button>
-        </div>
-      )}
-
-      {/* Library Info Section */}
-      {libraryPath && (
-        <div className="border-t border-gray-700">
-          <div className="p-4">
-            <div className="bg-gradient-to-r from-rekordbox-purple to-purple-700 rounded-xl p-4 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-purple-100 text-xs font-medium">Current Library</p>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={onSelectLibrary}
-                    className="text-purple-100 hover:text-white transition-colors p-1"
-                    title="Change Library"
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                  </button>
-                  {onUnloadLibrary && (
-                    <button
-                      onClick={onUnloadLibrary}
-                      className="text-purple-100 hover:text-red-300 transition-colors p-1"
-                      title="Unload Library"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
-              </div>
-              <p className="text-white text-sm font-medium truncate" title={libraryPath}>
-                {libraryPath}
-              </p>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-700">
-        <p className="text-xs text-gray-500 text-center">
-          Made with ❤️ for DJs
-        </p>
-      </div>
-    </nav>
-  );
+            {/* Navigation Links - TE Minimal Style */}
+            <div className="flex-1 p-te-lg">
+                <ul className="space-y-te-sm">
+                    {navItems.map((item) => {
+                        const isDisabled = !libraryData && item.id !== 'duplicates';
+
+                        if (isDisabled) {
+                            return (
+                                <li key={item.path}>
+                                    <div
+                                        className="flex items-center gap-te-md p-te-md rounded-te bg-te-grey-300/50 text-te-grey-400 cursor-not-allowed border-2 border-te-grey-300/50">
+                                        <item.icon className="w-4 h-4 flex-shrink-0"/>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-te-display text-xs font-medium uppercase tracking-te-display">
+                                                {item.label}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </li>
+                            );
+                        }
+
+                        return (
+                            <li key={item.path}>
+                                <Link to={item.path} preload="intent">
+                                    <motion.div
+                                        whileHover={{scale: 1.02}}
+                                        whileTap={{scale: 0.98}}
+                                        className={`
+                      flex items-center gap-te-md p-te-md rounded-te border-2 
+                      transition-all duration-200 font-te-mono text-xs font-medium uppercase tracking-wider
+                      ${activeTab === item.id
+                                            ? 'bg-te-orange text-te-cream border-te-orange shadow-lg'
+                                            : 'bg-te-cream text-te-grey-700 border-te-grey-300 hover:bg-te-grey-100 hover:border-te-grey-400 hover:text-te-grey-800'
+                                        }
+                    `}
+                                    >
+                                        <item.icon className="w-4 h-4 flex-shrink-0"/>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-nowrap pr-1  ${activeTab && "text-xxs"}`}>
+                                                {item.label}
+                                            </p>
+                                        </div>
+                                        {activeTab === item.id && (
+                                            <motion.div
+                                                layoutId="activeIndicator"
+                                                className="w-2 h-2 bg-te-cream rounded-full"
+                                                initial={false}
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 500,
+                                                    damping: 30
+                                                }}
+                                            />
+                                        )}
+                                    </motion.div>
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+
+            {/* Quick Actions - TE Style */}
+            {!libraryPath && (
+                <div className="p-te-lg border-t-2 border-te-grey-300">
+                    <button
+                        onClick={onSelectLibrary}
+                        className="w-full flex items-center justify-center gap-te-md p-te-md bg-te-orange hover:bg-te-orange/90
+                     text-te-cream rounded-te font-te-mono text-xs font-medium uppercase tracking-wider
+                     transition-all duration-200 border-2 border-te-orange hover:shadow-lg"
+                    >
+                        <FolderOpen className="w-4 h-4"/>
+                        <span>Open Library</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Library Info Section - TE Minimal */}
+            {libraryPath && (
+                <div className="border-t-2 border-te-grey-300">
+                    <div className="p-te-lg">
+                        <div className="bg-te-grey-800 rounded-te p-te-md">
+                            <div className="flex items-center justify-between mb-te-sm">
+                                <p className="text-te-grey-300 text-xs font-te-display font-medium uppercase tracking-te-display">Library</p>
+                                <div className="flex items-center space-x-te-sm">
+                                    <button
+                                        onClick={onSelectLibrary}
+                                        className="text-te-grey-400 hover:text-te-orange transition-colors p-1 rounded"
+                                        title="Change Library"
+                                    >
+                                        <FolderOpen className="w-3 h-3"/>
+                                    </button>
+                                    {onUnloadLibrary && (
+                                        <button
+                                            onClick={onUnloadLibrary}
+                                            className="text-te-grey-400 hover:text-te-red-500 transition-colors p-1 rounded"
+                                            title="Unload Library"
+                                        >
+                                            <X className="w-3 h-3"/>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <p className="text-te-cream text-xs font-te-mono truncate" title={libraryPath}>
+                                {libraryPath}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Footer - Minimal TE */}
+            <div className="p-te-lg border-t-2 border-te-grey-300">
+                <div className="text-center">
+                    <p className="text-xs text-te-grey-500 font-te-mono tracking-wider mb-2">
+                        🖤 FOR DJs
+                    </p>
+                    {onShowTutorial && (
+                        <button
+                            onClick={onShowTutorial}
+                            className="inline-flex items-center space-x-1 text-xs text-te-grey-400 hover:text-te-orange transition-colors font-te-mono"
+                            title="Show XML Export & Import Tutorial"
+                        >
+                            <HelpCircle className="w-3 h-3" />
+                            <span>Help</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+        </nav>
+    );
 }

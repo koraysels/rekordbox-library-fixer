@@ -113,7 +113,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
   return (
     <div
-      className={`bg-zinc-800 border rounded-lg p-3 ${isSelected ? 'border-rekordbox-purple' : 'border-zinc-700'} cursor-pointer`}
+      className={`card p-3 ${isSelected ? 'border-te-orange' : 'border-te-grey-300'} cursor-pointer`}
       onClick={handleContainerClick}
     >
       <div className="flex items-center justify-between mb-2">
@@ -154,7 +154,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
       </div>
 
       {isExpanded && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2 te-expanded-content">
           {duplicate.tracks.map((track: any) => {
             console.log('🎵 Rendering track:', { id: track.id, location: track.location, name: track.name });
             const isRecommended = recommendedTrack && track.id === recommendedTrack.id;
@@ -163,21 +163,21 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
             return (
               <div
                 key={track.id}
-                className={`p-3 bg-zinc-900 rounded border ${
-                  isRecommended ? 'border-green-600' :
-                  isManuallySelected ? 'border-rekordbox-purple' :
-                  'border-zinc-700'
-                }`}
+                className={`p-3 bg-te-cream rounded-te border-2 ${
+                  isRecommended ? 'border-te-green-500' :
+                  isManuallySelected ? 'border-te-orange' :
+                  'border-te-grey-300'
+                } transition-colors hover:border-te-grey-400`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1.5">
                       {(isRecommended || isManuallySelected) && (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <CheckCircle className="w-4 h-4 text-te-green-500" />
                       )}
-                      <h4 className="font-medium text-sm truncate">{track.name}</h4>
+                      <h4 className="font-medium text-sm truncate te-value font-te-mono">{track.name}</h4>
                       {isRecommended && (
-                        <span className="px-1.5 py-0.5 bg-green-600 text-white text-xs rounded">
+                        <span className="confidence-high">
                           Recommended
                         </span>
                       )}
@@ -185,47 +185,47 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
                     <div className="grid grid-cols-2 gap-3 text-xs">
                       <div className="space-y-0.5">
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
+                        <div className="flex items-center space-x-1.5 te-label">
                           <Music className="w-3 h-3" />
-                          <span className="truncate">{track.artist}</span>
+                          <span className="truncate font-te-mono">{track.artist}</span>
                         </div>
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
+                        <div className="flex items-center space-x-1.5 te-label">
                           <Disc className="w-3 h-3" />
-                          <span className="truncate">{track.album || 'No Album'}</span>
+                          <span className="truncate font-te-mono">{track.album || 'No Album'}</span>
                         </div>
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
+                        <div className="flex items-center space-x-1.5 te-label">
                           <Clock className="w-3 h-3" />
-                          <span>{formatDuration(track.duration)}</span>
+                          <span className="font-te-mono">{formatDuration(track.duration)}</span>
                         </div>
                       </div>
 
                       <div className="space-y-0.5">
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
+                        <div className="flex items-center space-x-1.5 te-label">
                           <HardDrive className="w-3 h-3" />
-                          <span>{formatFileSize(track.size)}</span>
+                          <span className="font-te-mono">{formatFileSize(track.size)}</span>
                         </div>
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
-                          <span>Bitrate:</span>
-                          <span>{track.bitrate || 'N/A'} kbps</span>
+                        <div className="flex items-center space-x-1.5 te-label">
+                          <span className="font-te-mono">Bitrate:</span>
+                          <span className="font-te-mono">{track.bitrate || 'N/A'} kbps</span>
                         </div>
-                        <div className="flex items-center space-x-1.5 text-zinc-400">
+                        <div className="flex items-center space-x-1.5 te-label">
                           <Star className="w-3 h-3" />
-                          <span>Rating: {track.rating || 0}/5</span>
+                          <span className="font-te-mono">Rating: {track.rating || 0}/5</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-1.5 text-xs text-zinc-500">
+                    <div className="mt-1.5 text-xs te-label">
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-zinc-600 font-medium">Path:</span>
+                          <span className="te-value font-medium font-te-mono">Path:</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               console.log('🔵 Go to File button clicked!', track.location);
                               openFileLocation(track.location);
                             }}
-                            className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded border border-blue-500 hover:border-blue-400 transition-all duration-200"
+                            className="flex items-center space-x-1 px-2 py-1 text-xs bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border border-te-orange transition-all duration-200 font-te-mono"
                             title="Open file location in system file manager"
                           >
                             <ExternalLink className="w-3 h-3" />
@@ -233,7 +233,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                           </button>
                         </div>
                         <div
-                          className="font-mono text-xs bg-zinc-900 p-1.5 rounded border border-zinc-700 select-all whitespace-pre-wrap word-break-all"
+                          className="te-code-block select-all whitespace-pre-wrap word-break-all"
                           title="Click to select full path"
                           style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}
                         >
@@ -243,9 +243,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                     </div>
 
                     {(track.cues?.length > 0 || track.loops?.length > 0) && (
-                      <div className="mt-1 flex space-x-2 text-xs text-green-500">
-                        {track.cues?.length > 0 && <span>✓ {track.cues.length} cues</span>}
-                        {track.loops?.length > 0 && <span>✓ {track.loops.length} loops</span>}
+                      <div className="mt-1 flex space-x-2 text-xs text-te-green-600">
+                        {track.cues?.length > 0 && <span className="font-te-mono">✓ {track.cues.length} cues</span>}
+                        {track.loops?.length > 0 && <span className="font-te-mono">✓ {track.loops.length} loops</span>}
                       </div>
                     )}
                   </div>
@@ -256,10 +256,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         e.stopPropagation();
                         handleManualSelection(track.id);
                       }}
-                      className={`ml-3 px-2 py-1 text-xs rounded transition-colors ${
+                      className={`ml-3 px-2 py-1 text-xs rounded-te transition-colors ${
                         isManuallySelected
-                          ? 'bg-rekordbox-purple text-white'
-                          : 'bg-zinc-700 hover:bg-zinc-600 text-zinc-300'
+                          ? 'bg-te-orange text-te-cream border border-te-orange'
+                          : 'bg-te-grey-300 hover:bg-te-grey-400 text-te-grey-700 border border-te-grey-400'
                       }`}
                     >
                       {isManuallySelected ? 'Selected' : 'Select'}
