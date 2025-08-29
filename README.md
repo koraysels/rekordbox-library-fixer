@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Manager" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Manager](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.3--alpha-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.0.4--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -98,8 +98,8 @@ Make a simple, free tool that might help you get your library back under control
 #### Option 1: Download Pre-built App *(Recommended)*
 1. Go to [Releases](https://github.com/koraysels/rekordbox-library-manager/releases)
 2. Download the latest version for your platform:
-   - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.3-alpha.exe`
-   - **macOS**: `Rekordbox-Library-Manager-0.0.3-alpha.dmg`
+   - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.4-alpha.exe`
+   - **macOS**: `Rekordbox-Library-Manager-0.0.4-alpha.dmg`
 3. Install and launch the app
 4. Export you collection as xml using Rekordbox.  
 ![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)  
@@ -198,17 +198,61 @@ If you have tracks showing as "!" (missing) in Rekordbox:
 
 #### 📥 **Step 6: Import Back to Rekordbox**
 
-After cleaning your library, you'll want to import the updated XML back to Rekordbox:
+After cleaning your library with this tool, you'll want to import the updated XML back to Rekordbox. Here's the complete process with visual guides:
+
+##### 🎯 **Method 1: Complete Library Replacement** *(Recommended)*
+
+**Step A: Enable XML Import in Rekordbox**
+
+Before you can import XML files, you need to enable the XML import feature in Rekordbox:
+
+1. **Open Rekordbox** 
+2. **Go to View Settings**: Navigate to the top menu and access the view preferences
+3. **Enable "rekordbox xml" in Tree View**: Make sure the checkbox for "rekordbox xml" is checked
+
+<img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" width="600" />
+
+> **💡 Important**: The "rekordbox xml" option must be enabled in the Tree View section for XML import to work properly.
+
+**Step B: Import Your Cleaned XML File**
+
+1. **Navigate to Database Tab**: Click on the "Database" tab in Rekordbox
+2. **Access Library Sync**: Look for the "Library Sync" section 
+3. **Select Your Updated XML**: Click "Browse" and select your cleaned XML file (the tool creates a new file with "_cleaned" suffix)
+
+<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" width="600" />
+
+4. **Configure Import Options**:
+   - ✅ **BPM change points**: Keep this checked to preserve tempo analysis
+   - ✅ **Select your updated XML file**: Make sure you're importing the correct cleaned file
+5. **Click Import**: Rekordbox will process your cleaned library
+6. **Wait for Processing**: This may take several minutes for large libraries
+
+##### ⚠️ **Method 2: Alternative Import Process**
+
+If the above method doesn't work, try this alternative:
 
 1. **In Rekordbox**: Go to **File → Import → Collection** 
-2. **Select the updated XML file** (the tool creates a new file with "_cleaned" suffix)
+2. **Select the updated XML file** 
 3. **Choose import options**:
    - ✅ **Replace current collection** (recommended for cleanest results)
    - ⚠️ **Merge with current collection** (if you want to keep existing data)
 4. **Wait for import** - Rekordbox will process your cleaned library
-5. **Verify results** - check that duplicates are gone and missing tracks are found
 
-> **⚠️ Important**: Always backup your original Rekordbox library before importing! The tool creates backups automatically, but it's good practice to have your own copy.
+##### 🔍 **Verify Your Import**
+
+After importing, verify that everything worked correctly:
+
+1. **Check Playlist Counts**: Your playlists should now show the correct number of tracks (no more empty playlists!)
+2. **Verify Duplicate Removal**: Duplicates should be gone from your collection
+3. **Test Relocated Tracks**: Previously missing tracks should now play correctly
+4. **Check Metadata**: All cues, loops, and beatgrids should be preserved
+
+> **⚠️ Critical Backup Reminder**: Always backup your original Rekordbox database before importing! You can find your Rekordbox database files in:
+> - **Windows**: `%APPDATA%\Pioneer\rekordbox`  
+> - **macOS**: `~/Library/Pioneer/rekordbox`
+>
+> The tool creates XML backups automatically, but backing up your entire Rekordbox database is extra protection.
 
 ---
 
