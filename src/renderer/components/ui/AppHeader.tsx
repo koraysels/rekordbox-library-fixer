@@ -13,7 +13,7 @@ const AppHeaderComponent: React.FC<AppHeaderProps> = React.memo(({
   onSelectLibrary
 }) => {
   return (
-    <header className="bg-gradient-to-r from-rekordbox-purple to-purple-700 shadow-lg">
+    <header className="bg-gradient-to-r from-te-orange to-te-grey-700 shadow-lg">
       <div className="flex items-center justify-between px-6 py-3">
         {/* App region for dragging */}
         <div className="flex-1 app-drag-region"></div>
@@ -22,16 +22,16 @@ const AppHeaderComponent: React.FC<AppHeaderProps> = React.memo(({
         <div className="flex items-center space-x-4">
           {libraryPath && (
             <div className="text-right">
-              <p className="text-purple-100 text-xs">Current Library</p>
-              <p className="text-white text-sm font-medium max-w-xs truncate" title={libraryPath}>
+              <p className="text-te-cream text-xs font-te-mono">Current Library</p>
+              <p className="text-te-cream text-sm font-medium max-w-xs truncate font-te-mono" title={libraryPath}>
                 {libraryPath}
               </p>
             </div>
           )}
           <button
             onClick={onSelectLibrary}
-            className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-lg
-                     transition-colors duration-200 flex items-center space-x-2"
+            className="bg-te-cream/20 hover:bg-te-cream/30 text-te-cream font-medium py-2 px-4 rounded-te
+                     transition-colors duration-200 flex items-center space-x-2 font-te-display"
             disabled={isLoading}
           >
             {isLoading ? (

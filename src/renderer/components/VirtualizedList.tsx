@@ -28,7 +28,11 @@ export const VirtualizedList = <T,>({
   }
 
   if (items.length === 0) {
-    return <div className="p-5 text-white">No items to show</div>;
+    return (
+      <div className="p-5 te-value font-te-mono" role="status" aria-live="polite">
+        No items to show
+      </div>
+    );
   }
 
   return (

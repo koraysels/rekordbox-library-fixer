@@ -33,8 +33,8 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
   const variantClasses = {
     primary: 'btn-primary',
     secondary: 'btn-secondary',
-    danger: 'bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors',
-    success: 'btn-primary bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 disabled:from-gray-600 disabled:to-gray-500'
+    danger: 'bg-te-red-500 hover:bg-te-red-600 disabled:bg-te-grey-400 text-te-cream py-te-md px-te-lg rounded-te border-2 border-te-red-500 font-te-display text-xs font-medium uppercase tracking-te-display transition-all duration-200',
+    success: 'bg-te-green-500 hover:bg-te-green-600 disabled:bg-te-grey-400 text-te-cream py-te-md px-te-lg rounded-te border-2 border-te-green-500 font-te-display text-xs font-medium uppercase tracking-te-display transition-all duration-200'
   };
 
   const updatePopoverPosition = useCallback(() => {
@@ -120,7 +120,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
       position: 'absolute',
       width: '8px',
       height: '8px',
-      backgroundColor: '#111827', // gray-900
+      backgroundColor: '#FAF6F2', // te-cream
       transform: 'rotate(45deg)',
     };
 
@@ -131,8 +131,8 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
           left: '50%',
           top: '100%',
           transform: 'translateX(-50%) translateY(-50%) rotate(45deg)',
-          borderRight: '1px solid #374151',
-          borderBottom: '1px solid #374151',
+          borderRight: '1px solid #D1D1D1',
+          borderBottom: '1px solid #D1D1D1',
           borderLeft: 'none',
           borderTop: 'none',
         };
@@ -142,8 +142,8 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
           left: '50%',
           top: '0%',
           transform: 'translateX(-50%) translateY(-50%) rotate(45deg)',
-          borderLeft: '1px solid #374151',
-          borderTop: '1px solid #374151',
+          borderLeft: '1px solid #D1D1D1',
+          borderTop: '1px solid #D1D1D1',
           borderRight: 'none',
           borderBottom: 'none',
         };
@@ -153,8 +153,8 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
           left: '100%',
           top: '50%',
           transform: 'translateX(-50%) translateY(-50%) rotate(45deg)',
-          borderTop: '1px solid #374151',
-          borderRight: '1px solid #374151',
+          borderTop: '1px solid #D1D1D1',
+          borderRight: '1px solid #D1D1D1',
           borderLeft: 'none',
           borderBottom: 'none',
         };
@@ -164,8 +164,8 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
           left: '0%',
           top: '50%',
           transform: 'translateX(-50%) translateY(-50%) rotate(45deg)',
-          borderLeft: '1px solid #374151',
-          borderBottom: '1px solid #374151',
+          borderLeft: '1px solid #D1D1D1',
+          borderBottom: '1px solid #D1D1D1',
           borderRight: 'none',
           borderTop: 'none',
         };
@@ -253,7 +253,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
 
       {showPopover && createPortal(
         <div
-          className="fixed w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl pointer-events-auto"
+          className="fixed w-64 p-te-md bg-te-cream border-2 border-te-grey-300 rounded-te-lg shadow-xl pointer-events-auto"
           onMouseEnter={handlePopoverMouseEnter}
           onMouseLeave={handlePopoverMouseLeave}
           style={{
@@ -263,16 +263,16 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
             zIndex: 10000
           }}
         >
-          <div className="flex items-start space-x-2">
-            <Icon size={16} className="text-rekordbox-purple mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-te-sm">
+            <Icon size={16} className="text-te-orange mt-0.5 flex-shrink-0" />
             <div>
-              <h3 className="font-medium text-white text-sm">{title}</h3>
-              <p className="text-gray-300 text-xs mt-1">{description}</p>
+              <h3 className="font-te-display font-medium text-te-grey-800 text-sm">{title}</h3>
+              <p className="font-te-mono text-te-grey-600 text-xs mt-1">{description}</p>
             </div>
           </div>
           {/* Arrow */}
           <div
-            className="absolute w-2 h-2 bg-gray-900 border border-gray-700"
+            className="absolute w-2 h-2 bg-te-cream border-2 border-te-grey-300"
             style={getArrowStyle(popoverPosition.placement)}
           ></div>
         </div>,

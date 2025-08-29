@@ -548,6 +548,7 @@ export function useTrackRelocator(
                   originalLocation: relocation.oldLocation,
                   newLocation: relocation.newLocation,
                   relocationMethod: 'auto' as const,
+                  confidence: relocation.confidence,
                   timestamp: new Date(),
                   xmlUpdated: xmlUpdated,
                   backupCreated: !!backupPath

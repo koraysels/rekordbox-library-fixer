@@ -31,13 +31,13 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
     }
   };
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-6 bg-te-grey-100">
       {/* Search Configuration */}
       <div>
-        <h3 className="font-semibold mb-4 text-lg">Search Configuration</h3>
+        <h3 className="te-title mb-4">Search Configuration</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">Search Depth</label>
+            <label className="block text-sm te-label mb-2 font-te-mono">Search Depth</label>
             <input
               type="number"
               min="1"
@@ -47,12 +47,12 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
                 const newValue = parseInt(e.target.value);
                 updateRelocationOption('searchDepth', newValue);
               }}
-              className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:border-rekordbox-purple focus:outline-none"
+              className="input w-full"
             />
-            <p className="text-xs text-zinc-400 mt-1">How many folder levels deep to search</p>
+            <p className="text-xs te-label mt-1 font-te-mono">How many folder levels deep to search</p>
           </div>
           <div>
-            <label className="block text-sm text-zinc-300 mb-2">Match Threshold</label>
+            <label className="block text-sm te-label mb-2 font-te-mono">Match Threshold</label>
             <input
               type="range"
               min="0.1"
@@ -63,11 +63,11 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
                 const newValue = parseFloat(e.target.value);
                 updateRelocationOption('matchThreshold', newValue);
               }}
-              className="w-full accent-rekordbox-purple"
+              className="w-full accent-te-orange"
             />
-            <div className="flex justify-between text-xs text-zinc-400 mt-1">
+            <div className="flex justify-between text-xs te-label mt-1 font-te-mono">
               <span>10%</span>
-              <span className="text-rekordbox-purple font-medium">{Math.round(searchOptions.matchThreshold * 100)}% similarity</span>
+              <span className="text-te-orange font-medium">{Math.round(searchOptions.matchThreshold * 100)}% similarity</span>
               <span>100%</span>
             </div>
           </div>
@@ -76,23 +76,23 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
 
       {/* File Extensions */}
       <div>
-        <h3 className="font-semibold mb-4 text-lg">File Extensions</h3>
+        <h3 className="te-title mb-4">File Extensions</h3>
         <div className="flex flex-wrap gap-2">
           {searchOptions.fileExtensions.map((ext) => (
-            <span key={ext} className="px-3 py-1 bg-zinc-800 border border-zinc-600 rounded-md text-sm">
+            <span key={ext} className="px-3 py-1 bg-te-grey-300 border-2 border-te-grey-400 rounded-te text-sm te-value font-te-mono">
               {ext}
             </span>
           ))}
         </div>
-        <p className="text-sm text-zinc-400 mt-2">
+        <p className="text-sm te-label mt-2 font-te-mono">
           Audio file types to search for during relocation
         </p>
       </div>
 
       {/* Search Paths */}
       <div>
-        <h3 className="font-semibold mb-4 text-lg">Search Paths</h3>
-        <p className="text-sm text-zinc-400 mb-4">
+        <h3 className="te-title mb-4">Search Paths</h3>
+        <p className="text-sm te-label mb-4 font-te-mono">
           Configure where to look for relocated audio files. Add directories where your music might be located.
         </p>
 
@@ -103,11 +103,11 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
             onChange={(e) => setNewSearchPath(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addSearchPath()}
             placeholder="Enter path where tracks might be located..."
-            className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
+            className="input flex-1"
           />
           <button
             onClick={handleBrowseFolder}
-            className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors flex items-center"
+            className="px-3 py-2 bg-te-grey-500 hover:bg-te-grey-600 text-te-cream rounded-te transition-colors flex items-center"
             title="Browse for folder"
           >
             <FolderOpen size={16} />
@@ -115,7 +115,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
           <button
             onClick={addSearchPath}
             disabled={!newSearchPath.trim()}
-            className="px-4 py-2 bg-rekordbox-purple hover:bg-purple-600 disabled:bg-zinc-600 text-white rounded-lg transition-colors flex items-center space-x-1"
+            className="btn-primary px-4 py-2 flex items-center space-x-1"
           >
             <Plus size={16} />
             <span>Add</span>
@@ -123,22 +123,22 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
         </div>
 
         {searchOptions.searchPaths.length === 0 ? (
-          <div className="text-center py-8 border border-dashed border-zinc-600 rounded-lg">
+          <div className="text-center py-8 border-2 border-dashed border-te-grey-400 rounded-te">
             <div className="text-4xl mb-2">📂</div>
-            <p className="text-zinc-400 text-sm mb-1">No search paths configured</p>
-            <p className="text-zinc-500 text-xs">Add paths where your audio files might be located</p>
+            <p className="te-value text-sm mb-1 font-te-mono">No search paths configured</p>
+            <p className="te-label text-xs font-te-mono">Add paths where your audio files might be located</p>
           </div>
         ) : (
           <div className="space-y-2">
             {searchOptions.searchPaths.map((path, index) => (
-              <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-3 rounded border border-zinc-700">
+              <div key={index} className="card px-3 py-3 flex items-center justify-between">
                 <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
-                  <span className="font-mono text-sm text-zinc-200 truncate">{path}</span>
+                  <span className="text-te-orange font-semibold text-sm font-te-mono">#{index + 1}</span>
+                  <span className="font-te-mono text-sm te-value truncate">{path}</span>
                 </div>
                 <button
                   onClick={() => removeSearchPath(index)}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20 px-2 py-1 rounded ml-2 transition-colors"
+                  className="text-te-red-500 hover:text-te-red-600 hover:bg-te-red-100 px-2 py-1 rounded-te ml-2 transition-colors"
                   title="Remove this search path"
                 >
                   <X size={16} />
@@ -151,18 +151,18 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
 
       {/* Search Options */}
       <div>
-        <h3 className="font-semibold mb-4 text-lg">Search Options</h3>
+        <h3 className="te-title mb-4">Search Options</h3>
         <div className="space-y-3">
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
               checked={searchOptions.includeSubdirectories}
               onChange={(e) => updateRelocationOption('includeSubdirectories', e.target.checked)}
-              className="rounded border-zinc-600 text-rekordbox-purple focus:ring-purple-500"
+              className="rounded border-te-grey-400 text-te-orange focus:ring-te-orange"
             />
             <div>
-              <span className="font-medium">Include Subdirectories</span>
-              <p className="text-sm text-zinc-400">Search within subdirectories of the configured paths</p>
+              <span className="font-medium te-value font-te-mono">Include Subdirectories</span>
+              <p className="text-sm te-label font-te-mono">Search within subdirectories of the configured paths</p>
             </div>
           </label>
         </div>
