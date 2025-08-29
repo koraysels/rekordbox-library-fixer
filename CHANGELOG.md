@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.0.5-alpha] - 2025-08-29
+
+### 🎉 New Features
+- **XML Export & Import Tutorial**: Interactive step-by-step tutorial with screenshots
+- **Help System**: Tutorial accessible from menu and sidebar for easy discovery
+- **Ko-fi Support**: Added donation link in About modal for project support
+- **Enhanced Security**: URL validation for external links (HTTPS/HTTP/mailto only)
+
+### 🎨 Theme & Design Overhaul
+- **Completely new Theme**: Full implementation of a new light theme inspired by the TE PO-133 II sampler
+- **Application Rebrand**: Renamed from "Rekordbox Library Manager" to "Rekordbox Library Fixer"
+- **Color Harmony**: Applied UI design principles with proper contrast ratios
+- **Typography Enhancement**: Consistent TE fonts with optimized letter spacing
+- **Visual Polish**: Harmonious color schemes throughout all components
+
+### 🐛 Bug Fixes
+- **Notification Backgrounds**: Fixed missing toast notification backgrounds
+- **Color Class Issues**: Resolved incorrect Tailwind color class usage
+- **Theme Inconsistencies**: Eliminated dark theme remnants across components
+- **Build Errors**: Fixed Tailwind config syntax issues
+
+### 🔧 Technical Improvements
+- **TypeScript Declarations**: Comprehensive electron API type definitions
+- **Git Cleanup**: Removed development artifacts from version control
+- **Code Quality**: Applied DRY principles and modern React patterns
+- **Build System**: Verified cross-platform compatibility
+
+---
+
 ## [0.0.3-alpha] - 2025-01-27
 
 ### 🎉 New Features
