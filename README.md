@@ -17,6 +17,34 @@
 
 </div>
 
+## 📚 Table of Contents
+
+- [🎯 Why We Made This](#-why-we-made-this)
+- [🌟 What It Does](#-what-it-does)
+  - [🔍 Duplicate Detection](#-duplicate-detection)
+  - [📍 Track Relocation](#-track-relocation-new)
+  - [🛠️ Resolution Options](#️-resolution-options)
+  - [💾 Remembers Your Stuff](#-remembers-your-stuff-new)
+- [📱 Screenshots](#-screenshots)
+- [🚀 Quick Start](#-quick-start)
+  - [📥 Download & Install](#-download--install)
+  - [🎵 Using the Tool](#-using-the-tool)
+    - [Step 1: Export Your Rekordbox Library](#-step-1-export-your-rekordbox-library)
+    - [Step 2: Load Your Library](#-step-2-load-your-library)
+    - [Step 3: Find Duplicates](#-step-3-find-duplicates)
+    - [Step 4: Resolve Duplicates](#️-step-4-resolve-duplicates)
+    - [Step 5: Relocate Missing Tracks](#-step-5-relocate-missing-tracks-optional)
+    - [Step 6: Import Back to Rekordbox](#-step-6-import-back-to-rekordbox)
+- [🛠️ For Developers](#️-for-developers)
+- [🤝 Contributing](#-contributing)
+- [🙋‍♂️ FAQ](#️-faq)
+- [🛣️ Roadmap](#️-roadmap)
+- [🆘 Support & Community](#-support--community)
+- [📜 License](#-license)
+- [🙏 Acknowledgments](#-acknowledgments)
+
+---
+
 ## 🎯 Why We Made This
 
 Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
