@@ -486,7 +486,7 @@ const TrackRelocator: React.FC = () => {
       <SettingsSlideout
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        title="Track Relocator Settings"
+        title="TRACK RELOCATOR SETTINGS"
         subtitle="Configure search paths and matching criteria"
         width="xl"
       >
@@ -503,7 +503,7 @@ const TrackRelocator: React.FC = () => {
       <SettingsSlideout
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
-        title="Relocation History"
+        title="RELOCATION HISTORY"
         subtitle="Log of successful track relocations"
         width="xl"
       >
