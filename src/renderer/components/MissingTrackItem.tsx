@@ -50,38 +50,38 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
               type="checkbox"
               checked={isSelected}
               onChange={handleCheckboxChange}
-              className="rounded border-gray-600 text-rekordbox-purple focus:ring-purple-500"
+              className="rounded border-te-grey-400 text-te-orange focus:ring-te-orange"
             />
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className={`font-medium ${track.isUnlocatable ? 'text-orange-400' : 'text-white'}`}>
+                <h3 className={`font-medium ${track.isUnlocatable ? 'text-te-orange' : 'te-value'} font-te-mono`}>
                   {track.name}
                 </h3>
                 {track.isUnlocatable && (
-                  <AlertTriangle size={14} className="text-orange-400" title="Marked as unlocatable" />
+                  <AlertTriangle size={14} className="text-te-orange" title="Marked as unlocatable" />
                 )}
               </div>
-              <p className={`text-sm ${track.isUnlocatable ? 'text-orange-300' : 'text-gray-400'}`}>
+              <p className={`text-sm ${track.isUnlocatable ? 'text-te-orange' : 'te-label'} font-te-mono`}>
                 {track.artist}
               </p>
               {track.album && (
-                <p className={`text-xs ${track.isUnlocatable ? 'text-orange-500' : 'text-gray-500'}`}>
+                <p className={`text-xs ${track.isUnlocatable ? 'text-te-orange' : 'te-label'} font-te-mono`}>
                   {track.album}
                 </p>
               )}
             </div>
           </div>
           <div className="mt-2 ml-6">
-            <p className="text-gray-500 text-xs font-mono">
+            <p className="te-label text-xs font-te-mono">
               Missing: {track.originalLocation}
             </p>
             {track.isUnlocatable && (
-              <p className="text-orange-400 text-xs font-semibold mt-1">
+              <p className="text-te-orange text-xs font-semibold mt-1 font-te-mono">
                 ⚠️ Auto-relocation failed - marked as unlocatable
               </p>
             )}
             {hasRelocation && relocationPath && (
-              <p className="text-green-400 text-xs font-mono mt-1">
+              <p className="text-te-green text-xs font-te-mono mt-1">
                 → Relocate to: {relocationPath}
               </p>
             )}

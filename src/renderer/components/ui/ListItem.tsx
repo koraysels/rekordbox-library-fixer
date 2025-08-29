@@ -20,11 +20,11 @@ export const ListItem: React.FC<ListItemProps> = ({
   children,
   interactive = true
 }) => {
-  const baseClasses = 'bg-gray-800 rounded-lg p-4 border transition-colors';
+  const baseClasses = 'bg-te-cream rounded-te p-4 border-2 transition-colors';
   const interactiveClasses = interactive ? 'cursor-pointer' : '';
   const selectedClasses = isSelected
-    ? 'border-rekordbox-purple bg-purple-900/20'
-    : 'border-gray-700 hover:border-gray-600';
+    ? 'border-te-orange bg-te-orange/10'
+    : 'border-te-grey-300 hover:border-te-grey-400';
 
   const combinedClasses = `${baseClasses} ${interactiveClasses} ${selectedClasses} ${className}`;
 

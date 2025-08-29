@@ -30,11 +30,11 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               alt="Rekordbox Library Manager"
               className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
-            <h2 className="text-xl font-bold text-white">About</h2>
+            <h2 className="text-xl font-bold te-value">About</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-white transition-colors"
+            className="text-zinc-400 hover:te-value transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -42,8 +42,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
         {/* Content */}
         <div className="text-center mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">Rekordbox Library Manager</h3>
-          <p className="text-rekordbox-purple font-medium mb-4">Version {version}</p>
+          <h3 className="text-lg font-semibold te-value mb-2">Rekordbox Library Manager</h3>
+          <p className="text-te-orange font-medium mb-4">Version {version}</p>
           <p className="text-zinc-300 text-sm leading-relaxed mb-4">
             A powerful tool for managing and fixing Rekordbox libraries.
             Detect duplicates, optimize your library, and keep your DJ collection organized.
@@ -53,7 +53,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         {/* Developer info */}
         <div className="border-t border-zinc-700 pt-4 text-center">
           <p className="text-zinc-400 text-sm mb-1">
-            Developed by <span className="text-white font-medium">Koray Sels</span>
+            Developed by <span className="te-value font-medium">Koray Sels</span>
           </p>
           <p className="text-zinc-500 text-xs">
             © 2025 Koray Sels. All rights reserved.

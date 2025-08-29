@@ -198,7 +198,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   value="keep-highest-quality"
                   {...register('resolutionStrategy')}
                   onBlur={handleBlurSync}
-                  className="mt-1 text-rekordbox-purple"
+                  className="mt-1 text-te-orange"
                 />
                 <div>
                   <span className="font-medium">Keep Highest Quality</span>
@@ -212,7 +212,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   value="keep-newest"
                   {...register('resolutionStrategy')}
                   onBlur={handleBlurSync}
-                  className="mt-1 text-rekordbox-purple"
+                  className="mt-1 text-te-orange"
                 />
                 <div>
                   <span className="font-medium">Keep Newest</span>
@@ -226,7 +226,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   value="keep-oldest"
                   {...register('resolutionStrategy')}
                   onBlur={handleBlurSync}
-                  className="mt-1 text-rekordbox-purple"
+                  className="mt-1 text-te-orange"
                 />
                 <div>
                   <span className="font-medium">Keep Oldest</span>
@@ -236,7 +236,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
               <label className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-colors ${
                 watchedResolutionStrategy === 'keep-preferred-path'
-                  ? 'border-rekordbox-purple bg-rekordbox-purple/10'
+                  ? 'border-te-orange bg-te-orange/10'
                   : 'border-zinc-700 hover:border-zinc-600'
               }`}>
                 <input
@@ -244,7 +244,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   value="keep-preferred-path"
                   {...register('resolutionStrategy')}
                   onBlur={handleBlurSync}
-                  className="mt-1 text-rekordbox-purple"
+                  className="mt-1 text-te-orange"
                 />
                 <div>
                   <span className="font-medium">Keep Preferred Path</span>
@@ -258,7 +258,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   value="manual"
                   {...register('resolutionStrategy')}
                   onBlur={handleBlurSync}
-                  className="mt-1 text-rekordbox-purple"
+                  className="mt-1 text-te-orange"
                 />
                 <div>
                   <span className="font-medium">Manual Selection</span>
@@ -282,11 +282,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 onKeyPress={(e) => e.key === 'Enter' && addPathPreference()}
                 onBlur={handleBlurSync}
                 placeholder="e.g., /Users/DJ/Main Library"
-                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder:text-zinc-500 focus:border-rekordbox-purple focus:outline-none"
+                className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg te-value placeholder:text-zinc-500 focus:border-te-orange focus:outline-none"
               />
               <button
                 onClick={handleBrowseFolder}
-                className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors flex items-center"
+                className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 te-value rounded-lg transition-colors flex items-center"
                 title="Browse for folder"
               >
                 <FolderOpen size={16} />
@@ -294,7 +294,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <button
                 onClick={addPathPreference}
                 disabled={!pathPreferenceInput.trim()}
-                className="px-4 py-2 bg-rekordbox-purple hover:bg-purple-600 disabled:bg-zinc-600 text-white rounded-lg transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-te-orange hover:bg-te-orange600 disabled:bg-zinc-600 te-value rounded-lg transition-colors flex items-center space-x-1"
               >
                 <Plus size={16} />
                 <span>Add</span>
@@ -312,7 +312,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 {(watchedScanOptions?.pathPreferences || []).map((path, index) => (
                   <div key={index} className="flex items-center justify-between bg-zinc-800 px-3 py-3 rounded border border-zinc-700">
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <span className="text-rekordbox-purple font-semibold text-sm">#{index + 1}</span>
+                      <span className="text-te-orange font-semibold text-sm">#{index + 1}</span>
                       <span className="font-mono text-sm text-zinc-200 truncate">{path}</span>
                     </div>
                     <button

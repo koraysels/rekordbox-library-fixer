@@ -1,11 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html, body {
-    @apply bg-rekordbox-dark text-rekordbox-light;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    @apply bg-te-grey-100 text-te-grey-800 font-te-mono;
     margin: 0;
     padding: 0;
     position: relative;
@@ -18,24 +19,74 @@
 }
 
 @layer components {
+  /* TE-inspired button styles - Use mono font for buttons */
   .btn-primary {
-    @apply bg-rekordbox-purple hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-te-orange hover:bg-te-orange/90 text-te-cream font-te-mono font-semibold text-xs uppercase tracking-te-mono py-te-sm px-te-md rounded-te border-2 border-te-orange transition-all duration-200 hover:shadow-lg;
   }
   
   .btn-secondary {
-    @apply bg-rekordbox-gray hover:bg-zinc-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-te-grey-200 hover:bg-te-grey-300 text-te-grey-800 font-te-mono font-semibold text-xs uppercase tracking-te-mono py-te-sm px-te-md rounded-te border-2 border-te-grey-300 transition-all duration-200;
   }
   
+  .btn-ghost {
+    @apply bg-transparent hover:bg-te-grey-200 text-te-grey-600 hover:text-te-grey-800 font-te-mono font-semibold text-xs uppercase tracking-te-mono py-te-sm px-te-md rounded-te border-2 border-te-grey-300 transition-all duration-200;
+  }
+  
+  /* TE-inspired card styles */
   .card {
-    @apply bg-rekordbox-gray rounded-xl p-6 shadow-xl border border-zinc-800;
+    @apply bg-te-cream rounded-te-lg p-te-lg shadow-sm border-2 border-te-grey-300;
   }
   
+  .card-dark {
+    @apply bg-te-grey-800 rounded-te-lg p-te-lg shadow-sm border-2 border-te-grey-700 text-te-cream;
+  }
+  
+  /* TE-inspired input styles - Use mono font for inputs */
   .input {
-    @apply bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-rekordbox-light focus:outline-none focus:ring-2 focus:ring-rekordbox-purple;
+    @apply bg-te-grey-100 border-2 border-te-grey-300 rounded-te px-te-md py-te-sm text-te-grey-800 font-te-mono text-sm focus:outline-none focus:border-te-orange focus:shadow-lg transition-all duration-200;
   }
   
   .checkbox {
-    @apply w-4 h-4 text-rekordbox-purple bg-zinc-800 border-zinc-600 rounded focus:ring-rekordbox-purple focus:ring-2;
+    @apply w-4 h-4 text-te-orange bg-te-grey-100 border-2 border-te-grey-300 rounded-te focus:ring-te-orange focus:ring-2;
+  }
+  
+  /* TE-inspired utility classes */
+  .te-label {
+    @apply font-te-mono text-xs font-medium text-te-grey-600 uppercase tracking-wider;
+  }
+  
+  .te-value {
+    @apply font-te-mono text-sm font-semibold text-te-grey-800 tracking-wide;
+  }
+  
+  .te-display {
+    @apply font-te-display text-lg font-bold text-te-grey-800 tracking-te-display;
+  }
+  
+  .te-title {
+    @apply font-te-display text-xl font-bold text-te-grey-800 uppercase tracking-te-display;
+  }
+  
+  /* TE-inspired confidence badges with harmonious colors */
+  .confidence-high {
+    @apply bg-te-green-100 text-te-green-600 border border-te-green-200 px-2 py-1 rounded-te text-xs font-te-mono font-medium;
+  }
+  
+  .confidence-medium {
+    @apply bg-te-amber-100 text-te-amber-600 border border-te-amber-200 px-2 py-1 rounded-te text-xs font-te-mono font-medium;
+  }
+  
+  .confidence-low {
+    @apply bg-te-red-100 text-te-red-600 border border-te-red-200 px-2 py-1 rounded-te text-xs font-te-mono font-medium;
+  }
+  
+  /* TE-inspired expanded content styling */
+  .te-expanded-content {
+    @apply bg-te-grey-50 border-2 border-te-grey-200 rounded-te p-te-md;
+  }
+  
+  .te-code-block {
+    @apply bg-te-grey-100 border border-te-grey-300 rounded-te p-te-sm font-te-mono text-xs text-te-grey-700;
   }
 }
 
@@ -57,22 +108,22 @@
   animation: spin 1s linear infinite !important;
 }
 
-/* Custom scrollbar */
+/* TE-inspired custom scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-zinc-900;
+  @apply bg-te-grey-200;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-zinc-700 rounded-full;
+  @apply bg-te-grey-400 rounded-te;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-zinc-600;
+  @apply bg-te-orange;
 }
 
 /* App header drag region */

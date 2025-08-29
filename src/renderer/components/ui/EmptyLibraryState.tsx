@@ -11,53 +11,66 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onLoadLibrary: _onLoadLibrary
 }) => {
   return (
-    <div className="h-full flex items-center justify-center py-8 px-0">
-      <div className="text-center max-w-2xl w-full">
-        {/* App Logo */}
-        <div className="mb-8">
-          <img
-            src="/icons/64x64.png"
-            alt="Rekordbox Library Manager"
-            className="w-24 h-24 mx-auto mb-4 bg-white rounded-3xl p-3 shadow-lg"
-          />
-          <h2 className="text-3xl font-bold text-white mb-2">Welcome to Rekordbox Library Manager</h2>
-          <p className="text-zinc-400 text-lg">
-            Manage, clean, and optimize your Rekordbox music library
+    <div className="h-full flex items-center justify-center py-te-xl px-te-lg bg-te-grey-100">
+      <div className="text-center max-w-lg w-full">
+        {/* App Logo - TE Minimal */}
+        <div className="mb-te-xl">
+          <div className="w-16 h-16 mx-auto mb-te-lg bg-white rounded-te flex items-center justify-center">
+            <img
+              src="/icons/64x64.png"
+              alt="Rekordbox Library Manager"
+              className="w-12 h-12 opacity-90"
+            />
+          </div>
+          <h2 className="font-te-display text-xl font-bold text-te-grey-800 mb-te-sm uppercase tracking-tight">
+            REKORDBOX LIBRARY MGR
+          </h2>
+          <p className="text-te-grey-500 font-te-mono text-sm tracking-wider">
+            MANAGE • CLEAN • OPTIMIZE
           </p>
         </div>
 
-        {/* Browse Button Only - Drag & Drop Temporarily Disabled */}
-        <div className="border-2 border-dashed border-gray-600 rounded-3xl p-12 mb-8">
+        {/* Load Library Section - TE Calculator Style */}
+        <div className="bg-te-cream border-2 border-te-grey-300 rounded-te-lg p-te-xl mb-te-lg shadow-sm">
           <div className="flex flex-col items-center">
-            <FileText className="w-16 h-16 text-gray-400 mb-4" />
-            <h3 className="text-2xl font-semibold text-white mb-2">Load Your Library</h3>
-            <p className="text-zinc-400 mb-6 leading-relaxed">
-              Click the button below to browse and select your Rekordbox XML library file
+            <div className="w-12 h-12 bg-te-grey-200 rounded-te flex items-center justify-center mb-te-md">
+              <FileText className="w-6 h-6 text-te-grey-600" />
+            </div>
+            <h3 className="font-te-display text-sm font-semibold text-te-grey-800 mb-te-sm uppercase tracking-wide">
+              Load XML Library
+            </h3>
+            <p className="text-te-grey-500 font-te-mono text-sm mb-te-lg leading-relaxed text-center">
+              Select your Rekordbox XML export file to begin
             </p>
             <button
               type="button"
               onClick={onSelectLibrary}
-              className="bg-rekordbox-purple hover:bg-rekordbox-purple/90
-                       text-white font-semibold py-4 px-8 rounded-xl
-                       transition-colors duration-200 flex items-center space-x-3"
+              className="bg-te-orange hover:bg-te-orange/90 text-te-cream
+                       font-te-display text-xs font-semibold py-te-md px-te-lg rounded-te
+                       border-2 border-te-orange hover:shadow-lg
+                       transition-all duration-200 flex items-center gap-te-sm uppercase tracking-wider
+                       hover:animate-te-glow"
             >
-              <FolderOpen className="w-5 h-5" />
-              <span>Browse for XML File</span>
+              <FolderOpen className="w-4 h-4" />
+              <span>Browse Files</span>
             </button>
           </div>
         </div>
 
-        {/* File Type Info */}
+        {/* File Type Info - Minimal TE */}
         <div className="text-center">
-          <p className="text-xs text-zinc-500 mb-2">Supported file types</p>
-          <div className="flex items-center justify-center space-x-6 text-zinc-400">
-            <div className="flex items-center space-x-2">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm">Rekordbox XML</span>
+          <p className="text-xs text-te-grey-400 font-te-mono uppercase tracking-wider mb-te-sm">
+            Supported Formats
+          </p>
+          <div className="flex items-center justify-center gap-te-lg text-te-grey-500">
+            <div className="flex items-center gap-te-xs bg-te-grey-200 px-te-sm py-te-xs rounded-te">
+              <FileText className="w-3 h-3" />
+              <span className="font-te-mono text-xs tracking-wider">XML</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <FileText className="w-4 h-4" />
-              <span className="text-sm">Collection.xml</span>
+            <div className="w-1 h-1 bg-te-grey-300 rounded-full"></div>
+            <div className="flex items-center gap-te-xs bg-te-grey-200 px-te-sm py-te-xs rounded-te">
+              <FileText className="w-3 h-3" />
+              <span className="font-te-mono text-xs tracking-wider">COLLECTION</span>
             </div>
           </div>
         </div>

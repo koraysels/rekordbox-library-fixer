@@ -62,7 +62,8 @@
       "Bash(npm run:*)",
       "Bash(git rm:*)",
       "Bash(lsof:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
