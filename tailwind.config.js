@@ -88,7 +88,6 @@ module.exports = {
           '100%': { 'box-shadow': '0 0 20px rgba(255, 107, 53, 0.8)' },
         }
       }
-      }
     },
   },
   plugins: [],
