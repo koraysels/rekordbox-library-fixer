@@ -11,8 +11,6 @@
 
 **🤞 Just trying to make DJs' lives a bit easier, one library at a time**
 
-> ## 🚨 Relocation of missing tracks might be a broken .. a fix will become available soon. 
-
 *Maybe this will help you clean up those pesky duplicates and find your missing tracks*
 
 [Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-fixer/issues)
