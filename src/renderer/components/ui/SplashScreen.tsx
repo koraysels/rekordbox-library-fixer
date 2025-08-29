@@ -9,7 +9,7 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   isLoading = true,
-  message = 'Loading Rekordbox Library Manager...'
+  message = 'Loading Rekordbox Library Fixer...'
 }) => {
   const version = useAppStore((state) => state.version);
   const loadVersion = useAppStore((state) => state.loadVersion);
@@ -25,13 +25,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
           <div className="relative">
             <img
               src="./logo.png"
-              alt="Rekordbox Library Manager"
+              alt="Rekordbox Library Fixer"
               className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg"
             />
             <div className="absolute -inset-2 bg-te-orange/20 rounded-full blur-lg animate-pulse"></div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-te-cream font-te-display">Rekordbox Library Manager</h1>
+            <h1 className="text-2xl font-bold text-te-cream font-te-display uppercase">Rekordbox Library Fixer</h1>
             <p className="text-te-cream text-sm font-te-mono">Fix and optimize your DJ library</p>
           </div>
         </div>

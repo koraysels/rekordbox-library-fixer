@@ -138,7 +138,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
                 </div>
                 <button
                   onClick={() => removeSearchPath(index)}
-                  className="text-te-red hover:text-te-red/80 hover:bg-te-red/10 px-2 py-1 rounded-te ml-2 transition-colors"
+                  className="text-te-red-500 hover:text-te-red-600 hover:bg-te-red-100 px-2 py-1 rounded-te ml-2 transition-colors"
                   title="Remove this search path"
                 >
                   <X size={16} />

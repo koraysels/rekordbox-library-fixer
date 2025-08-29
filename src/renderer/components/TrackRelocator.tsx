@@ -382,7 +382,7 @@ const TrackRelocator: React.FC = () => {
                   </div>
                 ) : (
                   <div className="text-center te-value py-8">
-                    <CheckCircle size={48} className="mx-auto mb-4 text-te-green" />
+                    <CheckCircle size={48} className="mx-auto mb-4 text-te-green-500" />
                     <h3 className="te-title mb-2">All Tracks Located!</h3>
                     <p className="font-te-mono">No missing tracks found in your library</p>
                   </div>
@@ -451,10 +451,10 @@ const TrackRelocator: React.FC = () => {
                         <div className="flex items-center space-x-2 mt-1">
                           <span className={`text-xs px-2 py-0.5 rounded-te ${
                             candidate.confidence > 0.8
-                              ? 'bg-te-green text-te-cream'
+                              ? 'bg-te-green-500 text-te-cream'
                               : candidate.confidence > 0.6
                                 ? 'bg-te-orange text-te-cream'
-                                : 'bg-te-red text-te-cream'
+                                : 'bg-te-red-500 text-te-cream'
                           }`}>
                             {Math.round(candidate.confidence * 100)}%
                           </span>

@@ -65,13 +65,13 @@ export function Sidebar({
                     <div className="w-10 h-10 bg-white rounded-te flex items-center justify-center">
                         <img
                             src="./icons/48x48.png"
-                            alt="Rekordbox Library Manager"
+                            alt="Rekordbox Library Fixer"
                             className="w-8 h-8 opacity-90"
                         />
                     </div>
                     <div>
                         <h1 className="font-te-display text-te-grey-800 font-bold text-sm tracking-te-display">REKORDBOX</h1>
-                        <p className="text-xs text-te-grey-500 font-te-mono tracking-wider">LIBRARY MGR</p>
+                        <p className="text-xs text-te-grey-500 font-te-mono tracking-wider">LIBRARY FIXER</p>
                     </div>
                 </div>
             </div>
@@ -172,7 +172,7 @@ export function Sidebar({
                                     {onUnloadLibrary && (
                                         <button
                                             onClick={onUnloadLibrary}
-                                            className="text-te-grey-400 hover:text-te-red transition-colors p-1 rounded"
+                                            className="text-te-grey-400 hover:text-te-red-500 transition-colors p-1 rounded"
                                             title="Unload Library"
                                         >
                                             <X className="w-3 h-3"/>
@@ -191,7 +191,7 @@ export function Sidebar({
             {/* Footer - Minimal TE */}
             <div className="p-te-lg border-t-2 border-te-grey-300">
                 <p className="text-xs text-te-grey-500 text-center font-te-mono tracking-wider">
-                    FOR DJs
+                    🖤 FOR DJs
                 </p>
             </div>
         </nav>

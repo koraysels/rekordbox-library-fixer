@@ -97,7 +97,7 @@
   },
   "build": {
     "appId": "com.rekordbox.library.manager",
-    "productName": "Rekordbox Library Manager",
+    "productName": "Rekordbox Library Fixer",
     "directories": {
       "output": "release"
     },
@@ -160,10 +160,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Rekordbox Library Manager"
+      "shortcutName": "Rekordbox Library Fixer"
     },
     "dmg": {
-      "title": "Rekordbox Library Manager",
+      "title": "Rekordbox Library Fixer",
       "window": {
         "width": 600,
         "height": 400

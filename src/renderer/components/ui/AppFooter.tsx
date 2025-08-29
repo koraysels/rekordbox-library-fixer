@@ -153,12 +153,12 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
         </div>
 
         <div className="font-te-mono text-xs text-te-grey-500 uppercase tracking-wider">
-          V{version} • FOR DJs
+          V{version} • (C) Koray Sels 2025
         </div>
       </div>
     </div>
   );
-});
+})
 
 AppFooterComponent.displayName = 'AppFooter';
 

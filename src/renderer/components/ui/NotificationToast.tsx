@@ -9,8 +9,8 @@ interface NotificationToastProps {
 export const NotificationToast: React.FC<NotificationToastProps> = ({ notification }) => {
   return (
     <div className={`fixed top-28 right-6 z-40 p-4 rounded-te shadow-xl flex items-center space-x-3 border-2 ${
-      notification.type === 'success' ? 'bg-te-green border-te-green' :
-      notification.type === 'error' ? 'bg-te-red border-te-red' :
+      notification.type === 'success' ? 'bg-te-green-500 border-te-green-500' :
+      notification.type === 'error' ? 'bg-te-red-500 border-te-red-500' :
       'bg-te-orange border-te-orange'
     } text-te-cream font-te-mono`}>
       {notification.type === 'success' ? (
