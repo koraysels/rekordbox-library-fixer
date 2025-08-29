@@ -72,22 +72,22 @@ Make a simple, free tool that might help you get your library back under control
 ### 🏠 **Main Dashboard**
 *The main screen - nothing fancy, just gets the job done*
 
-<img src="screenshots/01-main-interface.png" alt="Main Interface" width="600" />
+<img src="screenshots/01-main-interface.png" alt="Main Interface" />
 
 ### 🔍 **Duplicate Detection**
 *This is where the magic happens (hopefully)*
 
-<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" width="600" />
+<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" />
 
 ### 📍 **Track Relocation**
 *For when your tracks decide to play hide and seek*
 
-<img src="screenshots/04-track-relocation.png" alt="Track Relocation" width="600" />
+<img src="screenshots/04-track-relocation.png" alt="Track Relocation" />
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
 
-<img src="screenshots/02-loaded-library.png" alt="Settings Panel" width="600" />
+<img src="screenshots/02-loaded-library.png" alt="Settings Panel" />
 
 ---
 
@@ -130,7 +130,7 @@ Before using this tool, you need to export your Rekordbox collection as an XML f
    - Click **File** in the top menu bar
    - Select **Export Collection in xml format**
    
-   <img src="screenshots/rekordbox-export-menu.png" alt="Export Menu" width="400" />
+   <img src="screenshots/rekordbox-export-menu.png" alt="Export Menu" />
    
 3. **Choose Export Location**:
    - A dialog box will appear
@@ -210,7 +210,7 @@ Before you can import XML files, you need to enable the XML import feature in Re
 2. **Go to View Settings**: Navigate to the top menu and access the view preferences
 3. **Enable "rekordbox xml" in Tree View**: Make sure the checkbox for "rekordbox xml" is checked
 
-<img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" width="600" />
+<img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" />
 
 > **💡 Important**: The "rekordbox xml" option must be enabled in the Tree View section for XML import to work properly.
 
@@ -220,13 +220,27 @@ Before you can import XML files, you need to enable the XML import feature in Re
 2. **Access Library Sync**: Look for the "Library Sync" section 
 3. **Select Your Updated XML**: Click "Browse" and select your cleaned XML file (the tool creates a new file with "_cleaned" suffix)
 
-<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" width="600" />
+<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" />
 
 4. **Configure Import Options**:
    - ✅ **BPM change points**: Keep this checked to preserve tempo analysis
    - ✅ **Select your updated XML file**: Make sure you're importing the correct cleaned file
 5. **Click Import**: Rekordbox will process your cleaned library
 6. **Wait for Processing**: This may take several minutes for large libraries
+
+**Step C: Import Your Playlists**
+
+After the XML file is imported, you need to import the playlists:
+
+1. **Navigate to the rekordbox xml section** in the left sidebar
+2. **Expand the rekordbox xml tree** to see your imported library
+3. **Right-click on "Playlists"** under the rekordbox xml section
+4. **Select "Import Playlist"** from the context menu
+
+<img src="screenshots/import-xml-step-3.jpg" alt="Import Playlists" />
+
+5. **Confirm the import**: Your playlists will be imported with all tracks properly linked
+6. **Verify playlist contents**: Check that all playlists now show the correct track counts
 
 ##### ⚠️ **Method 2: Alternative Import Process**
 
@@ -253,37 +267,6 @@ After importing, verify that everything worked correctly:
 > - **macOS**: `~/Library/Pioneer/rekordbox`
 >
 > The tool creates XML backups automatically, but backing up your entire Rekordbox database is extra protection.
-
----
-
-## 🎛️ Advanced Configuration
-
-### 🔍 **Duplicate Detection Settings**
-
-```typescript
-// Example configuration for different DJ styles
-{
-  // For Electronic Music DJs
-  useFingerprint: true,        // Detect identical files
-  useMetadata: true,          // Also check metadata
-  metadataFields: ['artist', 'title', 'bpm', 'key'],
-  
-  // For Hip-Hop DJs  
-  metadataFields: ['artist', 'title', 'album', 'duration'],
-  pathPreferences: ['/FLAC/', '/WAV/', '/MP3/']
-}
-```
-
-### 📍 **Track Relocation Options**
-
-```typescript
-{
-  searchDepth: 3,             // How deep to search subdirectories
-  matchThreshold: 0.8,        // 80% similarity required
-  fileExtensions: ['.mp3', '.wav', '.flac', '.m4a'],
-  includeSubdirectories: true
-}
-```
 
 ---
 
