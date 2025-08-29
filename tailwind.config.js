@@ -84,9 +84,10 @@ module.exports = {
       },
       keyframes: {
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(255, 107, 53, 0.5)' },
-          '100%': { boxShadow: '0 0 20px rgba(255, 107, 53, 0.8)' },
+          '0%': { 'box-shadow': '0 0 5px rgba(255, 107, 53, 0.5)' },
+          '100%': { 'box-shadow': '0 0 20px rgba(255, 107, 53, 0.8)' },
         }
+      }
       }
     },
   },
