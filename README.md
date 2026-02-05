@@ -35,6 +35,34 @@
     - [Step 4: Resolve Duplicates](#️-step-4-resolve-duplicates)
     - [Step 5: Relocate Missing Tracks](#-step-5-relocate-missing-tracks-optional)
     - [Step 6: Import Back to Rekordbox](#-step-6-import-back-to-rekordbox)
+     - [🌟 What It Does](#-what-it-does)
+     - [🔍 Duplicate Detection](#-duplicate-detection)
+     - [📍 Track Relocation](#-track-relocation)
+     - [📊 Statistics](#-statistics)
+    
+     ### 📍 **Track Relocation**
+     - **🔎 Smart Search**: Tries to find your moved music files automatically
+     ...
+     - **⚠️ Unlocatable Tracking**: Marks tracks that couldn't be auto-relocated so you can retry or handle them manually
+    
+    ### 📊 **Statistics** *(NEW!)*
+    - **Total tracks** and **total playlists** counters
+    - **Top 10 genres** by track count
+    - **BPM distribution** (binned, default 20bpm buckets)
+    - **Year distribution** (tracks grouped by year)
+    - **Special tag detection**: tags containing `www`, URLs or non-alphanumeric characters
+    - Accessible from the new `Statistics` tab in the sidebar
+    - See `docs/statistics.md` for details on computation and charting
+    
+     #### 📥 **Step 6: Import Back to Rekordbox**
+     After cleaning your library with this tool, you'll want to import the updated XML back to Rekordbox. Here's the complete process with visual guides:
+    
+    #### 📊 **Step 6: Open Statistics**
+    1. **Open the app** and click the `Statistics` tab in the sidebar
+    2. **View totals and charts**: total tracks, total playlists, top genres, BPM bins, year distribution, special tag counts
+    3. **See `docs/statistics.md`** for full details on computation (binning rules, tag parsing) and chart examples
+    
+    *** End Patch
 - [🛠️ For Developers](#️-for-developers)
 - [🤝 Contributing](#-contributing)
 - [🙋‍♂️ FAQ](#️-faq)

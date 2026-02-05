@@ -4,6 +4,7 @@ import { DuplicatesPage } from './components/pages/DuplicatesPage';
 import { RelocatePage } from './components/pages/RelocatePage';
 import { ImportPage } from './components/pages/ImportPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
+import { StatisticsPage } from './components/pages/StatisticsPage';
 
 // Root route - wraps entire app
 export const rootRoute = createRootRoute({
@@ -35,12 +36,19 @@ export const maintenanceRoute = createRoute({
   component: MaintenancePage,
 });
 
+export const statisticsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/statistics',
+  component: StatisticsPage,
+});
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   duplicatesRoute,
   relocateRoute,
   importRoute,
   maintenanceRoute,
+  statisticsRoute,
 ]);
 
 // Create and export router
