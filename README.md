@@ -38,7 +38,7 @@
      - [🌟 What It Does](#-what-it-does)
      - [🔍 Duplicate Detection](#-duplicate-detection)
      - [📍 Track Relocation](#-track-relocation)
-     - [📊 Statistics](#-statistics)
+     - [📊 Statistics](#-statistics-new)
     
      ### 📍 **Track Relocation**
      - **🔎 Smart Search**: Tries to find your moved music files automatically
@@ -137,6 +137,12 @@ Make a simple, free tool that might help you get your library back under control
 *For when your tracks decide to play hide and seek*
 
 <img src="screenshots/04-track-relocation.png" alt="Track Relocation" width="600" />
+
+### 📊️ **Statistics** *(NEW!)*
+*See how your library is doing*
+
+<img src="screenshots/06-statistics.png" alt="Statistics" width="400" />
+
 
 ### ⚙️ **Settings**
 *Tweak things until they work the way you want*
