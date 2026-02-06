@@ -36,7 +36,7 @@ describe('computeStatistics', () => {
       acc[String(cur.bin)] = cur.count;
       return acc;
     }, {});
-    expect(bpmBins['120-139'] || bpmBins['120-139']).toBeDefined();
+    expect(bpmBins['120-139']).toBeDefined();
     // special tags: t1 has www, t2 has 'cool!' (special char) => count 2
     expect(stats.specialTagCount).toBe(2);
   });
