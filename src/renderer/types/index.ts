@@ -142,12 +142,13 @@ export interface DistributionItem {
   label: string;
   count: number;
 }
-
+export interface GenreDistributionItem extends DistributionItem {
+  titles: string[];
+}
 export interface BinnedItem {
   bin: string | number;
   count: number;
 }
-
 export interface StatisticsData {
   totalTracks: number;
   totalPlaylists: number;

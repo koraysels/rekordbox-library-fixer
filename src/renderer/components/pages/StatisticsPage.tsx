@@ -31,7 +31,7 @@ const GenreTooltip: React.FC<{ active?: boolean; payload?: unknown[] }> = ({ act
         ) : (
           // Display titles in two columns (two titles per row)
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-h-48 overflow-auto">
-            {shown.map((t, i) => (
+            {shown.map((t: string, i: number) => (
               <div key={`${item.label}-${i}`} className="text-xs truncate pr-2">{t}</div>
             ))}
           </div>
@@ -82,8 +82,8 @@ export const StatisticsPage: React.FC = () => {
   }
 
   // map genre label -> titles array for quick lookup in tick renderer
-  const genreTitleMap: Record<string, string[]> = stats.genreDistribution.reduce<Record<string, string[]>>((acc, g) => {
-    acc[g.label] = (g as GenreDistributionItem).titles || [];
+  const genreTitleMap: Record<string, string[]> = (stats.genreDistribution as GenreDistributionItem[]).reduce<Record<string, string[]>>((acc, g) => {
+    acc[g.label] = g.titles || [];
     return acc;
   }, {});
 
