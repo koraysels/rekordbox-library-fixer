@@ -126,7 +126,7 @@ export function Sidebar({
                                     >
                                         <item.icon className="w-4 h-4 flex-shrink-0"/>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-nowrap pr-1  ${activeTab && 'text-xxs'}`}>
+                                            <p className={`text-nowrap pr-1 ${activeTab === item.id ? 'text-xxs' : ''}`}>
                                                 {item.label}
                                             </p>
                                         </div>
