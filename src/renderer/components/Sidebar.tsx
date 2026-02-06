@@ -2,6 +2,7 @@ import {Link} from '@tanstack/react-router';
 import {
     MapPin,
     Download,
+    BarChart2,
     Wrench,
     Copy,
     FolderOpen,
@@ -44,7 +45,7 @@ const navItems = [
         id: 'statistics' as TabType,
         path: '/statistics',
         label: 'Statistics',
-        icon: Download,
+        icon: BarChart2,
         description: 'Get insights for your library'
     }
 ];

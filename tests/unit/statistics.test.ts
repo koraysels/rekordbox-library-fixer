@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeStatistics } from '../../src/renderer/hooks/useStatistics';
-import type { LibraryData } from '../../src/renderer/types';
+import { computeStatistics } from '@renderer/hooks/useStatistics';
+import type { LibraryData } from '@renderer/types';
 
 describe('computeStatistics', () => {
   it('returns zeros for null/empty library', () => {
