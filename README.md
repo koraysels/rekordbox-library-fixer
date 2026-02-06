@@ -61,8 +61,8 @@
     1. **Open the app** and click the `Statistics` tab in the sidebar
     2. **View totals and charts**: total tracks, total playlists, top genres, BPM bins, year distribution, special tag counts
     3. **See `docs/statistics.md`** for full details on computation (binning rules, tag parsing) and chart examples
-    
-    *** End Patch
+
+
 - [🛠️ For Developers](#️-for-developers)
 - [🤝 Contributing](#-contributing)
 - [🙋‍♂️ FAQ](#️-faq)
