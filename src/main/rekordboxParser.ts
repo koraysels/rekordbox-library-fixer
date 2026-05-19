@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as xml2js from 'xml2js';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 export interface Track {
   id: string;
@@ -75,6 +76,21 @@ export interface RekordboxLibrary {
   playlists: Playlist[];
 }
 
+// Rekordbox XML uses file://localhost/... URLs; fileURLToPath handles Windows drive letters correctly.
+function locationToPath(url: string): string {
+  if (!url) return '';
+  try {
+    return fileURLToPath(url);
+  } catch {
+    return decodeURIComponent(url).replace('file://localhost', '');
+  }
+}
+
+function pathToLocation(filePath: string): string {
+  if (!filePath) return '';
+  return pathToFileURL(filePath).toString().replace('file:///', 'file://localhost/');
+}
+
 export class RekordboxParser {
   private parser: xml2js.Parser;
   private builder: xml2js.Builder;
@@ -147,7 +163,7 @@ export class RekordboxParser {
       genre: trackNode.Genre,
       bpm: trackNode.AverageBpm ? parseFloat(trackNode.AverageBpm) : undefined,
       key: trackNode.Tonality,
-      location: decodeURIComponent(trackNode.Location || '').replace('file://localhost', ''),
+      location: locationToPath(trackNode.Location || ''),
       size: trackNode.Size ? parseInt(trackNode.Size) : undefined,
       bitrate: trackNode.BitRate ? parseInt(trackNode.BitRate) : undefined,
       duration: trackNode.TotalTime ? parseFloat(trackNode.TotalTime) : undefined,
@@ -311,7 +327,7 @@ export class RekordboxParser {
         Comments: track.comments || '',
         PlayCount: track.playCount?.toString() || '0',
         Rating: track.rating?.toString() || '0',
-        Location: 'file://localhost' + encodeURI(track.location).replace(/#/g, '%23'),
+        Location: pathToLocation(track.location),
         Remixer: track.remixer || '',
         Tonality: track.key || '',
         Label: track.label || '',
