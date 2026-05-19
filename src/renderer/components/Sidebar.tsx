@@ -2,6 +2,7 @@ import {Link} from '@tanstack/react-router';
 import {
     MapPin,
     Download,
+    BarChart2,
     Wrench,
     Copy,
     FolderOpen,
@@ -39,6 +40,13 @@ const navItems = [
         label: 'Maintenance',
         icon: Wrench,
         description: 'Library maintenance tools'
+    },
+    {
+        id: 'statistics' as TabType,
+        path: '/statistics',
+        label: 'Statistics',
+        icon: BarChart2,
+        description: 'Get insights for your library'
     }
 ];
 
@@ -118,7 +126,7 @@ export function Sidebar({
                                     >
                                         <item.icon className="w-4 h-4 flex-shrink-0"/>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-nowrap pr-1  ${activeTab && "text-xxs"}`}>
+                                            <p className={`text-nowrap pr-1 ${activeTab === item.id ? 'text-xxs' : ''}`}>
                                                 {item.label}
                                             </p>
                                         </div>

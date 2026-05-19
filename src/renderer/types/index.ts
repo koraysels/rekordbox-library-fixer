@@ -1,6 +1,6 @@
 // Global types and interfaces
 
-export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance';
+export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -137,6 +137,27 @@ export interface OwnershipFix {
   error?: string;
 }
 
+// Statistics-related types
+export interface DistributionItem {
+  label: string;
+  count: number;
+}
+export interface GenreDistributionItem extends DistributionItem {
+  titles: string[];
+}
+export interface BinnedItem {
+  bin: string | number;
+  count: number;
+}
+export interface StatisticsData {
+  totalTracks: number;
+  totalPlaylists: number;
+  genreDistribution: DistributionItem[]; // top 10, sorted desc
+  bpmDistribution: BinnedItem[]; // binned bpm counts
+  yearDistribution: DistributionItem[]; // year => count
+  specialTagCount: number; // tracks containing tags with special chars or 'www'
+}
+
 // Electron API types
 declare global {
   interface Window {
@@ -172,6 +193,7 @@ declare global {
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
       // Event listeners
       onShowAbout: (callback: () => void) => () => void;
+      onShowTutorial?: (callback: () => void) => () => void;
     };
   }
 }
