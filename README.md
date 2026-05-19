@@ -1,468 +1,350 @@
-# 🎧 Rekordbox Library Fixer
+# Rekordbox Library Fixer
 
 <div align="center">
 
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.4--alpha-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.0.5--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
-**🤞 Just trying to make DJs' lives a bit easier, one library at a time**
+**Just trying to make DJs' lives a bit easier, one library at a time**
 
-*Maybe this will help you clean up those pesky duplicates and find your missing tracks*
+*Find duplicates, fix missing tracks, and keep your DJ metadata intact*
 
 [Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-fixer/issues)
 
 </div>
 
-## 📚 Table of Contents
+---
 
-- [🎯 Why We Made This](#-why-we-made-this)
-- [🌟 What It Does](#-what-it-does)
-  - [🔍 Duplicate Detection](#-duplicate-detection)
-  - [📍 Track Relocation](#-track-relocation-new)
-  - [🛠️ Resolution Options](#️-resolution-options)
-  - [💾 Remembers Your Stuff](#-remembers-your-stuff-new)
-- [📱 Screenshots](#-screenshots)
-- [🚀 Quick Start](#-quick-start)
-  - [📥 Download & Install](#-download--install)
-  - [🎵 Using the Tool](#-using-the-tool)
-    - [Step 1: Export Your Rekordbox Library](#-step-1-export-your-rekordbox-library)
-    - [Step 2: Load Your Library](#-step-2-load-your-library)
-    - [Step 3: Find Duplicates](#-step-3-find-duplicates)
-    - [Step 4: Resolve Duplicates](#️-step-4-resolve-duplicates)
-    - [Step 5: Relocate Missing Tracks](#-step-5-relocate-missing-tracks-optional)
-    - [Step 6: Import Back to Rekordbox](#-step-6-import-back-to-rekordbox)
-     - [🌟 What It Does](#-what-it-does)
-     - [🔍 Duplicate Detection](#-duplicate-detection)
-     - [📍 Track Relocation](#-track-relocation)
-     - [📊 Statistics](#-statistics-new)
-    
-     ### 📍 **Track Relocation**
-     - **🔎 Smart Search**: Tries to find your moved music files automatically
-     ...
-     - **⚠️ Unlocatable Tracking**: Marks tracks that couldn't be auto-relocated so you can retry or handle them manually
-    
-    ### 📊 **Statistics** *(NEW!)*
-    - **Total tracks** and **total playlists** counters
-    - **Top 10 genres** by track count
-    - **BPM distribution** (binned, default 20bpm buckets)
-    - **Year distribution** (tracks grouped by year)
-    - **Special tag detection**: tags containing `www`, URLs or non-alphanumeric characters
-    - Accessible from the new `Statistics` tab in the sidebar
-    - See `docs/statistics.md` for details on computation and charting
-    
-     #### 📥 **Step 6: Import Back to Rekordbox**
-     After cleaning your library with this tool, you'll want to import the updated XML back to Rekordbox. Here's the complete process with visual guides:
-    
-    #### 📊 **Step 6: Open Statistics**
-    1. **Open the app** and click the `Statistics` tab in the sidebar
-    2. **View totals and charts**: total tracks, total playlists, top genres, BPM bins, year distribution, special tag counts
-    3. **See `docs/statistics.md`** for full details on computation (binning rules, tag parsing) and chart examples
+## Table of Contents
 
-
-- [🛠️ For Developers](#️-for-developers)
-- [🤝 Contributing](#-contributing)
-- [🙋‍♂️ FAQ](#️-faq)
-- [🛣️ Roadmap](#️-roadmap)
-- [🆘 Support & Community](#-support--community)
-- [📜 License](#-license)
-- [🙏 Acknowledgments](#-acknowledgments)
+- [Why This Exists](#why-this-exists)
+- [What It Does](#what-it-does)
+- [Screenshots](#screenshots)
+- [Quick Start](#quick-start)
+  - [Download & Install](#download--install)
+  - [Using the Tool](#using-the-tool)
+- [For Developers](#for-developers)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+- [Roadmap](#roadmap)
+- [Support](#support)
+- [License](#license)
 
 ---
 
-## 🎯 Why We Made This
+## Why This Exists
 
-Look, we've all been there. You're prepping for a gig and suddenly realize you have 47 versions of "One More Time" and half your tracks show up as "!" because you moved your music folder again. Frustrating, right?
+You're prepping for a gig and realize you have 47 versions of "One More Time" and half your tracks show as "!" because you reorganized your music folder. This tool handles those two problems: duplicate detection and track relocation.
 
-This little tool is just our attempt to help fellow DJs deal with the chaos. Will it solve all your problems? Probably not. But hopefully it'll save you some time and headaches.
-I am aware of other (commercial) tools available, like the excellent Rekordbox Collection Tool (RCT) by MixMasterG, but is Mac only and not open-source. 
+I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG, but it's macOS-only and closed source. This is free and cross-platform.
 
-### 😤 The Stuff That's Annoying:
-- 🎵 **Too Many Duplicates**: Same track, but with slightly different names, cluttering everything
-- 📁 **Missing Files**: You know, those dreaded "!" tracks that mess up your flow ![rekordbox-missing-track.png](screenshots/rekordbox-missing-track.png)   
-- ⏰ **Time Sink**: Spending more time organizing music than actually mixing it
-- 💸 **Expensive Tools**: Why pay hundreds when it should just... work?
-- 🔒 **No Control**: Can't tweak things the way *you* want them
-
-### ✨ What We're Trying to Do:
-Make a simple, free tool that might help you get your library back under control. No promises, but it's worked for us and hopefully will for you too! 🤞
+**The common pain points:**
+- Duplicate tracks with slightly different names cluttering your library
+- Missing file references ("!" tracks) after moving your music folder
+- Spending more time organizing than mixing
 
 ---
 
-## 🌟 What It Does
+## What It Does
 
-### 🔍 **Duplicate Detection** 
-- **🎵 Audio Fingerprinting**: Finds identical tracks even when they have different names (pretty cool, right?)
-- **📝 Metadata Matching**: Compares artist, title, BPM, key - whatever fields you want
-- **🎯 Confidence Scoring**: Shows how sure we are that tracks are actually duplicates
-- **🎛️ Your Rules**: Tweak the settings however you like - it's your library!
+### Duplicate Detection
+- **Audio fingerprinting**: Finds identical tracks even with different filenames
+- **Metadata matching**: Compares artist, title, BPM, key — configurable
+- **Confidence scoring**: Shows how certain the match is
+- **Flexible settings**: Adjust thresholds to suit your library
 
-### 📍 **Track Relocation** *(NEW!)*
-- **🔎 Smart Search**: Tries to find your moved music files automatically  
-- **🎯 Similarity Matching**: Matches tracks even when filenames are different
-- **📁 Bulk Operations**: Fix hundreds of tracks at once (if you're lucky!)
-- **⚡ Fast Enough**: Scans through lots of files without making you wait forever
-- **⚠️ Unlocatable Tracking**: Marks tracks that couldn't be auto-relocated so you can retry or handle them manually
+### Track Relocation
+- **Smart search**: Automatically finds moved music files
+- **Similarity matching**: Matches tracks even when filenames differ
+- **Bulk operations**: Fix hundreds of missing tracks at once
+- **Unlocatable tracking**: Marks tracks that couldn't be auto-relocated for manual review
 
-### 🛠️ **Resolution Options**
-- **🏆 Quality-Based**: Keeps the highest bitrate versions (usually what you want)
-- **📅 Date-Based**: Keep the newest or oldest files - your choice  
-- **📂 Folder Preferences**: Prioritize tracks from certain folders (like keeping FLAC over MP3)
-- **✋ Manual Mode**: Check everything yourself if you're the careful type
+### Resolution Options
+- **Quality-based**: Keeps the highest bitrate version
+- **Date-based**: Keep newest or oldest files
+- **Folder preferences**: Prioritize tracks from certain directories (e.g. FLAC over MP3)
+- **Manual mode**: Review everything yourself
 
-### 💾 **Remembers Your Stuff** *(NEW!)*
-- **🔄 Picks Up Where You Left Off**: No need to start over if you close the app
-- **📊 IndexedDB Storage**: Built-in browser storage - no external database needed!
-- **⚡ Quick Loading**: Opens right back to where you were
-- **🎯 Per-Library**: Keeps results separate for each of your Rekordbox libraries
+### Session Persistence
+- Picks up where you left off if you close the app
+- Uses IndexedDB (no external database needed)
+- Results are stored per-library
 
 ---
 
-## 📱 Screenshots
+## Screenshots
 
-### 🏠 **Main Dashboard**
-*The main screen - nothing fancy, just gets the job done*
+### Main Dashboard
 
 <img src="screenshots/01-main-interface.png" alt="Main Interface" width="600" />
 
-### 🔍 **Duplicate Detection**
-*This is where the magic happens (hopefully)*
+### Duplicate Detection
 
-<img src="screenshots/03-duplicate-detection.png" alt="Library with Data" width="600" />
+<img src="screenshots/03-duplicate-detection.png" alt="Duplicate Detection" width="600" />
 
-### 📍 **Track Relocation**
-*For when your tracks decide to play hide and seek*
+### Track Relocation
 
 <img src="screenshots/04-track-relocation.png" alt="Track Relocation" width="600" />
 
-### 📊️ **Statistics** *(NEW!)*
-*See how your library is doing*
+### Statistics
 
 <img src="screenshots/06-statistics.png" alt="Statistics" width="400" />
 
-
-### ⚙️ **Settings**
-*Tweak things until they work the way you want*
+### Settings
 
 <img src="screenshots/02-settings-library.png" alt="Settings Panel" width="400" />
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### 📥 **Download & Install**
+### Download & Install
 
-#### Option 1: Download Pre-built App *(Recommended)*
+#### Option 1: Pre-built App (Recommended)
+
 1. Go to [Releases](https://github.com/koraysels/rekordbox-library-fixer/releases)
-2. Download the latest version for your platform:
-   - **Windows**: `rekordbox-library-fixer-Setup-0.0.4-alpha.exe`
-   - **macOS**: `rekordbox-library-fixer-0.0.4-alpha.dmg`
-3. Install and launch the app
-4. Export you collection as xml using Rekordbox.  
-![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)  
-5. Load your Rekordbox XML file and start cleaning!  
+2. Download the right file for your system:
 
+**Windows:**
+- `Rekordbox.Library.Fixer.Setup.x.x.x-alpha.exe` — installer (recommended)
+- `Rekordbox.Library.Fixer-x.x.x-alpha-win.zip` — portable
+
+**macOS:**
+- `Rekordbox.Library.Fixer-x.x.x-alpha-universal.dmg` — works on both Intel and Apple Silicon Macs
+- `Rekordbox.Library.Fixer-x.x.x-alpha-arm64.dmg` — Apple Silicon only (M1/M2/M3/M4)
+- `Rekordbox.Library.Fixer-x.x.x-alpha.dmg` — Intel only (pre-2020 Macs)
+
+> **Not sure which Mac you have?** Click the Apple menu > About This Mac. If it says "Intel" under Processor/Chip, use the Intel DMG or the universal one. If it says "Apple M1/M2/M3", use the arm64 or universal one.
+
+**Linux:**
+- `rekordbox-library-manager-x.x.x-alpha.AppImage` — universal AppImage
+- `rekordbox-library-manager_x.x.x-alpha_arm64.deb` — Debian/Ubuntu
+
+3. Install and launch
+
+#### macOS: Opening an Unsigned App
+
+Since this app isn't signed with an Apple Developer certificate, macOS may warn you about it. The `xattr` command in Terminal removes the quarantine flag:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Rekordbox\ Library\ Fixer.app
+```
+
+Alternatively, right-click the app and choose **Open**, then click **Open** in the dialog that appears.
 
 #### Option 2: Build from Source
+
 ```bash
-# Clone the repository
 git clone https://github.com/koraysels/rekordbox-library-fixer.git
 cd rekordbox-library-fixer
-
-# Install dependencies
 npm install
-
-# Launch development version
 npm run dev
 ```
 
-### 🎵 **Using the Tool**
+---
 
-#### 📤 **Step 1: Export Your Rekordbox Library**
+### Using the Tool
 
-Before using this tool, you need to export your Rekordbox collection as an XML file:
+#### Step 1: Export Your Rekordbox Library
 
-1. **Open Rekordbox** on your computer
-2. **Navigate to File Menu**: 
-   - Click **File** in the top menu bar
-   - Select **Export Collection in xml format**
-   - 
-    ![Export Menu](screenshots/export-collection-as-xml.png)
+1. Open Rekordbox
+2. Go to **File → Export Collection in xml format**
 
-3. **Choose Export Location**:
-   - A dialog box will appear
-   - Choose where to save your XML file (Desktop is recommended for easy access)
-   - Name your file (e.g., "my-library-backup.xml")
-   - Click **Save**
-   
-4. **Wait for Export**:
-   - Rekordbox will export your entire collection
-   - This may take a few minutes for large libraries (10,000+ tracks)
-   - You'll see a progress indicator
+   ![Export Menu](screenshots/export-collection-as-xml.png)
 
-> **💡 Pro Tip**: Export your library regularly as a backup! This XML file contains all your playlists, cue points, and track metadata.
+3. Save the XML file somewhere easy to find (e.g. Desktop)
+4. Large libraries (10,000+ tracks) may take a few minutes to export
 
-#### 📁 **Step 2: Load Your Library**
+> **Tip**: Export your library regularly as a backup — the XML contains all your playlists, cue points, and track metadata.
 
-You can load your library in two convenient ways:
+#### Step 2: Load Your Library
 
-**Option A: Drag & Drop** *(Easy & Fast)*
-1. **Launch Rekordbox Library Fixer**
-2. **Simply drag your XML file** directly onto the application window
-3. **Drop it anywhere** on the interface - the app will automatically detect and load it
-4. **Wait for parsing** - the tool will analyze your library structure
+**Drag & Drop:**
+1. Launch Rekordbox Library Fixer
+2. Drag your XML file onto the app window
 
-<img src="screenshots/06-drag-drop-library.png" alt="Drag & Drop Interface" width="600" />
+<img src="screenshots/06-drag-drop-library.png" alt="Drag and Drop" width="600" />
 
-**Option B: Browse for File** *(Traditional)*
-1. **Launch Rekordbox Library Fixer**
-2. **Click "Browse for XML File"** in the main interface  
-3. **Select your XML file** from where you saved it
-4. **Wait for parsing** - the tool will analyze your library structure
+**Browse:**
+1. Launch the app
+2. Click **Browse for XML File** and select your file
 
-#### 🔍 **Step 3: Find Duplicates**
+#### Step 3: Find Duplicates
 
-1. **Go to "Duplicate Detection" tab**
-2. **Configure your detection settings** (optional):
-   - Choose between Audio Fingerprinting and/or Metadata Matching
-   - Select which metadata fields to compare
-   - Set path preferences if you have organized folders
-3. **Click "Scan for Duplicates"**
-4. **Review the results** - duplicates will be grouped by similarity
+1. Go to the **Duplicate Detection** tab
+2. Configure detection settings (optional): audio fingerprinting, metadata fields, path preferences
+3. Click **Scan for Duplicates**
+4. Review the grouped results
 
-#### 🛠️ **Step 4: Resolve Duplicates**
+#### Step 4: Resolve Duplicates
 
-1. **Review found duplicates** - each group shows similar tracks
-2. **Select which duplicates to resolve** (or use "Select All")
-3. **Choose resolution strategy**:
-   - **Keep Highest Quality**: Automatically keeps best bitrate/quality
-   - **Keep Newest**: Keeps most recently modified files
-   - **Keep Preferred Path**: Prioritizes tracks from specific folders
-   - **Manual**: Review each duplicate individually
-4. **Click "Resolve Selected"** 
-5. **Confirm the operation** - a backup will be created automatically
+1. Review the duplicate groups
+2. Select duplicates to resolve (or **Select All**)
+3. Choose a resolution strategy:
+   - **Keep Highest Quality** — keeps best bitrate
+   - **Keep Newest** — most recently modified
+   - **Keep Preferred Path** — prioritizes specific folders
+   - **Manual** — review each pair yourself
+4. Click **Resolve Selected** and confirm
 
-#### 📍 **Step 5: Relocate Missing Tracks** *(Optional)*
+#### Step 5: Relocate Missing Tracks (Optional)
 
-If you have tracks showing as "!" (missing) in Rekordbox:
+If tracks show as "!" in Rekordbox:
 
-1. **Go to "Track Relocator" tab**
-2. **Add search directories** where your music might be located
-3. **Configure search settings** (depth, file types, similarity threshold)
-4. **Click "Scan for Missing Tracks"**
-5. **Review relocation candidates** 
-6. **Apply relocations** for the matches you want to fix
+1. Go to the **Track Relocator** tab
+2. Add search directories where your music might be
+3. Configure search depth and similarity threshold
+4. Click **Scan for Missing Tracks**
+5. Review candidates and apply the relocations you want
 
-#### 📥 **Step 6: Import Back to Rekordbox**
+#### Step 6: Import Back to Rekordbox
 
-After cleaning your library with this tool, you'll want to import the updated XML back to Rekordbox. Here's the complete process with visual guides:
+**Enable XML import in Rekordbox:**
 
-##### 🎯 **Method 1: Complete Library Replacement** *(Recommended)*
-
-**Step A: Enable XML Import in Rekordbox**
-
-Before you can import XML files, you need to enable the XML import feature in Rekordbox:
-
-1. **Open Rekordbox** 
-2. **Go to View Settings**: Navigate to the top menu and access the view preferences
-3. **Enable "rekordbox xml" in Tree View**: Make sure the checkbox for "rekordbox xml" is checked
+1. Open Rekordbox
+2. Go to view preferences and enable **"rekordbox xml"** in the Tree View
 
 <img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" width="600" />
 
-> **💡 Important**: The "rekordbox xml" option must be enabled in the Tree View section for XML import to work properly.
+**Import the cleaned file:**
 
-**Step B: Import Your Cleaned XML File**
+1. Navigate to the **Database** tab
+2. Select your updated XML file (saved with `_cleaned` suffix by the tool)
 
-1. **Navigate to Database Tab**: Click on the "Database" tab in Rekordbox
-2. **Access Library Sync**: Look for the "Library Sync" section 
-3. **Select Your Updated XML**: Click "Browse" and select your cleaned XML file (the tool creates a new file with "_cleaned" suffix)
+<img src="screenshots/import-xml-step-2.jpg" alt="Import XML" width="600" />
 
-<img src="screenshots/import-xml-step-2.jpg" alt="Import XML File" width="600" />
+3. Keep **BPM change points** checked to preserve beatgrid data
+4. Click **Import** and wait for processing
 
-4. **Configure Import Options**:
-   - ✅ **BPM change points**: Keep this checked to preserve tempo analysis
-   - ✅ **Select your updated XML file**: Make sure you're importing the correct cleaned file
-5. **Click Import**: Rekordbox will process your cleaned library
-6. **Wait for Processing**: This may take several minutes for large libraries
+**Import playlists:**
 
-**Step C: Import Your Playlists**
-
-After the XML file is imported, you need to import the playlists:
-
-1. **Navigate to the rekordbox xml section** in the left sidebar
-2. **Expand the rekordbox xml tree** to see your imported library
-3. **Right-click on "Playlists"** under the rekordbox xml section
-4. **Select "Import Playlist"** from the context menu
+1. In the left sidebar, find the **rekordbox xml** section
+2. Right-click **Playlists** and select **Import Playlist**
 
 <img src="screenshots/import-xml-step-3.jpg" alt="Import Playlists" width="400" />
 
-5. **Confirm the import**: Your playlists will be imported with all tracks properly linked
-6. **Verify playlist contents**: Check that all playlists now show the correct track counts
+**Verify:**
+- Check playlist track counts are correct
+- Confirm duplicates are removed
+- Test that relocated tracks play
 
-##### ⚠️ **Method 2: Alternative Import Process**
-
-If the above method doesn't work, try this alternative:
-
-1. **In Rekordbox**: Go to **File → Import → Collection** 
-2. **Select the updated XML file** 
-3. **Choose import options**:
-   - ✅ **Replace current collection** (recommended for cleanest results)
-   - ⚠️ **Merge with current collection** (if you want to keep existing data)
-4. **Wait for import** - Rekordbox will process your cleaned library
-
-##### 🔍 **Verify Your Import**
-
-After importing, verify that everything worked correctly:
-
-1. **Check Playlist Counts**: Your playlists should now show the correct number of tracks (no more empty playlists!)
-2. **Verify Duplicate Removal**: Duplicates should be gone from your collection
-3. **Test Relocated Tracks**: Previously missing tracks should now play correctly
-4. **Check Metadata**: All cues, loops, and beatgrids should be preserved
-
-> **⚠️ Critical Backup Reminder**: Always backup your original Rekordbox database before importing! You can find your Rekordbox database files in:
-> - **Windows**: `%APPDATA%\Pioneer\rekordbox`  
-> - **macOS**: `~/Library/Pioneer/rekordbox`
->
-> The tool creates XML backups automatically, but backing up your entire Rekordbox database is extra protection.
+> **Backup reminder**: Before importing, back up your Rekordbox database:
+> - Windows: `%APPDATA%\Pioneer\rekordbox`
+> - macOS: `~/Library/Pioneer/rekordbox`
 
 ---
 
-## 🛠️ **For Developers**
+## For Developers
 
-### 🏗️ **Tech Stack**
+### Tech Stack
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
 - **Backend**: Electron + Node.js
-- **Storage**: Dexie.js (IndexedDB) - no external database needed!
-- **State Management**: Zustand with persistence
+- **Storage**: Dexie.js (IndexedDB)
+- **State**: Zustand with persistence
 - **Testing**: Vitest + Playwright
 - **Build**: Vite + electron-builder
 
-### 🧪 **Development Commands**
+### Development Commands
 ```bash
 # Development
-npm run dev              # Launch app with hot reload
-npm run test:unit        # Run unit tests
-npm run test:e2e         # Run end-to-end tests
+npm run dev              # Launch with hot reload
+npm run test:unit        # Unit tests
+npm run test:e2e         # End-to-end tests
 
 # Building
-npm run build            # Build for production
-npm run dist:mac         # Create macOS installer
-npm run dist:win         # Create Windows installer
-npm run dist:all         # Build for all platforms
+npm run build            # Production build
+npm run dist:mac         # macOS installer
+npm run dist:win         # Windows installer
+npm run dist:all         # All platforms
 ```
 
-### 🏛️ **Architecture**
+### Architecture
 ```
 src/
 ├── main/           # Electron main process
 ├── renderer/       # React frontend
-├── shared/         # Shared types & utilities
+├── shared/         # Shared types and utilities
 └── tests/          # Test suites
 ```
 
 ---
 
-## 🤝 **Contributing**
+## Contributing
 
-We welcome contributions from the DJ community! Whether you're a developer or just a DJ with ideas:
+### For DJs:
+- [Report bugs](https://github.com/koraysels/rekordbox-library-fixer/issues)
+- [Suggest features](https://github.com/koraysels/rekordbox-library-fixer/issues)
+- Share your workflow and use cases
+- Star the repo to help other DJs find it
 
-### 🎵 **For DJs**:
-- 🐛 [Report bugs](https://github.com/koraysels/rekordbox-library-fixer/issues) you encounter
-- 💡 [Suggest features](https://github.com/koraysels/rekordbox-library-fixer/issues) you'd love to see
-- 📝 Share your workflow and use cases
-- ⭐ Star the repo to help other DJs find it
-
-### 👨‍💻 **For Developers**:
+### For Developers:
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Follow the [development setup](#-for-developers)
-4. Write tests for your changes
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Write tests for your changes
+4. Submit a pull request
 
-### 🎯 ** Features we could use your help with**:
-- [ ] **Serato/VirtualDJ support**: Expand beyond Rekordbox
-- [ ] **Playlist duplicate detection**: Find duplicates in playlists
-- [ ] **Audio analysis**: BPM/key detection for better matching
-- [ ] **Batch processing**: Handle multiple libraries
-- [ ] **Plugin system**: Custom duplicate detection algorithms
+### Areas needing help:
+- Serato/VirtualDJ format support
+- Playlist duplicate detection
+- Audio analysis (BPM/key detection)
+- Batch processing for multiple libraries
 
 ---
 
-## 🙋‍♂️ **FAQ**
+## FAQ
 
-### ❓ **Is this safe to use with my library?**
-**Yes!** The tool creates backups before making any changes. Your original files are never modified directly.
+**Is this safe to use with my library?**
+Yes. The tool creates backups before making changes. Your original files are never modified directly.
 
-### ❓ **Does this work with large libraries?**
-**Absolutely!** Tested with libraries containing 50,000+ tracks. Uses Indexdb (Dexie.js) for performance and persistent storage.
+**Does it work with large libraries?**
+Yes. Tested with libraries containing 50,000+ tracks. Uses IndexedDB (via Dexie.js) for performance and persistent storage.
 
-### ❓ **Can I undo changes?**
-**Yes!** Every operation creates a backup XML file. You can always restore your library to its previous state.
+**Can I undo changes?**
+Yes. Every operation creates a backup XML file you can restore from.
 
-### ❓ **What about other DJ software?**
-Currently supports Rekordbox XML format. Serato and VirtualDJ might be supported in future versions if enough people want it.
+**What about other DJ software?**
+Currently supports Rekordbox XML format. Serato and VirtualDJ may be added if there's enough interest.
 
-### ❓ **Is this really free?**
-**100% free for personal use!** No ads, no subscriptions, no limits. Open source but protected against commercial repackaging.
-
----
-
-## 🛣️ **Roadmap**
-
-### 📅 **v0.0.3** *(Next Release)*
-- [ ] **Playlist Management**: Duplicate detection within playlists
-- [ ] **Better UI**: Improved design and user experience
-- [ ] **Performance**: Even faster scanning for large libraries
-- [ ] **Auto-updater**: Stay updated automatically
-
-### 📅 **v0.1.0** *(Major Release)*
-- [ ] **Multi-format Support**: Serato, VirtualDJ, Traktor
-- [ ] ***Maintenance Mode**
-- [ ] ***Auto Import Mode*** import new tracks, preventing duplicates and replacing lower bitrate tracks with better quality ones. Update all playlists to include the new, higher quality audio file
-
-### 📅 **v1.0.0** *(Full Release)*
-- [ ] **Stability & Performance is fine-tuned**: 
----
-
-## 🆘 **Support & Community**
-
-### 💬 **Get Help**:
-- 📖 [Check the Documentation](CLAUDE.md)
-- 🐛 [Report Issues](https://github.com/koraysels/rekordbox-library-fixer/issues)
-- 💡 [Request Features](https://github.com/koraysels/rekordbox-library-fixer/discussions)
-
-### 🌟 **Show Support**:
-- ⭐ **Star this repository** to help other DJs find it
-- ☕ **[Buy me a coffee on Ko-fi](https://ko-fi.com/koraysels)** if this tool saved you time
-- 🐦 **Share on social media** with your DJ friends
-- 💝 **Contribute code** or documentation improvements
-- 🎵 **Tell other DJs** about this tool
+**Is it free?**
+Free for personal use. No ads, no subscriptions, no limits.
 
 ---
 
-## 📜 **License**
+## Roadmap
 
-This project is licensed under a **custom non-commercial license** - see the [LICENSE](LICENSE) file for details.
+**v0.0.6:**
+- Playlist duplicate detection
+- Improved UI
 
-**What this means for you:**
-- ✅ **Free personal use** - use it for your own music libraries
-- ✅ **Study the code** - learn from it, contribute improvements  
-- ✅ **Internal business use** - use it within your organization
-- ✅ **Share with friends** - distribute freely for non-commercial use
-- ❌ **No commercial repackaging** - can't sell it or offer as paid service
-- ❌ **No proprietary versions** - modifications must stay open source
+**v0.1.0:**
+- Multi-format support (Serato, VirtualDJ, Traktor)
+- Auto-import mode
+
+**v1.0.0:**
+- Stability and performance polish
 
 ---
 
-## 🙏 **Acknowledgments**
+## Support
 
-- **Pioneer DJ** for creating Rekordbox and the XML export format
-- **The open-source community** for the incredible libraries that make this possible
-- **Beta testers** from the DJ community who helped refine this tool
-- **All DJs** who struggle with library management - this one's for you! 🎵
+- [Report Issues](https://github.com/koraysels/rekordbox-library-fixer/issues)
+- [Request Features](https://github.com/koraysels/rekordbox-library-fixer/discussions)
+- [Ko-fi](https://ko-fi.com/koraysels) — if this saved you time
+
+---
+
+## License
+
+Custom non-commercial license — see [LICENSE](LICENSE) for details.
+
+- Free for personal use
+- Study and contribute to the code
+- Internal business use is fine
+- No commercial repackaging or selling
 
 ---
 
@@ -470,8 +352,6 @@ This project is licensed under a **custom non-commercial license** - see the [LI
 
 **Made by a DJ who got tired of messy libraries**
 
-*If this thing actually helped you, maybe give it a star so other DJs can find it? No pressure though! 😊*
-
-[⬆️ Back to Top](#-rekordbox-library-fixer)
+[Back to Top](#rekordbox-library-fixer)
 
 </div>

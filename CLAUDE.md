@@ -271,22 +271,33 @@ Always use this format for GitHub releases:
 
 ---
 
-## ⚠️ macOS Users – Important Note
-Since this app is **not signed or notarized by Apple**, macOS may warn that it is “damaged” or “cannot be opened.”  
-This is normal for unsigned apps and does **not mean the app is broken**.
+## macOS – Which file to download
 
-### How to open the app:
-#### Option 1 – Right-click Open (Recommended)
-1. Download and install the `.dmg` or `.zip`.
-2. Right-click the app → **Open**.
-3. macOS will show a warning, but you’ll also see an **Open** button.
-4. Click it. From now on, macOS will remember the app as safe.
+| Your Mac | File to download |
+|----------|-----------------|
+| Apple Silicon (M1/M2/M3/M4) | `...-arm64.dmg` |
+| Intel (2019 and earlier) | `....dmg` (no arch suffix) |
+| Not sure | `...-universal.dmg` (works on both) |
 
-#### Option 2 – Remove quarantine via Terminal
-If you prefer, you can also run this command after installing:
+**Not sure which chip you have?** Click the Apple menu → About This Mac. It will say “Apple M1” (or M2/M3/M4) or “Intel Core”.
+
+---
+
+## macOS – Opening an unsigned app
+
+Since this app is not signed with an Apple Developer certificate, macOS may warn you. To open it:
+
+**Option 1 – Remove quarantine via Terminal (most reliable):**
 ```bash
-xattr -dr com.apple.quarantine /Applications/Rekordbox\ Library\ Manager.app
+xattr -dr com.apple.quarantine /Applications/Rekordbox\ Library\ Fixer.app
 ```
+
+**Option 2 – Right-click to open:**
+1. Right-click the app → **Open**
+2. Click **Open** in the warning dialog
+3. macOS will remember the app as safe from now on
+
+If you see “this app is not supported on this Mac” rather than a security warning, you’ve downloaded the wrong architecture — use the universal DMG instead.
 
 ---
 *Built with ❤️ for DJs*

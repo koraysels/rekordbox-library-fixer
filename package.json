@@ -107,6 +107,11 @@
       "dist/main/**/*",
       "package.json"
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "koraysels",
+      "repo": "rekordbox-library-fixer"
+    },
     "mac": {
       "category": "public.app-category.music",
       "icon": "assets/icons/icon.icns",
@@ -116,14 +121,16 @@
           "target": "dmg",
           "arch": [
             "x64",
-            "arm64"
+            "arm64",
+            "universal"
           ]
         },
         {
           "target": "zip",
           "arch": [
             "x64",
-            "arm64"
+            "arm64",
+            "universal"
           ]
         }
       ]
