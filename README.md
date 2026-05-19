@@ -156,10 +156,10 @@ Make a simple, free tool that might help you get your library back under control
 ### 📥 **Download & Install**
 
 #### Option 1: Download Pre-built App *(Recommended)*
-1. Go to [Releases](https://github.com/koraysels/rekordbox-library-manager/releases)
+1. Go to [Releases](https://github.com/koraysels/rekordbox-library-fixer/releases)
 2. Download the latest version for your platform:
-   - **Windows**: `Rekordbox-Library-Manager-Setup-0.0.4-alpha.exe`
-   - **macOS**: `Rekordbox-Library-Manager-0.0.4-alpha.dmg`
+   - **Windows**: `rekordbox-library-fixer-Setup-0.0.4-alpha.exe`
+   - **macOS**: `rekordbox-library-fixer-0.0.4-alpha.dmg`
 3. Install and launch the app
 4. Export you collection as xml using Rekordbox.  
 ![export-collection-as-xml.png](screenshots/export-collection-as-xml.png)  
@@ -169,8 +169,8 @@ Make a simple, free tool that might help you get your library back under control
 #### Option 2: Build from Source
 ```bash
 # Clone the repository
-git clone https://github.com/koraysels/rekordbox-library-manager.git
-cd rekordbox-library-manager
+git clone https://github.com/koraysels/rekordbox-library-fixer.git
+cd rekordbox-library-fixer
 
 # Install dependencies
 npm install
@@ -370,8 +370,8 @@ src/
 We welcome contributions from the DJ community! Whether you're a developer or just a DJ with ideas:
 
 ### 🎵 **For DJs**:
-- 🐛 [Report bugs](https://github.com/koraysels/rekordbox-library-manager/issues) you encounter
-- 💡 [Suggest features](https://github.com/koraysels/rekordbox-library-manager/issues) you'd love to see
+- 🐛 [Report bugs](https://github.com/koraysels/rekordbox-library-fixer/issues) you encounter
+- 💡 [Suggest features](https://github.com/koraysels/rekordbox-library-fixer/issues) you'd love to see
 - 📝 Share your workflow and use cases
 - ⭐ Star the repo to help other DJs find it
 
@@ -431,8 +431,8 @@ Currently supports Rekordbox XML format. Serato and VirtualDJ might be supported
 
 ### 💬 **Get Help**:
 - 📖 [Check the Documentation](CLAUDE.md)
-- 🐛 [Report Issues](https://github.com/koraysels/rekordbox-library-manager/issues)
-- 💡 [Request Features](https://github.com/koraysels/rekordbox-library-manager/discussions)
+- 🐛 [Report Issues](https://github.com/koraysels/rekordbox-library-fixer/issues)
+- 💡 [Request Features](https://github.com/koraysels/rekordbox-library-fixer/discussions)
 
 ### 🌟 **Show Support**:
 - ⭐ **Star this repository** to help other DJs find it
@@ -472,6 +472,6 @@ This project is licensed under a **custom non-commercial license** - see the [LI
 
 *If this thing actually helped you, maybe give it a star so other DJs can find it? No pressure though! 😊*
 
-[⬆️ Back to Top](#-rekordbox-library-manager)
+[⬆️ Back to Top](#-rekordbox-library-fixer)
 
 </div>
