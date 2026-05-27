@@ -286,6 +286,10 @@ export class DuplicateDetector {
     // Bitrate breaks ties within the same lossless/lossy tier.
     if (track.bitrate) {score += track.bitrate * 10;}
 
+    // Sample rate matters most for lossless files (96kHz > 44.1kHz), scaled to
+    // sit between bitrate and file-size in influence.
+    if (track.sampleRate) {score += track.sampleRate / 10;}
+
     // File size as secondary indicator
     if (track.size) {score += track.size / 1000000;} // MB
 
