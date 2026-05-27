@@ -202,7 +202,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div>
                   <span className="font-medium text-te-grey-800">Keep Highest Quality</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks with higher bitrate and file size</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Prefers lossless formats (FLAC, WAV, AIFF), then higher bitrate and sample rate</p>
                 </div>
               </label>
 
