@@ -15,11 +15,9 @@ import { useFileOperations } from '../hooks';
 import { ConfidenceBadge } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
 
-const LOSSLESS_EXTENSIONS = ['.flac', '.wav', '.aiff', '.aif'];
-const isLossless = (loc: string) => {
-  const ext = '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
-  return LOSSLESS_EXTENSIONS.includes(ext);
-};
+const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
+const isUniversalLossless = (loc: string) => ['.wav', '.aiff', '.aif'].includes(_ext(loc));
+const isFlac = (loc: string) => _ext(loc) === '.flac';
 
 interface DuplicateItemProps {
   duplicate: any;
@@ -47,13 +45,15 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
     if (resolutionStrategy === 'keep-highest-quality') {
       const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
+      const tier = (t: any) => {
+        if (isUniversalLossless(t.location || '')) return 2;
+        if (preferLossless && isFlac(t.location || '')) return 2;
+        return 0;
+      };
       recommended = duplicate.tracks.reduce((best: any, current: any) => {
-        if (preferLossless) {
-          const bestLossless = isLossless(best.location || '');
-          const currentLossless = isLossless(current.location || '');
-          if (currentLossless && !bestLossless) return current;
-          if (!currentLossless && bestLossless) return best;
-        }
+        const bt = tier(best); const ct = tier(current);
+        if (ct > bt) return current;
+        if (bt > ct) return best;
         return qualityScore(current) > qualityScore(best) ? current : best;
       });
     } else if (resolutionStrategy === 'keep-newest') {
