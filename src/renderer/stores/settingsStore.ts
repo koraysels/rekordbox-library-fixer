@@ -24,13 +24,14 @@ interface SettingsState {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set, get) => ({
+    (set, _get) => ({
       // Initial state
       scanOptions: {
         useFingerprint: true,
         useMetadata: false,
         metadataFields: ['artist', 'title', 'duration'],
-        pathPreferences: []
+        pathPreferences: [],
+        preferLossless: false
       },
       resolutionStrategy: 'keep-highest-quality',
       relocationOptions: {
