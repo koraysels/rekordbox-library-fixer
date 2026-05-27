@@ -7,6 +7,7 @@ export interface ConsolidateOptions {
   destination: string;
   mode: 'copy' | 'move';
   conflictResolution: 'skip' | 'overwrite' | 'quality';
+  preferLossless?: boolean;
 }
 
 export interface ConsolidateProgress {
@@ -54,10 +55,10 @@ export class LibraryConsolidator {
   }
 
   // Quick quality score from extension + file size — no async metadata needed.
-  private qualityScore(location: string): number {
+  private qualityScore(location: string, preferLossless = false): number {
     try {
       const size = fs.statSync(location).size;
-      return (isLossless(location) ? 1_000_000 : 0) + size / 1_000_000;
+      return (preferLossless && isLossless(location) ? 1_000_000 : 0) + size / 1_000_000;
     } catch {
       return 0;
     }
@@ -136,7 +137,7 @@ export class LibraryConsolidator {
             continue;
           }
           if (options.conflictResolution === 'quality') {
-            if (this.qualityScore(dest) >= this.qualityScore(src)) {
+            if (this.qualityScore(dest, options.preferLossless) >= this.qualityScore(src, options.preferLossless)) {
               result.skipped++;
               result.locationUpdates[src] = dest;
               continue;

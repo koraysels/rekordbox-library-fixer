@@ -37,6 +37,7 @@ export const MaintenancePage: React.FC = () => {
   const [destination, setDestination] = useState('');
   const [mode, setMode] = useState<Mode>('copy');
   const [conflictResolution, setConflictResolution] = useState<ConflictResolution>('skip');
+  const [preferLossless, setPreferLossless] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -95,7 +96,7 @@ export const MaintenancePage: React.FC = () => {
         operationId,
         tracks,
         libraryPath: libraryPath ?? '',
-        options: { destination, mode, conflictResolution },
+        options: { destination, mode, conflictResolution, preferLossless },
       });
       if (res.success) {
         setResult(res.data);
@@ -108,7 +109,7 @@ export const MaintenancePage: React.FC = () => {
       setError('Consolidation failed');
       setPhase('idle');
     }
-  }, [destination, hasLibrary, tracks, libraryPath, mode, conflictResolution]);
+  }, [destination, hasLibrary, tracks, libraryPath, mode, conflictResolution, preferLossless]);
 
   const cancel = useCallback(async () => {
     await window.electronAPI.cancelConsolidate?.(operationIdRef.current);
@@ -121,6 +122,7 @@ export const MaintenancePage: React.FC = () => {
     setProgress(null);
     setResult(null);
     setError(null);
+    setPreferLossless(false);
   }, []);
 
   const pct = progress && progress.total > 0
@@ -133,7 +135,10 @@ export const MaintenancePage: React.FC = () => {
 
       {/* Consolidate Library */}
       <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md">
-        <h3 className="font-semibold text-te-grey-800 mb-1">Consolidate Library</h3>
+        <div className="flex items-center gap-2 mb-1">
+          <h3 className="font-semibold text-te-grey-800">Consolidate Library</h3>
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300">Beta / Untested</span>
+        </div>
         <p className="text-sm text-te-grey-500 font-te-mono mb-te-md">
           Copy or move all tracks to a single destination (e.g. an external SSD) and update the XML locations.
         </p>
@@ -208,6 +213,17 @@ export const MaintenancePage: React.FC = () => {
                     </div>
                   </label>
                 ))}
+                {conflictResolution === 'quality' && (
+                  <label className="flex items-center gap-2 ml-5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferLossless}
+                      onChange={e => setPreferLossless(e.target.checked)}
+                      className="text-te-orange"
+                    />
+                    <span className="text-sm text-te-grey-700">Prefer lossless formats (FLAC, WAV, AIFF) over lossy</span>
+                  </label>
+                )}
               </div>
             </div>
 
