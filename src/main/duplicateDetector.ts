@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as mm from 'music-metadata';
 import { Track } from './rekordboxParser';
 import { Logger } from './logger';
-import { isLossless } from './audioQuality';
+import { isUniversalLossless, isFlac } from './audioQuality';
 
 export interface DuplicateSet {
   id: string;
@@ -267,17 +267,16 @@ export class DuplicateDetector {
   }
 
   private selectHighestQuality(tracks: Track[], preferLossless = false): Track {
+    const tier = (t: Track) => {
+      if (isUniversalLossless(t.location)) return 2; // WAV/AIFF: always top tier
+      if (preferLossless && isFlac(t.location)) return 2; // FLAC: top tier only when preferred
+      return 0;
+    };
     return tracks.reduce((best, current) => {
-      if (preferLossless) {
-        const bestLossless = isLossless(best.location);
-        const currentLossless = isLossless(current.location);
-
-        // Lossless always beats lossy, regardless of bitrate or metadata.
-        if (currentLossless && !bestLossless) return current;
-        if (!currentLossless && bestLossless) return best;
-      }
-
-      // Same tier (or lossless preference off) — compare by bitrate, size, and metadata richness.
+      const bt = tier(best);
+      const ct = tier(current);
+      if (ct > bt) return current;
+      if (bt > ct) return best;
       const bestScore = this.calculateQualityScore(best);
       const currentScore = this.calculateQualityScore(current);
       return currentScore > bestScore ? current : best;
