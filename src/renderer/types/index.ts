@@ -152,7 +152,7 @@ export interface BinnedItem {
 export interface StatisticsData {
   totalTracks: number;
   totalPlaylists: number;
-  genreDistribution: DistributionItem[]; // top 10, sorted desc
+  genreDistribution: GenreDistributionItem[]; // top 10, sorted desc
   bpmDistribution: BinnedItem[]; // binned bpm counts
   yearDistribution: DistributionItem[]; // year => count
   specialTagCount: number; // tracks containing tags with special chars or 'www'

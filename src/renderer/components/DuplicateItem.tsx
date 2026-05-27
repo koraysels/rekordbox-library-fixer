@@ -14,6 +14,12 @@ import { formatFileSize, formatDuration } from '../utils';
 import { useFileOperations } from '../hooks';
 import { ConfidenceBadge } from './ui';
 
+const LOSSLESS_EXTENSIONS = ['.flac', '.wav', '.aiff', '.aif'];
+const isLossless = (loc: string) => {
+  const ext = '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
+  return LOSSLESS_EXTENSIONS.includes(ext);
+};
+
 interface DuplicateItemProps {
   duplicate: any;
   isSelected: boolean;
@@ -38,10 +44,13 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     let recommended = duplicate.tracks[0];
 
     if (resolutionStrategy === 'keep-highest-quality') {
+      const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
       recommended = duplicate.tracks.reduce((best: any, current: any) => {
-        const bestScore = (best.bitrate || 0) + (best.size || 0) / 1000000;
-        const currentScore = (current.bitrate || 0) + (current.size || 0) / 1000000;
-        return currentScore > bestScore ? current : best;
+        const bestLossless = isLossless(best.location || '');
+        const currentLossless = isLossless(current.location || '');
+        if (currentLossless && !bestLossless) return current;
+        if (!currentLossless && bestLossless) return best;
+        return qualityScore(current) > qualityScore(best) ? current : best;
       });
     } else if (resolutionStrategy === 'keep-newest') {
       recommended = duplicate.tracks.reduce((newest: any, current: any) => {

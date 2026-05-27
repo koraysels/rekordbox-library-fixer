@@ -2,7 +2,7 @@ import React from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useStatistics } from '../../hooks/useStatistics';
 import { PageHeader } from '../ui';
-import { Download } from 'lucide-react';
+import { BarChart2 } from 'lucide-react';
 import type { GenreDistributionItem } from '../../types';
 
 // Custom tooltip for genre chart to display titles
@@ -75,21 +75,21 @@ export const StatisticsPage: React.FC = () => {
   if (!stats || stats.totalTracks === 0) {
     return (
       <div className="p-te-lg">
-        <PageHeader title="Statistics" icon={Download} />
+        <PageHeader title="Statistics" icon={BarChart2} />
         <div className="mt-te-md text-te-grey-500">Load a library to view statistics.</div>
       </div>
     );
   }
 
   // map genre label -> titles array for quick lookup in tick renderer
-  const genreTitleMap: Record<string, string[]> = (stats.genreDistribution as GenreDistributionItem[]).reduce<Record<string, string[]>>((acc, g) => {
+  const genreTitleMap: Record<string, string[]> = stats.genreDistribution.reduce<Record<string, string[]>>((acc, g) => {
     acc[g.label] = g.titles || [];
     return acc;
   }, {});
 
   return (
     <div className="p-te-lg h-full overflow-auto">
-      <PageHeader title="Statistics" icon={Download} />
+      <PageHeader title="Statistics" icon={BarChart2} />
 
       {/* Top stat cards */}
       <div className="grid grid-cols-3 gap-te-md mt-te-md">
