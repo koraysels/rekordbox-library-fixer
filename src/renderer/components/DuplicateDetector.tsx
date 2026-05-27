@@ -210,6 +210,7 @@ const DuplicateDetector: React.FC = () => {
         duplicates: selectedDuplicateSets,
         strategy: resolutionStrategy,
         pathPreferences: scanOptions.pathPreferences,
+        preferLossless: scanOptions.preferLossless,
       });
 
       if (result.success) {

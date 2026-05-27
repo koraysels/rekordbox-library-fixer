@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { LibraryData, StatisticsData, GenreDistributionItem, BinnedItem } from '../types';
+import type { LibraryData, StatisticsData, DistributionItem, GenreDistributionItem, BinnedItem } from '../types';
 import { useAppContext } from '../AppWithRouter';
 
 function safeGetField(obj: unknown, ...keys: string[]) {

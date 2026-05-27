@@ -200,9 +200,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   onBlur={handleBlurSync}
                   className="mt-1 text-te-orange"
                 />
-                <div>
+                <div className="flex-1">
                   <span className="font-medium text-te-grey-800">Keep Highest Quality</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Prefers lossless formats (FLAC, WAV, AIFF), then higher bitrate and sample rate</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks with higher bitrate and sample rate</p>
+                  {watchedResolutionStrategy === 'keep-highest-quality' && (
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        {...register('scanOptions.preferLossless')}
+                        onBlur={handleBlurSync}
+                        className="text-te-orange"
+                      />
+                      <span className="text-sm text-te-grey-700">Prefer lossless formats (FLAC, WAV, AIFF) over lossy</span>
+                    </label>
+                  )}
                 </div>
               </label>
 

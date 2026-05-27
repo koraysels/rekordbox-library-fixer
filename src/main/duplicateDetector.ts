@@ -17,6 +17,7 @@ export interface DuplicateOptions {
   useMetadata: boolean;
   metadataFields: string[];
   pathPreferences?: string[];
+  preferLossless?: boolean;
 }
 
 export class DuplicateDetector {
@@ -224,6 +225,7 @@ export class DuplicateDetector {
     strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
     selections?: Map<string, string>; // Map of duplicate set ID to track ID to keep
     pathPreferences?: string[];
+    preferLossless?: boolean;
   }): Promise<Map<string, Track>> {
     const tracksToKeep = new Map<string, Track>();
 
@@ -232,7 +234,7 @@ export class DuplicateDetector {
 
       switch (resolution.strategy) {
         case 'keep-highest-quality':
-          keepTrack = this.selectHighestQuality(duplicateSet.tracks);
+          keepTrack = this.selectHighestQuality(duplicateSet.tracks, resolution.preferLossless ?? false);
           break;
         case 'keep-newest':
           keepTrack = this.selectNewest(duplicateSet.tracks);
@@ -264,16 +266,18 @@ export class DuplicateDetector {
     return tracksToKeep;
   }
 
-  private selectHighestQuality(tracks: Track[]): Track {
+  private selectHighestQuality(tracks: Track[], preferLossless = false): Track {
     return tracks.reduce((best, current) => {
-      const bestLossless = isLossless(best.location);
-      const currentLossless = isLossless(current.location);
+      if (preferLossless) {
+        const bestLossless = isLossless(best.location);
+        const currentLossless = isLossless(current.location);
 
-      // Lossless always beats lossy, regardless of bitrate or metadata.
-      if (currentLossless && !bestLossless) return current;
-      if (!currentLossless && bestLossless) return best;
+        // Lossless always beats lossy, regardless of bitrate or metadata.
+        if (currentLossless && !bestLossless) return current;
+        if (!currentLossless && bestLossless) return best;
+      }
 
-      // Same tier — compare by bitrate, size, and metadata richness.
+      // Same tier (or lossless preference off) — compare by bitrate, size, and metadata richness.
       const bestScore = this.calculateQualityScore(best);
       const currentScore = this.calculateQualityScore(current);
       return currentScore > bestScore ? current : best;
