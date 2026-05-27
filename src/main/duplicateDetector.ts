@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as mm from 'music-metadata';
 import { Track } from './rekordboxParser';
 import { Logger } from './logger';
+import { isLossless } from './audioQuality';
 
 export interface DuplicateSet {
   id: string;
@@ -16,6 +17,7 @@ export interface DuplicateOptions {
   useMetadata: boolean;
   metadataFields: string[];
   pathPreferences?: string[];
+  preferLossless?: boolean;
 }
 
 export class DuplicateDetector {
@@ -223,6 +225,7 @@ export class DuplicateDetector {
     strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
     selections?: Map<string, string>; // Map of duplicate set ID to track ID to keep
     pathPreferences?: string[];
+    preferLossless?: boolean;
   }): Promise<Map<string, Track>> {
     const tracksToKeep = new Map<string, Track>();
 
@@ -231,7 +234,7 @@ export class DuplicateDetector {
 
       switch (resolution.strategy) {
         case 'keep-highest-quality':
-          keepTrack = this.selectHighestQuality(duplicateSet.tracks);
+          keepTrack = this.selectHighestQuality(duplicateSet.tracks, resolution.preferLossless ?? false);
           break;
         case 'keep-newest':
           keepTrack = this.selectNewest(duplicateSet.tracks);
@@ -263,8 +266,18 @@ export class DuplicateDetector {
     return tracksToKeep;
   }
 
-  private selectHighestQuality(tracks: Track[]): Track {
+  private selectHighestQuality(tracks: Track[], preferLossless = false): Track {
     return tracks.reduce((best, current) => {
+      if (preferLossless) {
+        const bestLossless = isLossless(best.location);
+        const currentLossless = isLossless(current.location);
+
+        // Lossless always beats lossy, regardless of bitrate or metadata.
+        if (currentLossless && !bestLossless) return current;
+        if (!currentLossless && bestLossless) return best;
+      }
+
+      // Same tier (or lossless preference off) — compare by bitrate, size, and metadata richness.
       const bestScore = this.calculateQualityScore(best);
       const currentScore = this.calculateQualityScore(current);
       return currentScore > bestScore ? current : best;
@@ -274,8 +287,12 @@ export class DuplicateDetector {
   private calculateQualityScore(track: Track): number {
     let score = 0;
 
-    // Bitrate is most important
+    // Bitrate breaks ties within the same lossless/lossy tier.
     if (track.bitrate) {score += track.bitrate * 10;}
+
+    // Sample rate matters most for lossless files (96kHz > 44.1kHz), scaled to
+    // sit between bitrate and file-size in influence.
+    if (track.sampleRate) {score += track.sampleRate / 10;}
 
     // File size as secondary indicator
     if (track.size) {score += track.size / 1000000;} // MB

@@ -64,10 +64,28 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 - **Unlocatable tracking**: Marks tracks that couldn't be auto-relocated for manual review
 
 ### Resolution Options
-- **Quality-based**: Keeps the highest bitrate version
+- **Quality-based**: Keeps the highest bitrate version; optionally prefer lossless formats (FLAC, WAV, AIFF) over lossy regardless of bitrate
 - **Date-based**: Keep newest or oldest files
-- **Folder preferences**: Prioritize tracks from certain directories (e.g. FLAC over MP3)
+- **Folder preferences**: Prioritize tracks from certain directories
 - **Manual mode**: Review everything yourself
+
+### Lossless-aware quality scoring
+When "Keep Highest Quality" is selected, you can enable **Prefer lossless formats** in settings. When on, FLAC/WAV/AIFF always wins over MP3/AAC/OGG regardless of bitrate — fixing the case where Rekordbox stores lossless files with `BitRate=0`. When off (default), quality is judged purely by bitrate and file size, which is safer for setups where players don't support FLAC.
+
+Quality priority order when lossless preference is enabled:
+
+| Factor | Notes |
+|--------|-------|
+| Lossless tier | FLAC, WAV, AIFF always beats MP3, AAC, OGG |
+| Bitrate | Higher wins within the same tier |
+| Sample rate | 96kHz beats 44.1kHz for ties between lossless files |
+| File size | Larger as final fallback |
+| Metadata richness | BPM, key, cues, loops, beatgrid bonuses |
+
+### Statistics
+- Genre distribution (top 10 with track list on hover)
+- BPM distribution by range
+- Year distribution
 
 ### Session Persistence
 - Picks up where you left off if you close the app
