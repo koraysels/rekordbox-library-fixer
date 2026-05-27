@@ -221,7 +221,7 @@ export const MaintenancePage: React.FC = () => {
                       onChange={e => setPreferLossless(e.target.checked)}
                       className="text-te-orange"
                     />
-                    <span className="text-sm text-te-grey-700">Prefer lossless formats (FLAC, WAV, AIFF) over lossy</span>
+                    <span className="text-sm text-te-grey-700">Prefer FLAC over lossy formats</span>
                   </label>
                 )}
               </div>
