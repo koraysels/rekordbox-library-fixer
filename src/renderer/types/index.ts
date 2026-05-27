@@ -51,6 +51,7 @@ export interface ScanOptions {
   useMetadata: boolean;
   metadataFields: string[];
   pathPreferences: string[];
+  preferLossless: boolean;
 }
 
 export type ResolutionStrategy =

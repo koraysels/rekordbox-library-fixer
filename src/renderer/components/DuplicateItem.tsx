@@ -13,6 +13,7 @@ import {
 import { formatFileSize, formatDuration } from '../utils';
 import { useFileOperations } from '../hooks';
 import { ConfidenceBadge } from './ui';
+import { useSettingsStore } from '../stores/settingsStore';
 
 const LOSSLESS_EXTENSIONS = ['.flac', '.wav', '.aiff', '.aif'];
 const isLossless = (loc: string) => {
@@ -37,6 +38,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
 
   const { openFileLocation } = useFileOperations();
+  const preferLossless = useSettingsStore((state) => state.scanOptions.preferLossless);
 
   const recommendedTrack = useMemo(() => {
     if (resolutionStrategy === 'manual') {return null;}
@@ -46,10 +48,12 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     if (resolutionStrategy === 'keep-highest-quality') {
       const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
       recommended = duplicate.tracks.reduce((best: any, current: any) => {
-        const bestLossless = isLossless(best.location || '');
-        const currentLossless = isLossless(current.location || '');
-        if (currentLossless && !bestLossless) return current;
-        if (!currentLossless && bestLossless) return best;
+        if (preferLossless) {
+          const bestLossless = isLossless(best.location || '');
+          const currentLossless = isLossless(current.location || '');
+          if (currentLossless && !bestLossless) return current;
+          if (!currentLossless && bestLossless) return best;
+        }
         return qualityScore(current) > qualityScore(best) ? current : best;
       });
     } else if (resolutionStrategy === 'keep-newest') {

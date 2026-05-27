@@ -355,6 +355,7 @@ ipcMain.handle('find-duplicates', async (_, options: {
   useFingerprint: boolean;
   useMetadata: boolean;
   metadataFields: string[];
+  preferLossless?: boolean;
 }) => {
   try {
     const duplicates = await duplicateDetector.findDuplicates(
@@ -380,6 +381,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
   duplicates: any[];
   strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
   pathPreferences: string[];
+  preferLossless?: boolean;
 }) => {
   safeConsole.log(`🔧 IPC: Resolving ${resolution.duplicates.length} duplicate sets`);
   try {
@@ -405,10 +407,12 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       if (resolution.strategy === 'keep-highest-quality') {
         const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
         trackToKeep = tracksInSet.reduce((best: any, current: any) => {
-          const bestLossless = isLossless(best.location || '');
-          const currentLossless = isLossless(current.location || '');
-          if (currentLossless && !bestLossless) return current;
-          if (!currentLossless && bestLossless) return best;
+          if (resolution.preferLossless) {
+            const bestLossless = isLossless(best.location || '');
+            const currentLossless = isLossless(current.location || '');
+            if (currentLossless && !bestLossless) return current;
+            if (!currentLossless && bestLossless) return best;
+          }
           return qualityScore(current) > qualityScore(best) ? current : best;
         });
       } else if (resolution.strategy === 'keep-newest') {
