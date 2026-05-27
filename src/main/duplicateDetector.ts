@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as mm from 'music-metadata';
 import { Track } from './rekordboxParser';
 import { Logger } from './logger';
+import { isLossless } from './audioQuality';
 
 export interface DuplicateSet {
   id: string;
@@ -265,6 +266,14 @@ export class DuplicateDetector {
 
   private selectHighestQuality(tracks: Track[]): Track {
     return tracks.reduce((best, current) => {
+      const bestLossless = isLossless(best.location);
+      const currentLossless = isLossless(current.location);
+
+      // Lossless always beats lossy, regardless of bitrate or metadata.
+      if (currentLossless && !bestLossless) return current;
+      if (!currentLossless && bestLossless) return best;
+
+      // Same tier — compare by bitrate, size, and metadata richness.
       const bestScore = this.calculateQualityScore(best);
       const currentScore = this.calculateQualityScore(current);
       return currentScore > bestScore ? current : best;
@@ -274,7 +283,7 @@ export class DuplicateDetector {
   private calculateQualityScore(track: Track): number {
     let score = 0;
 
-    // Bitrate is most important
+    // Bitrate breaks ties within the same lossless/lossy tier.
     if (track.bitrate) {score += track.bitrate * 10;}
 
     // File size as secondary indicator

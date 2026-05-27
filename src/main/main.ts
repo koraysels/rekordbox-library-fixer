@@ -4,6 +4,7 @@ import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
+import { isLossless } from './audioQuality';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
@@ -402,10 +403,13 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
       // Apply resolution strategy
       if (resolution.strategy === 'keep-highest-quality') {
+        const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
         trackToKeep = tracksInSet.reduce((best: any, current: any) => {
-          const bestScore = (best.bitrate || 0) + (best.size || 0) / 1000000;
-          const currentScore = (current.bitrate || 0) + (current.size || 0) / 1000000;
-          return currentScore > bestScore ? current : best;
+          const bestLossless = isLossless(best.location || '');
+          const currentLossless = isLossless(current.location || '');
+          if (currentLossless && !bestLossless) return current;
+          if (!currentLossless && bestLossless) return best;
+          return qualityScore(current) > qualityScore(best) ? current : best;
         });
       } else if (resolution.strategy === 'keep-newest') {
         trackToKeep = tracksInSet.reduce((newest: any, current: any) => {

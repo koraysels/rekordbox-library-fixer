@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { LibraryData, StatisticsData, DistributionItem, BinnedItem } from '../types';
+import type { LibraryData, StatisticsData, GenreDistributionItem, BinnedItem } from '../types';
 import { useAppContext } from '../AppWithRouter';
 
 function safeGetField(obj: unknown, ...keys: string[]) {
@@ -51,6 +51,7 @@ export function computeStatistics(libraryData: LibraryData | null): StatisticsDa
   }
 
   const genreCounts = new Map<string, number>();
+  const genreTitles = new Map<string, string[]>();
   const bpmCounts = new Map<string | number, number>();
   const yearCounts = new Map<string, number>();
   let specialTagCount = 0;
@@ -70,6 +71,12 @@ export function computeStatistics(libraryData: LibraryData | null): StatisticsDa
     }
     const genreKey = String(genre).trim();
     genreCounts.set(genreKey, (genreCounts.get(genreKey) || 0) + 1);
+    const trackTitle = String(safeGetField(track, 'Name', 'name', 'title', 'Title') || '').trim();
+    if (trackTitle) {
+      const titles = genreTitles.get(genreKey) ?? [];
+      titles.push(trackTitle);
+      genreTitles.set(genreKey, titles);
+    }
 
     // BPM - try several keys
     const rawBpm = safeGetField(track, 'Bpm', 'BPM', 'bpm');
@@ -98,8 +105,8 @@ export function computeStatistics(libraryData: LibraryData | null): StatisticsDa
   }
 
   // Build distributions
-  const genreArray: DistributionItem[] = Array.from(genreCounts.entries())
-    .map(([label, count]) => ({ label, count }))
+  const genreArray: GenreDistributionItem[] = Array.from(genreCounts.entries())
+    .map(([label, count]) => ({ label, count, titles: genreTitles.get(label) ?? [] }))
     .sort((a, b) => b.count - a.count);
 
   // Take top 10 and group rest into 'Other'
@@ -107,7 +114,8 @@ export function computeStatistics(libraryData: LibraryData | null): StatisticsDa
   const rest = genreArray.slice(10);
   if (rest.length > 0) {
     const otherCount = rest.reduce((s, r) => s + r.count, 0);
-    top.push({ label: 'Other', count: otherCount });
+    const otherTitles = rest.flatMap((r) => r.titles);
+    top.push({ label: 'Other', count: otherCount, titles: otherTitles });
   }
 
   const bpmArray: BinnedItem[] = Array.from(bpmCounts.entries())
