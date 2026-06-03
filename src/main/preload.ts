@@ -98,8 +98,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cancelConsolidate: (operationId: string) =>
     ipcRenderer.invoke('cancel-consolidate', operationId),
   onConsolidateProgress: (callback: (progress: any) => void) => {
-    ipcRenderer.on('consolidate-progress', (_, progress) => callback(progress));
-    return () => { ipcRenderer.removeAllListeners('consolidate-progress'); };
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('consolidate-progress', handler);
+    return () => { ipcRenderer.removeListener('consolidate-progress', handler); };
   },
 
   // Native drag-and-drop

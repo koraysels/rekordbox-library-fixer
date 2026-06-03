@@ -72,6 +72,7 @@ export const MaintenancePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const operationIdRef = useRef<string>('');
+  const cancelledRef = useRef(false);
 
   const tracks = libraryData ? Array.from(libraryData.tracks.values()) : [];
   const hasLibrary = tracks.length > 0;
@@ -104,7 +105,7 @@ export const MaintenancePage: React.FC = () => {
         setError(res.error ?? 'Preview failed');
         setPhase('idle');
       }
-    } catch (e) {
+    } catch {
       setError('Preview failed');
       setPhase('idle');
     }
@@ -114,6 +115,7 @@ export const MaintenancePage: React.FC = () => {
     if (!destination || !hasLibrary) return;
     const operationId = `consolidate-${Date.now()}`;
     operationIdRef.current = operationId;
+    cancelledRef.current = false;
     setPhase('running');
     setProgress(null);
     setResult(null);
@@ -125,6 +127,7 @@ export const MaintenancePage: React.FC = () => {
         libraryPath: libraryPath ?? '',
         options: { destination, mode, conflictResolution, preferLossless },
       });
+      if (cancelledRef.current) return;
       if (res.success) {
         setResult(res.data);
         setPhase('done');
@@ -132,13 +135,16 @@ export const MaintenancePage: React.FC = () => {
         setError(res.error ?? 'Consolidation failed');
         setPhase('idle');
       }
-    } catch (e) {
-      setError('Consolidation failed');
-      setPhase('idle');
+    } catch {
+      if (!cancelledRef.current) {
+        setError('Consolidation failed');
+        setPhase('idle');
+      }
     }
   }, [destination, hasLibrary, tracks, libraryPath, mode, conflictResolution, preferLossless]);
 
   const cancel = useCallback(async () => {
+    cancelledRef.current = true;
     await window.electronAPI.cancelConsolidate?.(operationIdRef.current);
     setPhase('cancelled');
   }, []);
@@ -149,7 +155,6 @@ export const MaintenancePage: React.FC = () => {
     setProgress(null);
     setResult(null);
     setError(null);
-    setPreferLossless(false);
   }, []);
 
   const pct = progress && progress.total > 0
@@ -164,7 +169,7 @@ export const MaintenancePage: React.FC = () => {
       <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-semibold text-te-grey-800">Consolidate Library</h3>
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300">Beta / Untested</span>
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-te-amber-100 text-te-amber-600 border border-te-amber-200">Beta / Untested</span>
         </div>
         <p className="text-sm text-te-grey-500 font-te-mono mb-te-md">
           Copy or move all tracks to a single destination (e.g. an external SSD) and update the XML locations.
@@ -187,15 +192,15 @@ export const MaintenancePage: React.FC = () => {
                   placeholder="/Volumes/SSD/Music"
                   className="flex-1 border border-te-grey-300 rounded-te px-3 py-2 text-sm font-te-mono bg-te-cream focus:outline-none focus:border-te-orange"
                 />
-                <button onClick={pickDestination} className="btn-secondary flex items-center gap-1 px-3">
+                <button onClick={pickDestination} aria-label="Browse" className="btn-secondary flex items-center gap-1 px-3">
                   <FolderOpen className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
             {/* Mode */}
-            <div>
-              <label className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">Operation</label>
+            <fieldset>
+              <legend className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">Operation</legend>
               <div className="flex gap-3">
                 {(['copy', 'move'] as Mode[]).map(m => (
                   <label key={m} className="flex items-center gap-2 cursor-pointer">
@@ -214,11 +219,11 @@ export const MaintenancePage: React.FC = () => {
                   </label>
                 ))}
               </div>
-            </div>
+            </fieldset>
 
             {/* Conflict resolution */}
-            <div>
-              <label className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">When file already exists at destination</label>
+            <fieldset>
+              <legend className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">When file already exists at destination</legend>
               <div className="flex flex-col gap-2">
                 {[
                   { value: 'skip', label: 'Skip', desc: 'Keep the existing destination file' },
@@ -253,7 +258,7 @@ export const MaintenancePage: React.FC = () => {
                   </label>
                 )}
               </div>
-            </div>
+            </fieldset>
 
             {/* Preview */}
             {preview && phase === 'previewed' && (
@@ -283,7 +288,7 @@ export const MaintenancePage: React.FC = () => {
                   />
                 </div>
                 <div className="flex gap-4 text-xs font-te-mono text-te-grey-500">
-                  <span className="text-green-600">{progress.succeeded} copied</span>
+                  <span className="text-green-600">{progress.succeeded} {mode === 'copy' ? 'copied' : 'moved'}</span>
                   <span className="text-te-grey-400">{progress.skipped} skipped</span>
                   {progress.failed > 0 && <span className="text-red-500">{progress.failed} failed</span>}
                 </div>
@@ -343,7 +348,7 @@ export const MaintenancePage: React.FC = () => {
                     {mode === 'copy' ? 'Copy Library' : 'Move Library'}
                   </button>
                   {(phase === 'done' || phase === 'cancelled') && (
-                    <button onClick={reset} className="btn-secondary">Reset</button>
+                    <button onClick={() => { reset(); setPreferLossless(false); }} className="btn-secondary">Reset</button>
                   )}
                 </>
               )}

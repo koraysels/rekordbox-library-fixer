@@ -6,11 +6,11 @@ import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
 import { LibraryConsolidator } from './libraryConsolidator';
-
-const libraryConsolidator = new LibraryConsolidator();
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
+
+const libraryConsolidator = new LibraryConsolidator();
 
 // Safe console logging to prevent EPIPE errors
 const safeConsole = {
@@ -1369,7 +1369,7 @@ ipcMain.handle('consolidate-library', async (event, {
   operationId: string;
   tracks: any[];
   libraryPath: string;
-  options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality' };
+  options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
 }) => {
   const cancelToken = { cancelled: false };
   consolidateCancelTokens.set(operationId, cancelToken);
@@ -1393,11 +1393,19 @@ ipcMain.handle('consolidate-library', async (event, {
         fs.copyFileSync(libraryPath, backupPath);
 
         const library = await rekordboxParser.parseLibrary(libraryPath);
+        const locToId = new Map(
+          [...library.tracks.entries()].map(([id, t]) => [t.location, id])
+        );
         for (const [oldLoc, newLoc] of Object.entries(result.locationUpdates)) {
-          const track = library.tracks.get(
-            [...library.tracks.entries()].find(([, t]) => t.location === oldLoc)?.[0] ?? ''
-          );
-          if (track) track.location = newLoc;
+          const id = locToId.get(oldLoc);
+          if (id) {
+            const track = library.tracks.get(id);
+            if (track) {
+              track.location = newLoc;
+              locToId.set(newLoc, id);
+              locToId.delete(oldLoc);
+            }
+          }
         }
         await rekordboxParser.saveLibrary(library, libraryPath);
       } catch (xmlErr) {

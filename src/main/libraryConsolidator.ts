@@ -50,7 +50,12 @@ export class LibraryConsolidator {
   }
 
   destPath(srcLocation: string, commonRoot: string, destination: string): string {
-    const relative = path.relative(commonRoot, srcLocation);
+    const relative = path.normalize(path.relative(commonRoot, srcLocation));
+    if (path.isAbsolute(relative) || relative.startsWith('..')) {
+      throw new Error(
+        `Track "${srcLocation}" falls outside common root "${commonRoot}" and cannot be consolidated safely`
+      );
+    }
     return path.join(destination, relative);
   }
 
@@ -155,6 +160,8 @@ export class LibraryConsolidator {
         } else {
           // Try rename first (fast, same volume); fall back to copy+delete
           try {
+            // Pre-delete dest so Windows doesn't throw EEXIST on rename
+            if (fs.existsSync(dest)) fs.unlinkSync(dest);
             fs.renameSync(src, dest);
           } catch {
             fs.copyFileSync(src, dest);
