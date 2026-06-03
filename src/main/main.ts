@@ -5,9 +5,12 @@ import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
+import { LibraryConsolidator } from './libraryConsolidator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
+
+const libraryConsolidator = new LibraryConsolidator();
 
 // Safe console logging to prevent EPIPE errors
 const safeConsole = {
@@ -1345,4 +1348,81 @@ ipcMain.handle('save-dropped-file', async (_, { content, fileName }) => {
     safeConsole.error('❌ Failed to save dropped file:', error);
     return { success: false, error: 'Failed to save dropped file' };
   }
+});
+
+// ─── Consolidate Library ──────────────────────────────────────────────────────
+
+const consolidateCancelTokens = new Map<string, { cancelled: boolean }>();
+
+ipcMain.handle('consolidate-preview', async (_, { tracks, destination }: { tracks: any[]; destination: string }) => {
+  try {
+    const preview = libraryConsolidator.preview(tracks, destination);
+    return { success: true, data: preview };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Preview failed' };
+  }
+});
+
+ipcMain.handle('consolidate-library', async (event, {
+  operationId, tracks, libraryPath, options
+}: {
+  operationId: string;
+  tracks: any[];
+  libraryPath: string;
+  options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
+}) => {
+  const cancelToken = { cancelled: false };
+  consolidateCancelTokens.set(operationId, cancelToken);
+
+  try {
+    const result = libraryConsolidator.consolidate(
+      tracks,
+      options,
+      (progress) => {
+        event.sender.send('consolidate-progress', { operationId, ...progress });
+      },
+      cancelToken
+    );
+
+    // Update XML locations if any files moved successfully
+    if (Object.keys(result.locationUpdates).length > 0 && libraryPath) {
+      try {
+        const fs = require('fs');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const backupPath = `${libraryPath}.backup.${timestamp}`;
+        fs.copyFileSync(libraryPath, backupPath);
+
+        const library = await rekordboxParser.parseLibrary(libraryPath);
+        const locToId = new Map(
+          [...library.tracks.entries()].map(([id, t]) => [t.location, id])
+        );
+        for (const [oldLoc, newLoc] of Object.entries(result.locationUpdates)) {
+          const id = locToId.get(oldLoc);
+          if (id) {
+            const track = library.tracks.get(id);
+            if (track) {
+              track.location = newLoc;
+              locToId.set(newLoc, id);
+              locToId.delete(oldLoc);
+            }
+          }
+        }
+        await rekordboxParser.saveLibrary(library, libraryPath);
+      } catch (xmlErr) {
+        safeConsole.error('Failed to update XML after consolidation:', xmlErr);
+      }
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Consolidation failed' };
+  } finally {
+    consolidateCancelTokens.delete(operationId);
+  }
+});
+
+ipcMain.handle('cancel-consolidate', async (_, operationId: string) => {
+  const token = consolidateCancelTokens.get(operationId);
+  if (token) token.cancelled = true;
+  return { success: true };
 });

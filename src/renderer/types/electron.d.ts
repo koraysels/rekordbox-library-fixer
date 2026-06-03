@@ -40,6 +40,12 @@ declare global {
       // App info
       getAppVersion(): Promise<any>;
       
+      // Consolidate Library
+      consolidatePreview(data: { tracks: any[]; destination: string }): Promise<any>;
+      consolidateLibrary(data: { operationId: string; tracks: any[]; libraryPath: string; options: any }): Promise<any>;
+      cancelConsolidate(operationId: string): Promise<any>;
+      onConsolidateProgress(callback: (progress: any) => void): () => void;
+
       // File operations
       saveDroppedFile(data: { content: string, fileName: string }): Promise<any>;
       openFileDialog(options?: any): Promise<any>;
