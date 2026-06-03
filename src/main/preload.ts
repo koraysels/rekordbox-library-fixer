@@ -90,6 +90,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('save-dropped-file', data),
   openFileDialog: (options?: any) => ipcRenderer.invoke('open-file-dialog', options),
 
+  // Consolidate Library
+  consolidatePreview: (data: { tracks: any[]; destination: string }) =>
+    ipcRenderer.invoke('consolidate-preview', data),
+  consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) =>
+    ipcRenderer.invoke('consolidate-library', data),
+  cancelConsolidate: (operationId: string) =>
+    ipcRenderer.invoke('cancel-consolidate', operationId),
+  onConsolidateProgress: (callback: (progress: any) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('consolidate-progress', handler);
+    return () => { ipcRenderer.removeListener('consolidate-progress', handler); };
+  },
+
   // Native drag-and-drop
   handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
   onNativeFileDrop: (callback: (filePaths: string[]) => void) => {
