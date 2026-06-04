@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.6--alpha-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.0.7--alpha-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -306,10 +306,10 @@ src/
 4. Submit a pull request
 
 ### Areas needing help:
-- Serato/VirtualDJ format support
-- Playlist duplicate detection
-- Audio analysis (BPM/key detection)
-- Batch processing for multiple libraries
+- master.db parsing (direct Rekordbox database, no XML export needed)
+- FLAC conversion pipeline for CDJ compatibility
+- Performance profiling on very large libraries (50k+ tracks)
+- Windows / Linux testing and bug reports
 
 ---
 
@@ -334,16 +334,24 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.0.6:**
-- Playlist duplicate detection
-- Improved UI
+**v0.0.7-alpha** *(current)*
+- Consolidate Library — copy/move all tracks to a single destination folder with conflict resolution and XML location updates
 
-**v0.1.0:**
-- Multi-format support (Serato, VirtualDJ, Traktor)
-- Auto-import mode
+**v0.0.8 — master.db support**
+- Read directly from Rekordbox's `master.db` SQLite database — no XML export step needed
+- Write changes back to the database without going through Rekordbox's import flow
+- Works alongside the existing XML workflow
 
-**v1.0.0:**
-- Stability and performance polish
+**v0.0.9 — FLAC conversion**
+- Convert FLAC files to WAV or AIFF for compatibility with older CDJs (CDJ-2000NXS and earlier) that don't support FLAC playback
+- Batch conversion with original file preservation
+- Automatic library location update after conversion
+
+**v0.1.0 — Stability & performance**
+- Async file operations so the UI stays responsive during large consolidations and relocations
+- Cancellation that works mid-file, not just between files
+- Comprehensive test coverage for core operations
+- Bug fixes driven by real-world usage reports
 
 ---
 
