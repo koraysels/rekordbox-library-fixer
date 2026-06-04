@@ -13,7 +13,7 @@
 
 *Find duplicates, fix missing tracks, and keep your DJ metadata intact*
 
-[Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues) • [Request Feature](https://github.com/koraysels/rekordbox-library-fixer/issues)
+[Download Latest Release](https://github.com/koraysels/rekordbox-library-fixer/releases) • [Report Bug](https://github.com/koraysels/rekordbox-library-fixer/issues)
 
 </div>
 
@@ -358,7 +358,6 @@ Free for personal use. No ads, no subscriptions, no limits.
 ## Support
 
 - [Report Issues](https://github.com/koraysels/rekordbox-library-fixer/issues)
-- [Request Features](https://github.com/koraysels/rekordbox-library-fixer/discussions)
 - [Ko-fi](https://ko-fi.com/koraysels) — if this saved you time
 
 ---
