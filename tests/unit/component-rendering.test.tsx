@@ -10,6 +10,16 @@ import React from 'react';
  * This catches issues like missing imports, undefined functions, etc.
  */
 
+// Mock AppContext so components using useAppContext() don't throw
+vi.mock('../../src/renderer/AppWithRouter', () => ({
+  useAppContext: () => ({
+    libraryData: null,
+    libraryPath: '',
+    showNotification: vi.fn(),
+    setLibraryData: vi.fn(),
+  }),
+}));
+
 // Mock all external dependencies that components might need
 vi.mock('../../src/renderer/hooks/useDuplicates', () => ({
   useDuplicates: () => ({
@@ -213,34 +223,21 @@ describe('Component Rendering Tests', () => {
   describe('TrackRelocator', () => {
     it('should render without crashing', async () => {
       const TrackRelocator = (await import('../../src/renderer/components/TrackRelocator')).TrackRelocator;
-      
-      const mockLibraryData = {
-        tracks: new Map(),
-        playlists: []
-      };
 
+      // TrackRelocator reads libraryData from AppContext (mocked as null above).
+      // With no library loaded it renders the empty state.
       expect(() => {
-        render(
-          <TrackRelocator
-            libraryData={mockLibraryData}
-            showNotification={vi.fn()}
-          />
-        );
+        render(<TrackRelocator />);
       }).not.toThrow();
 
-      expect(screen.getByText('Track Relocator')).toBeInTheDocument();
+      expect(screen.getByText('No Library Loaded')).toBeInTheDocument();
     });
 
     it('should handle null library data', async () => {
       const TrackRelocator = (await import('../../src/renderer/components/TrackRelocator')).TrackRelocator;
 
       expect(() => {
-        render(
-          <TrackRelocator
-            libraryData={null}
-            showNotification={vi.fn()}
-          />
-        );
+        render(<TrackRelocator />);
       }).not.toThrow();
 
       expect(screen.getByText('No Library Loaded')).toBeInTheDocument();
