@@ -6,7 +6,6 @@ import {
     BarChart2,
     Wrench,
     Copy,
-    Filter,
     FolderOpen,
     X,
     HelpCircle
@@ -42,13 +41,6 @@ const navItems = [
         label: 'Maintenance',
         icon: Wrench,
         description: 'Library maintenance tools'
-    },
-    {
-        id: 'filter' as TabType,
-        path: '/filter',
-        label: 'Filter & Move',
-        icon: Filter,
-        description: 'Copy or move tracks matching criteria'
     },
     {
         id: 'statistics' as TabType,

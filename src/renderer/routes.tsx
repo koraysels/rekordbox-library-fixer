@@ -4,7 +4,6 @@ import { DuplicatesPage } from './components/pages/DuplicatesPage';
 import { RelocatePage } from './components/pages/RelocatePage';
 import { ImportPage } from './components/pages/ImportPage';
 import { MaintenancePage } from './components/pages/MaintenancePage';
-import { FilterPage } from './components/pages/FilterPage';
 import { StatisticsPage } from './components/pages/StatisticsPage';
 
 // Root route - wraps entire app
@@ -37,12 +36,6 @@ export const maintenanceRoute = createRoute({
   component: MaintenancePage,
 });
 
-export const filterRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/filter',
-  component: FilterPage,
-});
-
 export const statisticsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/statistics',
@@ -55,7 +48,6 @@ const routeTree = rootRoute.addChildren([
   relocateRoute,
   importRoute,
   maintenanceRoute,
-  filterRoute,
   statisticsRoute,
 ]);
 
