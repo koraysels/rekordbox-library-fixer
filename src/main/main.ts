@@ -245,7 +245,10 @@ function createMenu() {
 app.whenReady().then(async () => {
   // Enable context menu with copy/paste support using eval to bypass TypeScript compilation
   try {
-    const contextMenuModule = await eval('import("electron-context-menu")');
+    // electron-context-menu is ESM-only; TypeScript compiles import() to require()
+    // in CommonJS mode, so we use Function to get a real dynamic ESM import.
+    const esmImport = new Function('m', 'return import(m)') as (m: string) => Promise<any>;
+    const contextMenuModule = await esmImport('electron-context-menu');
     const contextMenu = contextMenuModule.default;
     contextMenu({
       showLookUpSelection: false,
