@@ -5,13 +5,14 @@ import {
   Trash2,
   Loader2,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
-import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
+import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 
 const DuplicateDetector: React.FC = () => {
@@ -47,6 +48,8 @@ const DuplicateDetector: React.FC = () => {
 
   const [showSettings, setShowSettings] = useState(false);
   const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
+  const [deleteFromDisk, setDeleteFromDisk] = useState(false);
+  const [pendingDeletePaths, setPendingDeletePaths] = useState<string[] | null>(null);
 
   // Preferences are now loaded in the useDuplicates hook
 
@@ -185,23 +188,10 @@ const DuplicateDetector: React.FC = () => {
     }
   };
 
-  const resolveDuplicates = async () => {
-    if (selectedDuplicates.size === 0) {
-      showNotification('error', 'Please select duplicates to resolve');
-      return;
-    }
+  const executeResolve = useCallback(async (withDelete: boolean) => {
+    const selectedDuplicateSets = duplicates.filter(d => selectedDuplicates.has(d.id));
 
-    // Show confirmation dialog
-    const confirmMessage = `This will:\n1. Create a backup of your XML file\n2. Remove ${selectedDuplicates.size} duplicate sets from your library\n3. Save the updated library\n\nProceed?`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    const selectedDuplicateSets = duplicates.filter(d =>
-      selectedDuplicates.has(d.id)
-    );
-
-    setIsScanning(true); // Reuse loading state
+    setIsScanning(true);
     showNotification('info', 'Creating backup and resolving duplicates...');
 
     try {
@@ -211,28 +201,29 @@ const DuplicateDetector: React.FC = () => {
         strategy: resolutionStrategy,
         pathPreferences: scanOptions.pathPreferences,
         preferLossless: scanOptions.preferLossless,
+        deleteFromDisk: withDelete,
       });
 
       if (result.success) {
-        // Remove resolved duplicates from the list
         const remainingDuplicates = duplicates.filter(d => !selectedDuplicates.has(d.id));
         setDuplicates(remainingDuplicates);
         setSelections([]);
 
-        showNotification('success',
-          `✅ Successfully resolved ${selectedDuplicates.size} duplicate sets!\n` +
-          `📁 Backup created: ${result.backupPath}\n` +
-          `📝 XML updated with ${result.tracksRemoved} tracks removed`
-        );
+        let msg = `✅ Resolved ${selectedDuplicates.size} duplicate sets — ${result.tracksRemoved} tracks removed from XML.\n📁 Backup: ${result.backupPath}`;
+        if (withDelete) {
+          msg += `\n🗑️ ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} deleted from disk`;
+          if ((result.deleteErrors?.length ?? 0) > 0) {
+            msg += ` (${result.deleteErrors!.length} failed — check paths)`;
+          }
+        }
+        showNotification('success', msg);
 
-        // Update library data with the new version to refresh UI
         if (result.updatedLibrary && libraryData) {
-          const updatedLibraryData = {
+          setLibraryData({
             ...libraryData,
-            tracks: result.updatedLibrary.tracks, // The API returns the updated tracks Map
-            playlists: result.updatedLibrary.playlists || libraryData.playlists
-          };
-          setLibraryData(updatedLibraryData);
+            tracks: result.updatedLibrary.tracks,
+            playlists: result.updatedLibrary.playlists || libraryData.playlists,
+          });
         }
       } else {
         showNotification('error', `Failed to resolve duplicates: ${result.error}`);
@@ -243,7 +234,28 @@ const DuplicateDetector: React.FC = () => {
     } finally {
       setIsScanning(false);
     }
-  };
+  }, [duplicates, selectedDuplicates, libraryPath, resolutionStrategy, scanOptions, libraryData, setDuplicates, setSelections, setLibraryData, showNotification, setIsScanning]);
+
+  const resolveDuplicates = useCallback(async () => {
+    if (selectedDuplicates.size === 0) {
+      showNotification('error', 'Please select duplicates to resolve');
+      return;
+    }
+
+    if (deleteFromDisk) {
+      // Collect all file paths that will be removed so the modal can show them
+      const selectedSets = duplicates.filter(d => selectedDuplicates.has(d.id));
+      // We don't know which track "wins" client-side perfectly, but we show all paths —
+      // the backend will only delete the losers. Show a conservative "up to N files" list.
+      const allPaths = selectedSets.flatMap((d: any) =>
+        d.tracks.map((t: any) => t.location).filter(Boolean)
+      );
+      setPendingDeletePaths(allPaths);
+      return;
+    }
+
+    await executeResolve(false);
+  }, [selectedDuplicates, duplicates, deleteFromDisk, executeResolve, showNotification]);
 
 
   // Memoize expensive calculations
@@ -335,17 +347,31 @@ const DuplicateDetector: React.FC = () => {
             </div>
 
             {duplicates.length > 0 && (
-              <PopoverButton
-                onClick={resolveDuplicates}
-                disabled={isResolveDisabled}
-                loading={isScanning}
-                icon={Sparkles}
-                title="Resolve Selected Duplicates"
-                description="Apply resolution strategy to selected duplicate sets"
-                variant="success"
-              >
-                {isScanning ? 'Resolving...' : 'Resolve Selected'}
-              </PopoverButton>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Permanently delete the losing duplicate files from disk after resolving">
+                  <input
+                    type="checkbox"
+                    checked={deleteFromDisk}
+                    onChange={e => setDeleteFromDisk(e.target.checked)}
+                    className="checkbox"
+                  />
+                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500">
+                    <AlertTriangle className="w-3 h-3" />
+                    Also delete files from disk
+                  </span>
+                </label>
+                <PopoverButton
+                  onClick={resolveDuplicates}
+                  disabled={isResolveDisabled}
+                  loading={isScanning}
+                  icon={Sparkles}
+                  title="Resolve Selected Duplicates"
+                  description="Apply resolution strategy to selected duplicate sets"
+                  variant="success"
+                >
+                  {isScanning ? 'Resolving...' : 'Resolve Selected'}
+                </PopoverButton>
+              </div>
             )}
           </div>
         </div>
@@ -416,6 +442,18 @@ const DuplicateDetector: React.FC = () => {
           setResolutionStrategy={setResolutionStrategy}
         />
       </SettingsSlideout>
+
+      {/* 3-step delete confirmation modal */}
+      {pendingDeletePaths && (
+        <DeleteConfirmModal
+          filePaths={pendingDeletePaths}
+          onConfirm={() => {
+            setPendingDeletePaths(null);
+            executeResolve(true);
+          }}
+          onCancel={() => setPendingDeletePaths(null)}
+        />
+      )}
     </div>
   );
 };

@@ -167,7 +167,15 @@ declare global {
       selectFolder: () => Promise<string | null>;
       parseRekordboxLibrary: (xmlPath: string) => Promise<any>;
       findDuplicates: (options: any) => Promise<any>;
-      resolveDuplicates: (resolution: any) => Promise<any>;
+      resolveDuplicates: (resolution: any) => Promise<{
+        success: boolean;
+        backupPath?: string;
+        tracksRemoved?: number;
+        filesDeleted?: number;
+        deleteErrors?: { file: string; error: string }[];
+        updatedLibrary?: any;
+        error?: string;
+      }>;
       saveRekordboxXML: (data: any) => Promise<any>;
       showFileInFolder: (filePath: string) => Promise<any>;
       // Track Relocation APIs

@@ -385,6 +385,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
   strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
   pathPreferences: string[];
   preferLossless?: boolean;
+  deleteFromDisk?: boolean;
 }) => {
   safeConsole.log(`🔧 IPC: Resolving ${resolution.duplicates.length} duplicate sets`);
   try {
@@ -453,16 +454,22 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
       // Add all other tracks to removal list
       const tracksToRemoveFromSet = tracksInSet
-        .filter((track: any) => track.id !== trackToKeep.id)
-        .map((track: any) => track.id);
+        .filter((track: any) => track.id !== trackToKeep.id);
 
-      tracksToRemove.push(...tracksToRemoveFromSet);
+      tracksToRemove.push(...tracksToRemoveFromSet.map((t: any) => t.id));
 
       safeConsole.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
     }
 
     // Step 4: Remove tracks from library
     safeConsole.log(`🗑️ Removing ${tracksToRemove.length} duplicate tracks from library`);
+
+    // Collect file locations before deleting from the Map
+    const locationsToDelete: string[] = resolution.deleteFromDisk
+      ? tracksToRemove
+          .map(trackId => library.tracks.get(trackId)?.location)
+          .filter((loc): loc is string => !!loc)
+      : [];
 
     // Remove from tracks Map
     tracksToRemove.forEach(trackId => {
@@ -499,10 +506,29 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     safeConsole.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
     logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
 
+    // Step 6 (optional): Delete files from disk
+    const deleteResults = { deleted: 0, failed: [] as { file: string; error: string }[] };
+    if (resolution.deleteFromDisk && locationsToDelete.length > 0) {
+      const fsSync = require('fs');
+      for (const loc of locationsToDelete) {
+        try {
+          fsSync.unlinkSync(loc);
+          deleteResults.deleted++;
+          safeConsole.log(`🗑️ Deleted from disk: ${loc}`);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          deleteResults.failed.push({ file: loc, error: msg });
+          safeConsole.error(`❌ Failed to delete ${loc}: ${msg}`);
+        }
+      }
+    }
+
     return {
       success: true,
       backupPath,
       tracksRemoved: tracksToRemove.length,
+      filesDeleted: deleteResults.deleted,
+      deleteErrors: deleteResults.failed,
       updatedLibrary: library
     };
 
