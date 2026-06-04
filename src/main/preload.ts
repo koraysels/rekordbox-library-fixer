@@ -27,9 +27,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cancelAutoRelocate: (operationId: string) =>
     ipcRenderer.invoke('cancel-auto-relocate', operationId),
   onAutoRelocateProgress: (callback: (progress: any) => void) => {
-    ipcRenderer.on('auto-relocate-progress', (_, progress) => callback(progress));
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('auto-relocate-progress', handler);
     return () => {
-      ipcRenderer.removeAllListeners('auto-relocate-progress');
+      ipcRenderer.removeListener('auto-relocate-progress', handler);
     };
   },
   findRelocationCandidates: (track: any, options: any) =>
