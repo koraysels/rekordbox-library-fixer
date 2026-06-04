@@ -1,4 +1,5 @@
 import {Link} from '@tanstack/react-router';
+import iconUrl from '../assets/icon-48.png';
 import {
     MapPin,
     Download,
@@ -83,7 +84,7 @@ export function Sidebar({
                 <div className="flex items-center gap-te-md">
                     <div className="w-10 h-10 bg-white rounded-te flex items-center justify-center">
                         <img
-                            src="./icons/48x48.png"
+                            src={iconUrl}
                             alt="Rekordbox Library Fixer"
                             className="w-8 h-8 opacity-90"
                         />

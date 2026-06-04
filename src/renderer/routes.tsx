@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, createMemoryHistory } from '@tanstack/react-router';
 import AppWithRouter from './AppWithRouter';
 import { DuplicatesPage } from './components/pages/DuplicatesPage';
 import { RelocatePage } from './components/pages/RelocatePage';
@@ -59,9 +59,10 @@ const routeTree = rootRoute.addChildren([
   statisticsRoute,
 ]);
 
-// Create and export router
+// Use memory history so file:// protocol in packaged Electron doesn't break routing
 export const router = createRouter({
   routeTree,
+  history: createMemoryHistory({ initialEntries: ['/'] }),
   defaultPreload: 'intent',
 });
 

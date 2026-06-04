@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { X, Github, Coffee } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import iconUrl from '../../assets/icon-48.png';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <img
-              src="./icons/48x48.png"
+              src={iconUrl}
               alt="Rekordbox Library Fixer"
               className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
