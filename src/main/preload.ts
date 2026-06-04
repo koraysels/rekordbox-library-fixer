@@ -103,6 +103,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => { ipcRenderer.removeListener('consolidate-progress', handler); };
   },
 
+  // Filter & Move/Copy
+  filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) =>
+    ipcRenderer.invoke('filter-preview', data),
+  filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) =>
+    ipcRenderer.invoke('filter-library', data),
+  cancelFilter: (operationId: string) =>
+    ipcRenderer.invoke('cancel-filter', operationId),
+  onFilterProgress: (callback: (progress: any) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('filter-progress', handler);
+    return () => { ipcRenderer.removeListener('filter-progress', handler); };
+  },
+
   // Native drag-and-drop
   handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
   onNativeFileDrop: (callback: (filePaths: string[]) => void) => {

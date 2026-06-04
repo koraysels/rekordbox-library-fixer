@@ -1452,3 +1452,112 @@ ipcMain.handle('cancel-consolidate', async (_, operationId: string) => {
   if (token) token.cancelled = true;
   return { success: true };
 });
+
+// ─── Filter & Move/Copy ───────────────────────────────────────────────────────
+
+type FilterRule = {
+  field: 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
+  op: 'contains' | 'equals' | 'gte' | 'lte';
+  value: string;
+};
+
+function applyFilters(tracks: any[], rules: FilterRule[]): any[] {
+  return tracks.filter(t => rules.every(r => {
+    const raw = (() => {
+      switch (r.field) {
+        case 'artist':  return (t.artist  || '').toLowerCase();
+        case 'album':   return (t.album   || '').toLowerCase();
+        case 'genre':   return (t.genre   || '').toLowerCase();
+        case 'rating':  return t.rating  ?? 0;
+        case 'bpm':     return parseFloat(t.bpm) || 0;
+        case 'year':    return parseInt(t.year, 10) || 0;
+        case 'format': {
+          const ext = (t.location || '').split('.').pop()?.toLowerCase() ?? '';
+          return ext;
+        }
+      }
+    })();
+    const val = r.op === 'contains' || r.op === 'equals'
+      ? r.value.toLowerCase()
+      : parseFloat(r.value);
+
+    switch (r.op) {
+      case 'contains': return typeof raw === 'string' && raw.includes(val as string);
+      case 'equals':   return typeof raw === 'string' ? raw === val : raw === parseFloat(r.value);
+      case 'gte':      return typeof raw === 'number' && raw >= (val as number);
+      case 'lte':      return typeof raw === 'number' && raw <= (val as number);
+      default:         return true;
+    }
+  }));
+}
+
+const filterCancelTokens = new Map<string, { cancelled: boolean }>();
+
+ipcMain.handle('filter-preview', async (_, { tracks, filters, destination }: {
+  tracks: any[];
+  filters: FilterRule[];
+  destination: string;
+}) => {
+  try {
+    const filtered = applyFilters(tracks, filters);
+    const preview = libraryConsolidator.preview(filtered, destination);
+    return { success: true, data: { ...preview, matchedTracks: filtered.length } };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Preview failed' };
+  }
+});
+
+ipcMain.handle('filter-library', async (event, {
+  operationId, tracks, libraryPath, filters, options,
+}: {
+  operationId: string;
+  tracks: any[];
+  libraryPath: string;
+  filters: FilterRule[];
+  options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
+}) => {
+  const cancelToken = { cancelled: false };
+  filterCancelTokens.set(operationId, cancelToken);
+
+  try {
+    const filtered = applyFilters(tracks, filters);
+    const result = libraryConsolidator.consolidate(
+      filtered,
+      options,
+      (progress) => { event.sender.send('filter-progress', { operationId, ...progress }); },
+      cancelToken
+    );
+
+    if (Object.keys(result.locationUpdates).length > 0 && libraryPath) {
+      try {
+        const fs = require('fs');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        fs.copyFileSync(libraryPath, `${libraryPath}.backup.${timestamp}`);
+        const library = await rekordboxParser.parseLibrary(libraryPath);
+        const locToId = new Map([...library.tracks.entries()].map(([id, t]) => [t.location, id]));
+        for (const [oldLoc, newLoc] of Object.entries(result.locationUpdates)) {
+          const id = locToId.get(oldLoc);
+          if (id) {
+            const track = library.tracks.get(id);
+            if (track) { track.location = newLoc; locToId.set(newLoc, id); locToId.delete(oldLoc); }
+          }
+        }
+        await rekordboxParser.saveLibrary(library, libraryPath);
+      } catch (xmlErr) {
+        safeConsole.error('Failed to update XML after filter-move:', xmlErr);
+      }
+    }
+
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Filter operation failed' };
+  } finally {
+    filterCancelTokens.delete(operationId);
+  }
+});
+
+ipcMain.handle('cancel-filter', async (_, operationId: string) => {
+  const token = filterCancelTokens.get(operationId);
+  if (token) token.cancelled = true;
+  return { success: true };
+});

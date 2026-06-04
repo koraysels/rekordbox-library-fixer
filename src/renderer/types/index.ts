@@ -1,6 +1,6 @@
 // Global types and interfaces
 
-export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics';
+export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'filter' | 'statistics';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -197,6 +197,12 @@ declare global {
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // Filter & Move/Copy APIs
+      filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;
+      filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) => Promise<any>;
+      cancelFilter?: (operationId: string) => Promise<any>;
+      onFilterProgress?: (callback: (progress: any) => void) => () => void;
+
       // Consolidate Library APIs
       consolidatePreview: (data: { tracks: any[]; destination: string }) => Promise<any>;
       consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;
