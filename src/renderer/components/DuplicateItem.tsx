@@ -185,13 +185,21 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1.5">
-                      {(isRecommended || isManuallySelected) && (
-                        <CheckCircle className="w-4 h-4 text-te-green-500" />
-                      )}
                       <h4 className="font-medium text-sm truncate te-value font-te-mono">{track.name}</h4>
-                      {isRecommended && (
-                        <span className="confidence-high">
-                          Recommended
+                      {resolutionStrategy !== 'manual' && (
+                        isRecommended ? (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-green-100 text-te-green-600 border border-te-green-200 font-te-mono whitespace-nowrap">
+                            <CheckCircle className="w-3 h-3" /> Will be kept
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap">
+                            Will be removed
+                          </span>
+                        )
+                      )}
+                      {resolutionStrategy === 'manual' && isManuallySelected && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-green-100 text-te-green-600 border border-te-green-200 font-te-mono whitespace-nowrap">
+                          <CheckCircle className="w-3 h-3" /> Will be kept
                         </span>
                       )}
                     </div>
@@ -269,13 +277,13 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         e.stopPropagation();
                         handleManualSelection(track.id);
                       }}
-                      className={`ml-3 px-2 py-1 text-xs rounded-te transition-colors ${
+                      className={`ml-3 px-2 py-1 text-xs rounded-te transition-colors whitespace-nowrap ${
                         isManuallySelected
                           ? 'bg-te-orange text-te-cream border border-te-orange'
-                          : 'bg-te-grey-300 hover:bg-te-grey-400 text-te-grey-700 border border-te-grey-400'
+                          : 'bg-te-grey-100 hover:bg-te-grey-200 text-te-grey-700 border border-te-grey-300'
                       }`}
                     >
-                      {isManuallySelected ? 'Selected' : 'Select'}
+                      {isManuallySelected ? 'Keeping this' : 'Keep this'}
                     </button>
                   )}
                 </div>
