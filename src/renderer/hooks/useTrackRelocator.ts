@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
-import { historyStorage } from '../db/historyDb';
+import { historyStorage, historyEvents } from '../db/historyDb';
 import type {
   MissingTrack,
   RelocationCandidate,
