@@ -1291,8 +1291,11 @@ ipcMain.handle('open-external', async (_, url: string) => {
 
 // Native file dialog for opening files with absolute paths
 ipcMain.handle('open-file-dialog', async (_, options = {}) => {
+  if (!mainWindow) {
+    return { success: false, error: 'No active window' };
+  }
   try {
-    const result = await dialog.showOpenDialog(mainWindow!, {
+    const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile', 'multiSelections'],
       filters: options.filters || [
         { name: 'Rekordbox XML', extensions: ['xml'] },
