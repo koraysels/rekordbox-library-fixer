@@ -189,6 +189,11 @@ declare global {
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // Consolidate Library APIs
+      consolidatePreview: (data: { tracks: any[]; destination: string }) => Promise<any>;
+      consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;
+      cancelConsolidate?: (operationId: string) => Promise<any>;
+      onConsolidateProgress?: (callback: (progress: any) => void) => () => void;
       // File Drop APIs
       handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
