@@ -17,25 +17,25 @@ const tutorialSteps: TutorialStep[] = [
   {
     title: "Export Your Rekordbox Library",
     description: "In Rekordbox, go to File → Library → Export collection in xml format. This creates a backup of your entire library including playlists, cues, and metadata.",
-    image: "./screenshots/export-collection-as-xml.png",
+    image: "/screenshots/export-collection-as-xml.png",
     altText: "Rekordbox export collection menu"
   },
   {
     title: "Import XML Step 1",
     description: "Select the exported XML file from your computer. The file is usually saved in your Documents folder.",
-    image: "./screenshots/import-xml-step-1.jpg", 
+    image: "/screenshots/import-xml-step-1.jpg",
     altText: "Import XML file selection"
   },
   {
     title: "Import XML Step 2", 
     description: "Choose your import preferences and settings. You can select which data to import and how to handle conflicts.",
-    image: "./screenshots/import-xml-step-2.jpg",
+    image: "/screenshots/import-xml-step-2.jpg",
     altText: "Import XML preferences"
   },
   {
     title: "Import XML Step 3",
     description: "Review the import summary and confirm. Your library will be processed and ready for optimization.",
-    image: "./screenshots/import-xml-step-3.jpg",
+    image: "/screenshots/import-xml-step-3.jpg",
     altText: "Import XML confirmation"
   }
 ];
