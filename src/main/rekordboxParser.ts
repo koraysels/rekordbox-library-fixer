@@ -110,6 +110,13 @@ export class RekordboxParser {
     const xmlContent = await fs.promises.readFile(xmlPath, 'utf-8');
     const result = await this.parser.parseStringPromise(xmlContent);
 
+    if (!result.DJ_PLAYLISTS) {
+      throw new Error(
+        'Not a valid Rekordbox XML file — expected a DJ_PLAYLISTS root element. ' +
+        'Export your library from Rekordbox via File → Export Collection in xml format.'
+      );
+    }
+
     const library: RekordboxLibrary = {
       version: result.DJ_PLAYLISTS?.Version || '1.0.0',
       tracks: new Map(),
