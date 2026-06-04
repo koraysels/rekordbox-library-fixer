@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Github, Coffee } from 'lucide-react';
+import { X, ExternalLink, Coffee } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import iconUrl from '../../assets/icon-48.png';
 
@@ -68,7 +68,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               }}
               className="inline-flex items-center justify-center space-x-2 px-3 py-1.5 bg-te-grey-700 hover:bg-te-grey-600 text-te-grey-300 hover:text-te-cream rounded-te border border-te-grey-600 transition-colors font-te-mono text-sm"
             >
-              <Github className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" />
               <span>View on GitHub</span>
             </button>
             
