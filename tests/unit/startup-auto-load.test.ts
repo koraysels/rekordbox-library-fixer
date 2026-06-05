@@ -66,4 +66,16 @@ describe('useLibrary startup auto-load', () => {
     expect(result.current.libraryData).toBeNull();
     expect(mockShowNotification).toHaveBeenCalledWith('error', expect.any(String));
   });
+
+  it('always sets startupComplete=true even if checkFileAccessible rejects', async () => {
+    localStorage.setItem('rekordboxLibraryPath', '/path/to/library.xml');
+    window.electronAPI.checkFileAccessible.mockRejectedValue(new Error('IPC failure'));
+
+    const { result } = renderHook(() => useLibrary(mockShowNotification));
+
+    await waitFor(() => expect(result.current.startupComplete).toBe(true));
+    expect(result.current.libraryPath).toBe('');
+    expect(result.current.libraryData).toBeNull();
+    expect(localStorage.getItem('rekordboxLibraryPath')).toBeNull();
+  });
 });

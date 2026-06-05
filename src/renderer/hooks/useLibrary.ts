@@ -58,15 +58,20 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
         return;
       }
 
-      const { accessible } = await window.electronAPI.checkFileAccessible(savedPath);
+      try {
+        const { accessible } = await window.electronAPI.checkFileAccessible(savedPath);
 
-      if (accessible) {
-        await loadLibrary(savedPath);
-      } else {
+        if (accessible) {
+          await loadLibrary(savedPath);
+        } else {
+          localStorage.removeItem('rekordboxLibraryPath');
+        }
+      } catch (err) {
+        console.error('Startup auto-load failed:', err);
         localStorage.removeItem('rekordboxLibraryPath');
+      } finally {
+        setStartupComplete(true);
       }
-
-      setStartupComplete(true);
     };
 
     run();
