@@ -34,7 +34,6 @@ const pathToTab: Record<string, TabType> = {
 };
 
 const AppWithRouter: React.FC = () => {
-  const [showSplash, setShowSplash] = useState(true);
   const [showAbout, setShowAbout] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
@@ -48,6 +47,7 @@ const AppWithRouter: React.FC = () => {
     libraryPath,
     libraryData,
     isLoading,
+    startupComplete,
     selectLibrary,
     loadLibrary,
     clearStoredData,
@@ -60,14 +60,6 @@ const AppWithRouter: React.FC = () => {
     // duplicateResults, relocationResults, settings // Unused for now
   } = useRouteData(location.pathname, libraryPath);
 
-  // Hide splash screen after initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   // Set up menu event listeners
   useEffect(() => {
@@ -95,8 +87,7 @@ const AppWithRouter: React.FC = () => {
     }
   }, []);
 
-  // Show splash screen during initial load
-  if (showSplash) {
+  if (!startupComplete) {
     return <SplashScreen />;
   }
 

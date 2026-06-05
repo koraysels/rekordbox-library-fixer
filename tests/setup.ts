@@ -80,6 +80,7 @@ export const loadFixture = (filename: string): string => {
 Object.defineProperty(window, 'electronAPI', {
   value: {
     selectRekordboxXML: vi.fn(),
+    checkFileAccessible: vi.fn(),
     selectFolder: vi.fn(),
     parseRekordboxLibrary: vi.fn(),
     findDuplicates: vi.fn(),
