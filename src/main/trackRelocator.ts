@@ -184,27 +184,30 @@ export class TrackRelocator {
           }
         }
 
-        // 4. File size matching (if available)
+        // 4. File size matching (if available) — async to avoid blocking the main thread
         if (track.size) {
-          for (const file of files.slice(0, 20)) { // Limit to avoid performance issues
-            if (candidates.some(c => c.path === file)) {continue;}
-
-            try {
-              const stats = fs.statSync(file);
-              const sizeDifference = Math.abs(stats.size - track.size) / track.size;
-
-              if (sizeDifference <= 0.05) { // Within 5% size difference
-                candidates.push({
-                  path: file,
-                  score: Math.round((1 - sizeDifference) * 100),
-                  matchType: 'size',
-                  confidence: 0.6
-                });
-              }
-            } catch {
-              // Skip files that can't be accessed
-            }
-          }
+          const sizeMatches = await Promise.all(
+            files.slice(0, 20)
+              .filter(file => !candidates.some(c => c.path === file))
+              .map(async file => {
+                try {
+                  const stats = await fs.promises.stat(file);
+                  const sizeDifference = Math.abs(stats.size - track.size!) / track.size!;
+                  if (sizeDifference <= 0.05) {
+                    return {
+                      path: file,
+                      score: Math.round((1 - sizeDifference) * 100),
+                      matchType: 'size' as const,
+                      confidence: 0.6
+                    };
+                  }
+                } catch {
+                  // Skip files that can't be accessed
+                }
+                return null;
+              })
+          );
+          candidates.push(...sizeMatches.filter((m): m is NonNullable<typeof m> => m !== null));
         }
 
       } catch (error) {

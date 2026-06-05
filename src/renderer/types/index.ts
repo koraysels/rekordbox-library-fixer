@@ -159,6 +159,15 @@ export interface StatisticsData {
   specialTagCount: number; // tracks containing tags with special chars or 'www'
 }
 
+export type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
+export type FilterOp = 'contains' | 'equals' | 'gte' | 'lte';
+export interface FilterRule {
+  id: string;
+  field: FilterField;
+  op: FilterOp;
+  value: string;
+}
+
 // Electron API types
 declare global {
   interface Window {
@@ -167,7 +176,15 @@ declare global {
       selectFolder: () => Promise<string | null>;
       parseRekordboxLibrary: (xmlPath: string) => Promise<any>;
       findDuplicates: (options: any) => Promise<any>;
-      resolveDuplicates: (resolution: any) => Promise<any>;
+      resolveDuplicates: (resolution: any) => Promise<{
+        success: boolean;
+        backupPath?: string;
+        tracksRemoved?: number;
+        filesDeleted?: number;
+        deleteErrors?: { file: string; error: string }[];
+        updatedLibrary?: any;
+        error?: string;
+      }>;
       saveRekordboxXML: (data: any) => Promise<any>;
       showFileInFolder: (filePath: string) => Promise<any>;
       // Track Relocation APIs
@@ -189,6 +206,12 @@ declare global {
       updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
+      // Filter & Move/Copy APIs
+      filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;
+      filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) => Promise<any>;
+      cancelFilter?: (operationId: string) => Promise<any>;
+      onFilterProgress?: (callback: (progress: any) => void) => () => void;
+
       // Consolidate Library APIs
       consolidatePreview: (data: { tracks: any[]; destination: string }) => Promise<any>;
       consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;

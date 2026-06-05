@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { TrackRelocator } from '../../src/renderer/components/TrackRelocator';
 import type { LibraryData } from '../../src/renderer/types';
 
@@ -12,10 +11,14 @@ import type { LibraryData } from '../../src/renderer/types';
  * regressions where libraryPath becomes undefined.
  */
 
-// Mock the useTrackRelocator hook
-const mockUseTrackRelocator = vi.fn();
+// Use vi.hoisted so mockUseTrackRelocator is available inside vi.mock factory
+// (vi.mock calls are hoisted before const declarations)
+const { mockUseTrackRelocator } = vi.hoisted(() => ({
+  mockUseTrackRelocator: vi.fn(),
+}));
+
 vi.mock('../../src/renderer/hooks/useTrackRelocator', () => ({
-  useTrackRelocator: mockUseTrackRelocator
+  useTrackRelocator: mockUseTrackRelocator,
 }));
 
 // Mock other dependencies
@@ -98,11 +101,7 @@ describe('TrackRelocator Component Library Path Tests', () => {
   });
 
   const renderTrackRelocator = () => {
-    return render(
-      <MemoryRouter>
-        <TrackRelocator />
-      </MemoryRouter>
-    );
+    return render(<TrackRelocator />);
   };
 
   describe('Library Path Parameter Passing', () => {
@@ -125,7 +124,9 @@ describe('TrackRelocator Component Library Path Tests', () => {
       expect(mockUseTrackRelocator).toHaveBeenCalledWith(
         testLibraryData,
         testLibraryPath,
-        expect.any(Function) // showNotification
+        expect.any(Function), // showNotification
+        expect.any(Function), // setLibraryData
+        expect.anything()     // initialSearchOptions
       );
     });
 
@@ -135,7 +136,7 @@ describe('TrackRelocator Component Library Path Tests', () => {
         tracks: new Map(),
         playlists: [],
       };
-      
+
       // Update mock context with empty libraryPath
       mockAppContextValue.libraryData = testLibraryData;
       mockAppContextValue.libraryPath = '';
@@ -146,7 +147,9 @@ describe('TrackRelocator Component Library Path Tests', () => {
       expect(mockUseTrackRelocator).toHaveBeenCalledWith(
         testLibraryData,
         '', // Empty string libraryPath
-        expect.any(Function)
+        expect.any(Function),
+        expect.any(Function),
+        expect.anything()
       );
     });
 
@@ -161,7 +164,9 @@ describe('TrackRelocator Component Library Path Tests', () => {
       expect(mockUseTrackRelocator).toHaveBeenCalledWith(
         null,
         '',
-        expect.any(Function)
+        expect.any(Function),
+        expect.any(Function),
+        expect.anything()
       );
     });
   });
@@ -210,13 +215,14 @@ describe('TrackRelocator Component Library Path Tests', () => {
       // Verify the hook was called with exactly the expected number of parameters
       expect(mockUseTrackRelocator).toHaveBeenCalledTimes(1);
       const callArgs = mockUseTrackRelocator.mock.calls[0];
-      expect(callArgs).toHaveLength(4);
-      
+      expect(callArgs).toHaveLength(5);
+
       // Verify parameter types
       expect(callArgs[0]).toBe(testLibraryData); // LibraryData
       expect(typeof callArgs[1]).toBe('string'); // libraryPath
       expect(typeof callArgs[2]).toBe('function'); // showNotification
       expect(typeof callArgs[3]).toBe('function'); // setLibraryData
+      // callArgs[4] is initialSearchOptions (object)
     });
 
     it('should pass consistent libraryPath across re-renders', () => {
@@ -230,20 +236,18 @@ describe('TrackRelocator Component Library Path Tests', () => {
       mockAppContextValue.libraryPath = '/consistent/path.xml';
 
       const { rerender } = renderTrackRelocator();
-      
+
       // Clear call history and re-render
       mockUseTrackRelocator.mockClear();
-      rerender(
-        <MemoryRouter>
-          <TrackRelocator />
-        </MemoryRouter>
-      );
+      rerender(<TrackRelocator />);
 
       // Verify the same libraryPath is passed on re-render
       expect(mockUseTrackRelocator).toHaveBeenCalledWith(
         testLibraryData,
         '/consistent/path.xml',
-        expect.any(Function)
+        expect.any(Function),
+        expect.any(Function),
+        expect.anything()
       );
     });
   });
@@ -288,7 +292,9 @@ describe('TrackRelocator Component Library Path Tests', () => {
       expect(mockUseTrackRelocator).toHaveBeenCalledWith(
         legacyLibraryData,
         contextLibraryPath, // This provides the missing path information
-        expect.any(Function)
+        expect.any(Function),
+        expect.any(Function),
+        expect.anything()
       );
     });
   });

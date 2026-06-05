@@ -237,9 +237,13 @@ export class CloudSyncFixer {
     // Try to make the file available locally
     try {
       if (os.platform() === 'darwin') {
-        // macOS: Try to trigger download by accessing file metadata
-        const { execSync } = require('child_process');
-        execSync(`xattr -l "${issue.originalLocation}"`, { stdio: 'ignore' });
+        // macOS: Trigger download by reading file extended attributes.
+        // Uses execFile (not execSync) to avoid blocking the main thread,
+        // and passes the path as a separate argument to prevent injection.
+        const { execFile } = require('child_process');
+        await new Promise<void>(resolve => {
+          execFile('xattr', ['-l', issue.originalLocation], { timeout: 2000 }, () => resolve());
+        });
 
         // Wait a bit for the download to start
         await new Promise(resolve => setTimeout(resolve, 2000));

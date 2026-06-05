@@ -32,4 +32,6 @@ yarn-error.log*
 # Development artifacts
 .playwright-mcp/
 /.serena/
-/.claude/settings.local.json
+/.claude/
+/docs/
+/implement/

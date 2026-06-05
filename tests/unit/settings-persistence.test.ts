@@ -54,7 +54,8 @@ describe('Settings Persistence', () => {
       useFingerprint: true,
       useMetadata: false,
       metadataFields: ['artist', 'title', 'duration'],
-      pathPreferences: []
+      pathPreferences: [],
+      preferLossless: false
     });
     
     expect(result.current.resolutionStrategy).toBe('keep-highest-quality');

@@ -374,7 +374,7 @@ export class DuplicateDetector {
         }
       }
     }
-    merged.cues = Array.from(allCues.values());
+    merged.cues = Array.from(allCues.values()).map(cue => ({ ...cue }));
 
     // Merge loops from all tracks
     const allLoops = new Map<string, any>();
@@ -388,7 +388,7 @@ export class DuplicateDetector {
         }
       }
     }
-    merged.loops = Array.from(allLoops.values());
+    merged.loops = Array.from(allLoops.values()).map(loop => ({ ...loop }));
 
     // Merge playlists
     const allPlaylists = new Set<string>();

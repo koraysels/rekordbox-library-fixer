@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
-import { historyStorage } from '../db/historyDb';
+import { historyStorage, historyEvents } from '../db/historyDb';
 import type {
   MissingTrack,
   RelocationCandidate,
@@ -686,7 +686,10 @@ export function useTrackRelocator(
 
     try {
       const tracks = Object.fromEntries(libraryData.tracks.entries());
-      const computers = {}; // TODO: Get computers data from library
+      // STUB: ownership detection requires computer data from the library
+      // parser, which is not yet exposed via IPC. detectOwnershipIssues() will
+      // always return an empty result until this is implemented.
+      const computers = {};
       const result = await window.electronAPI.detectOwnershipIssues(tracks, computers);
 
       if (result.success) {
