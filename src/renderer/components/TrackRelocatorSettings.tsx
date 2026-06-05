@@ -90,7 +90,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
                   const next = active
                     ? searchOptions.fileExtensions.filter(e => e !== ext)
                     : [...searchOptions.fileExtensions, ext];
-                  if (next.length > 0) updateRelocationOption('fileExtensions', next);
+                  if (next.length > 0) { updateRelocationOption('fileExtensions', next); }
                 }}
                 className={`px-3 py-1 border-2 rounded-te text-sm font-te-mono transition-colors ${
                   active

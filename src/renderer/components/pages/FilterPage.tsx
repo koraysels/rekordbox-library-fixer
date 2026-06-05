@@ -3,19 +3,11 @@ import { Filter, FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Plu
 import { PageHeader } from '../ui';
 import { useAppContext } from '../../AppWithRouter';
 import { formatFileSize } from '../../utils';
+import type { FilterField, FilterOp, FilterRule } from '../../types';
 
-type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
-type FilterOp = 'contains' | 'equals' | 'gte' | 'lte';
 type Mode = 'copy' | 'move';
 type ConflictResolution = 'skip' | 'overwrite' | 'quality';
 type Phase = 'idle' | 'previewing' | 'previewed' | 'running' | 'done' | 'cancelled';
-
-interface FilterRule {
-  id: string;
-  field: FilterField;
-  op: FilterOp;
-  value: string;
-}
 
 interface Preview {
   matchedTracks: number;
@@ -101,8 +93,8 @@ export const FilterPage: React.FC = () => {
 
   const pickDestination = useCallback(async () => {
     const folder = await window.electronAPI.selectFolder();
-    if (folder) setDestination(folder);
-  }, []);
+    if (folder) { setDestination(folder); reset(); }
+  }, [reset]);
 
   const updateRule = useCallback((id: string, patch: Partial<FilterRule>) => {
     setRules(prev => prev.map(r => {
@@ -143,9 +135,13 @@ export const FilterPage: React.FC = () => {
         filters: validRules,
         options: { destination, mode, conflictResolution },
       });
-      if (cancelledRef.current) return;
-      if (res.success) { setResult(res.data); setPhase('done'); }
-      else { setError(res.error ?? 'Operation failed'); setPhase('idle'); }
+      if (res.success) {
+        setResult(res.data);
+        setPhase(cancelledRef.current ? 'cancelled' : 'done');
+      } else if (!cancelledRef.current) {
+        setError(res.error ?? 'Operation failed');
+        setPhase('idle');
+      }
     } catch {
       if (!cancelledRef.current) { setError('Operation failed'); setPhase('idle'); }
     }

@@ -159,6 +159,15 @@ export interface StatisticsData {
   specialTagCount: number; // tracks containing tags with special chars or 'www'
 }
 
+export type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
+export type FilterOp = 'contains' | 'equals' | 'gte' | 'lte';
+export interface FilterRule {
+  id: string;
+  field: FilterField;
+  op: FilterOp;
+  value: string;
+}
+
 // Electron API types
 declare global {
   interface Window {

@@ -239,9 +239,13 @@ export const MaintenancePage: React.FC = () => {
         operationId: opId, tracks, libraryPath: libraryPath ?? '',
         filters: fValidRules, options: { destination: fDest, mode: fMode, conflictResolution: fConflict },
       });
-      if (fCancelledRef.current) return;
-      if (res.success) { setFResult(res.data); setFPhase('done'); }
-      else { setFError(res.error ?? 'Operation failed'); setFPhase('idle'); }
+      if (res.success) {
+        setFResult(res.data);
+        setFPhase(fCancelledRef.current ? 'cancelled' : 'done');
+      } else if (!fCancelledRef.current) {
+        setFError(res.error ?? 'Operation failed');
+        setFPhase('idle');
+      }
     } catch { if (!fCancelledRef.current) { setFError('Operation failed'); setFPhase('idle'); } }
   }, [fDest, hasLibrary, tracks, libraryPath, fValidRules, fMode, fConflict]);
 
