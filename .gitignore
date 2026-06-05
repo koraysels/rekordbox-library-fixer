@@ -33,5 +33,5 @@ yarn-error.log*
 .playwright-mcp/
 /.serena/
 /.claude/
-/docs/
+/docs/superpowers/plans/
 /implement/

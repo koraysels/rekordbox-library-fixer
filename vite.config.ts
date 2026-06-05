@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig(({ mode }) => {
@@ -8,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const port = parseInt(env.VITE_DEV_PORT) || 3000;
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     base: './',
     build: {
       outDir: 'dist/renderer',

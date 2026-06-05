@@ -77,6 +77,7 @@
   },
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
+    "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-router": "^1.170.11",
     "autoprefixer": "^10.5.0",
     "crypto-js": "^4.2.0",
@@ -95,7 +96,7 @@
     "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.77.0",
     "recharts": "^3.8.1",
-    "tailwindcss": "^3.4.10",
+    "tailwindcss": "^4.3.0",
     "xml2js": "^0.6.2",
     "zustand": "^5.0.14"
   },

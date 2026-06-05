@@ -292,6 +292,17 @@ app.on('activate', () => {
   }
 });
 
+// File reachability check — used by startup auto-load
+ipcMain.handle('file-exists', async (_, path: string) => {
+  const fs = require('fs');
+  try {
+    await fs.promises.access(path, fs.constants.R_OK);
+    return { accessible: true };
+  } catch {
+    return { accessible: false };
+  }
+});
+
 // IPC Handlers for Feature 1: Duplicate Detection
 
 ipcMain.handle('select-rekordbox-xml', async () => {

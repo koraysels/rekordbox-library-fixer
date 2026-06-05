@@ -5,13 +5,12 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
   const [libraryPath, setLibraryPath] = useState<string>('');
   const [libraryData, setLibraryData] = useState<LibraryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [startupComplete, setStartupComplete] = useState(false);
 
   const loadLibrary = useCallback(async (path: string) => {
     setIsLoading(true);
     try {
-      // Clear previous library data when loading new library
       setLibraryData(null);
-      // Set the new library path immediately
       setLibraryPath(path);
 
       const result = await window.electronAPI.parseRekordboxLibrary(path);
@@ -20,12 +19,10 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
         showNotification('success', `Loaded ${result.data.tracks.size} tracks from library`);
       } else {
         showNotification('error', result.error || 'Failed to parse library');
-        // Reset path if loading failed
         setLibraryPath('');
       }
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to load library');
-      // Reset path if loading failed
       setLibraryPath('');
     } finally {
       setIsLoading(false);
@@ -38,60 +35,49 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
       if (path) {
         await loadLibrary(path);
       }
-    } catch (error) {
+    } catch {
       showNotification('error', 'Failed to select library file');
     }
   }, [loadLibrary, showNotification]);
 
   const clearStoredData = useCallback(() => {
     localStorage.removeItem('rekordboxLibraryPath');
-    localStorage.removeItem('rekordboxLibraryData');
     setLibraryPath('');
     setLibraryData(null);
     showNotification('info', 'Library data cleared');
   }, [showNotification]);
 
-  // Load persisted library data on mount
+  // Startup: auto-load last library if the file is still reachable.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const savedLibraryPath = localStorage.getItem('rekordboxLibraryPath');
-    const savedLibraryData = localStorage.getItem('rekordboxLibraryData');
+    const run = async () => {
+      const savedPath = localStorage.getItem('rekordboxLibraryPath');
 
-    if (savedLibraryPath) {
-      setLibraryPath(savedLibraryPath);
-    }
+      if (!savedPath) {
+        setStartupComplete(true);
+        return;
+      }
 
-    if (savedLibraryData) {
       try {
-        const parsedData = JSON.parse(savedLibraryData);
-        // Convert tracks array back to Map
-        if (parsedData && parsedData.tracks && Array.isArray(parsedData.tracks)) {
-          parsedData.tracks = new Map(parsedData.tracks);
-          setLibraryData(parsedData);
+        const { accessible } = await window.electronAPI.checkFileAccessible(savedPath);
+
+        if (accessible) {
+          await loadLibrary(savedPath);
+        } else {
+          localStorage.removeItem('rekordboxLibraryPath');
         }
-      } catch (error) {
-        console.warn('Failed to load saved library data:', error);
-        localStorage.removeItem('rekordboxLibraryData');
+      } catch (err) {
+        console.error('Startup auto-load failed:', err);
+        localStorage.removeItem('rekordboxLibraryPath');
+      } finally {
+        setStartupComplete(true);
       }
-    }
-  }, []);
+    };
 
-  // Save library data whenever it changes
-  useEffect(() => {
-    if (libraryData) {
-      try {
-        // Convert Map to array for JSON serialization
-        const dataToSave = {
-          ...libraryData,
-          tracks: Array.from(libraryData.tracks.entries())
-        };
-        localStorage.setItem('rekordboxLibraryData', JSON.stringify(dataToSave));
-      } catch (error) {
-        console.warn('Failed to save library data:', error);
-      }
-    }
-  }, [libraryData]);
+    run();
+  }, []); // intentionally empty — runs once on mount only
 
-  // Save library path whenever it changes
+  // Persist library path whenever it changes
   useEffect(() => {
     if (libraryPath) {
       localStorage.setItem('rekordboxLibraryPath', libraryPath);
@@ -102,9 +88,10 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
     libraryPath,
     libraryData,
     isLoading,
+    startupComplete,
     selectLibrary,
     loadLibrary,
     clearStoredData,
-    setLibraryData
+    setLibraryData,
   };
 };

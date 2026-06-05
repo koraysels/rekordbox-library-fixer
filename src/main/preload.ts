@@ -4,6 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   selectRekordboxXML: () => ipcRenderer.invoke('select-rekordbox-xml'),
+  checkFileAccessible: (path: string) => ipcRenderer.invoke('file-exists', path),
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   parseRekordboxLibrary: (xmlPath: string) =>
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
