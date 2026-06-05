@@ -124,7 +124,12 @@ const AppWithRouter: React.FC = () => {
 
         {/* Content with route-based rendering */}
         <div className="flex-1 pt-3 pb-6 overflow-hidden">
-        {!libraryData ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-te-grey-500">
+            <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
+            <p className="text-sm font-te-mono">Parsing library…</p>
+          </div>
+        ) : !libraryData ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
         ) : (
           <AppContext.Provider value={{

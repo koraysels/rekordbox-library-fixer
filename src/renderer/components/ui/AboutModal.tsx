@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { X, Github, Coffee } from 'lucide-react';
+import { X, ExternalLink, Coffee } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import iconUrl from '../../assets/icon-48.png';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <img
-              src="./icons/48x48.png"
+              src={iconUrl}
               alt="Rekordbox Library Fixer"
               className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
@@ -67,7 +68,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               }}
               className="inline-flex items-center justify-center space-x-2 px-3 py-1.5 bg-te-grey-700 hover:bg-te-grey-600 text-te-grey-300 hover:text-te-cream rounded-te border border-te-grey-600 transition-colors font-te-mono text-sm"
             >
-              <Github className="w-4 h-4" />
+              <ExternalLink className="w-4 h-4" />
               <span>View on GitHub</span>
             </button>
             

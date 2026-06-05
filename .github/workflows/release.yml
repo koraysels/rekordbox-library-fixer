@@ -22,11 +22,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm ci
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
 
       - name: Build Mac (x64, arm64, universal)
         run: npx electron-builder --mac --publish always
@@ -41,11 +44,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm ci
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
 
       - name: Build Windows
         run: npx electron-builder --win --publish always
@@ -60,11 +66,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - run: npm ci
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
-      - run: npm run build
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
 
       - name: Build Linux
         run: npx electron-builder --linux --publish always

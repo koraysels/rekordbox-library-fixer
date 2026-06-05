@@ -232,7 +232,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div className="flex-1">
                   <QualityInfo />
-                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks with higher bitrate and sample rate</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps the highest-quality version — others removed from your library <span className="text-te-grey-400">(files stay on disk)</span></p>
                   {watchedResolutionStrategy === 'keep-highest-quality' && (
                     <label className="flex items-center gap-2 mt-2 cursor-pointer">
                       <input
@@ -257,7 +257,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div>
                   <span className="font-medium text-te-grey-800">Keep Newest</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks with most recent modification date</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps the most recently modified version — others removed from your library <span className="text-te-grey-400">(files stay on disk)</span></p>
                 </div>
               </label>
 
@@ -271,7 +271,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div>
                   <span className="font-medium text-te-grey-800">Keep Oldest</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks that were added to library first</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps the oldest version (first added) — others removed from your library <span className="text-te-grey-400">(files stay on disk)</span></p>
                 </div>
               </label>
 
@@ -289,7 +289,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div>
                   <span className="font-medium text-te-grey-800">Keep Preferred Path</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps tracks from your preferred folders/locations</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">Keeps the version in your preferred folder — others removed from your library <span className="text-te-grey-400">(files stay on disk)</span></p>
                 </div>
               </label>
 
@@ -303,7 +303,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 />
                 <div>
                   <span className="font-medium text-te-grey-800">Manual Selection</span>
-                  <p className="text-sm text-te-grey-600 font-te-mono">Let you choose which track to keep for each duplicate</p>
+                  <p className="text-sm text-te-grey-600 font-te-mono">You pick which version to keep — the rest are removed from your library <span className="text-te-grey-400">(files stay on disk)</span></p>
                 </div>
               </label>
             </div>

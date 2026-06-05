@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import logoUrl from '../../assets/logo.png';
 
 interface SplashScreenProps {
   isLoading?: boolean;
@@ -24,7 +25,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         <div className="flex items-center justify-center space-x-3 mb-8">
           <div className="relative">
             <img
-              src="./logo.png"
+              src={logoUrl}
               alt="Rekordbox Library Fixer"
               className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg"
             />

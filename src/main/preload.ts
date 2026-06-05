@@ -27,9 +27,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cancelAutoRelocate: (operationId: string) =>
     ipcRenderer.invoke('cancel-auto-relocate', operationId),
   onAutoRelocateProgress: (callback: (progress: any) => void) => {
-    ipcRenderer.on('auto-relocate-progress', (_, progress) => callback(progress));
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('auto-relocate-progress', handler);
     return () => {
-      ipcRenderer.removeAllListeners('auto-relocate-progress');
+      ipcRenderer.removeListener('auto-relocate-progress', handler);
     };
   },
   findRelocationCandidates: (track: any, options: any) =>
@@ -101,6 +102,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
     ipcRenderer.on('consolidate-progress', handler);
     return () => { ipcRenderer.removeListener('consolidate-progress', handler); };
+  },
+
+  // Filter & Move/Copy
+  filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) =>
+    ipcRenderer.invoke('filter-preview', data),
+  filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) =>
+    ipcRenderer.invoke('filter-library', data),
+  cancelFilter: (operationId: string) =>
+    ipcRenderer.invoke('cancel-filter', operationId),
+  onFilterProgress: (callback: (progress: any) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+    ipcRenderer.on('filter-progress', handler);
+    return () => { ipcRenderer.removeListener('filter-progress', handler); };
   },
 
   // Native drag-and-drop

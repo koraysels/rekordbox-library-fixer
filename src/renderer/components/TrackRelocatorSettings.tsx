@@ -3,6 +3,8 @@ import { Plus, X, FolderOpen } from 'lucide-react';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { RelocationOptions } from '../types';
 
+const ALL_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg'];
+
 interface TrackRelocatorSettingsProps {
   searchOptions: RelocationOptions;
   newSearchPath: string;
@@ -78,14 +80,32 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
       <div>
         <h3 className="te-title mb-4">File Extensions</h3>
         <div className="flex flex-wrap gap-2">
-          {searchOptions.fileExtensions.map((ext) => (
-            <span key={ext} className="px-3 py-1 bg-te-grey-300 border-2 border-te-grey-400 rounded-te text-sm te-value font-te-mono">
-              {ext}
-            </span>
-          ))}
+          {ALL_EXTENSIONS.map((ext) => {
+            const active = searchOptions.fileExtensions.includes(ext);
+            return (
+              <button
+                key={ext}
+                type="button"
+                onClick={() => {
+                  const next = active
+                    ? searchOptions.fileExtensions.filter(e => e !== ext)
+                    : [...searchOptions.fileExtensions, ext];
+                  if (next.length > 0) { updateRelocationOption('fileExtensions', next); }
+                }}
+                className={`px-3 py-1 border-2 rounded-te text-sm font-te-mono transition-colors ${
+                  active
+                    ? 'bg-te-orange border-te-orange text-white'
+                    : 'bg-te-grey-200 border-te-grey-300 text-te-grey-500 hover:border-te-grey-400'
+                }`}
+                title={active ? `Exclude ${ext} from search` : `Include ${ext} in search`}
+              >
+                {ext}
+              </button>
+            );
+          })}
         </div>
         <p className="text-sm te-label mt-2 font-te-mono">
-          Audio file types to search for during relocation
+          Click to toggle which file types to search for during relocation
         </p>
       </div>
 

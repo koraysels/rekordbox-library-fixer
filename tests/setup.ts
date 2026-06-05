@@ -19,11 +19,16 @@ vi.mock('fs/promises', () => ({
   open: vi.fn(),
 }));
 
-// Mock fs for tests that don't need real file access
+// Mock fs for tests — use explicit stubs for sync methods because vitest 4's
+// Vite SSR module wrapper doesn't expose Node built-in methods via spread.
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();
   return {
     ...actual,
+    existsSync: vi.fn(() => true),  // Logger skips mkdirSync when this returns true
+    mkdirSync: vi.fn(),
+    appendFileSync: vi.fn(),
+    readFileSync: actual.readFileSync, // Keep real readFileSync for fixtures
     promises: {
       ...actual.promises,
       readFile: vi.fn(),
@@ -32,7 +37,6 @@ vi.mock('fs', async (importOriginal) => {
       stat: vi.fn(),
       open: vi.fn(),
     },
-    readFileSync: actual.readFileSync, // Keep real readFileSync for fixtures
   };
 });
 
