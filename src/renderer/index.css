@@ -2,6 +2,73 @@
 
 @import "tailwindcss";
 
+@theme {
+  /* TE colours */
+  --color-te-orange: #FF6B35;
+  --color-te-black: #0A0A0A;
+  --color-te-cream: #FAF6F2;
+  --color-te-yellow: #FFD93D;
+
+  --color-te-grey-50:  #FAFAFA;
+  --color-te-grey-100: #F5F5F5;
+  --color-te-grey-200: #E8E8E8;
+  --color-te-grey-300: #D1D1D1;
+  --color-te-grey-400: #A8A8A8;
+  --color-te-grey-500: #7A7A7A;
+  --color-te-grey-600: #4A4A4A;
+  --color-te-grey-700: #2D2D2D;
+  --color-te-grey-800: #1A1A1A;
+  --color-te-grey-900: #0F0F0F;
+
+  --color-te-red-50:  #FFF5F5;
+  --color-te-red-100: #FED7D7;
+  --color-te-red-200: #FEB2B2;
+  --color-te-red-500: #E53E3E;
+  --color-te-red-600: #C53030;
+
+  --color-te-green-50:  #F0FFF4;
+  --color-te-green-100: #C6F6D5;
+  --color-te-green-200: #9AE6B4;
+  --color-te-green-500: #38A169;
+  --color-te-green-600: #2F855A;
+
+  --color-te-amber-50:  #FFFBEB;
+  --color-te-amber-100: #FEF3C7;
+  --color-te-amber-200: #FDE68A;
+  --color-te-amber-500: #F59E0B;
+  --color-te-amber-600: #D97706;
+
+  --color-rekordbox-purple: #A855F7;
+  --color-rekordbox-dark:   #18181B;
+  --color-rekordbox-gray:   #27272A;
+  --color-rekordbox-light:  #F4F4F5;
+
+  /* TE fonts */
+  --font-te-display: 'Orbitron', 'Space Mono', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+  --font-te-mono:    'Space Mono', 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+  --font-te-sans:    'Space Mono', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* TE letter spacing */
+  --tracking-te-display: 0.1em;
+  --tracking-te-mono:    0.025em;
+  --tracking-te-wide:    0.15em;
+
+  /* TE border radius */
+  --radius-te:    4px;
+  --radius-te-lg: 8px;
+
+  /* TE spacing */
+  --spacing-te-xs: 2px;
+  --spacing-te-sm: 4px;
+  --spacing-te-md: 8px;
+  --spacing-te-lg: 16px;
+  --spacing-te-xl: 24px;
+
+  /* TE animations */
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-te-glow:    glow 2s ease-in-out infinite alternate;
+}
+
 @layer base {
   html, body {
     @apply bg-te-grey-100 text-te-grey-800 font-te-mono;
