@@ -188,10 +188,14 @@ declare global {
       }>;
       saveRekordboxXML: (data: any) => Promise<any>;
       showFileInFolder: (filePath: string) => Promise<any>;
+      openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+      saveDroppedFile: (data: { content: string; fileName: string }) => Promise<{ success: boolean; data?: { filePath: string }; error?: string }>;
       // Track Relocation APIs
       findMissingTracks: (tracks: any) => Promise<any>;
       resetTrackLocations: (trackIds: string[]) => Promise<any>;
       autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) => Promise<any>;
+      cancelAutoRelocate: (operationId: string) => Promise<any>;
+      onAutoRelocateProgress: (callback: (progress: any) => void) => () => void;
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
       batchRelocateTracks: (data: { libraryPath: string; relocations: any[] }) => Promise<any>;

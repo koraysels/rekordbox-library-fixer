@@ -42,7 +42,7 @@ const DuplicateDetector: React.FC = () => {
     setSearchFilter,
     isSearching,
     filteredDuplicates
-  } = useDuplicates(libraryPath, showNotification);
+  } = useDuplicates(libraryPath);
 
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
 
@@ -113,7 +113,7 @@ const DuplicateDetector: React.FC = () => {
   // Preferences are now saved in the useDuplicates hook
 
   // Debounced save function to reduce database writes
-  const debouncedSaveRef = React.useRef<NodeJS.Timeout>();
+  const debouncedSaveRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const saveDuplicateResults = useCallback(async () => {
     if (!libraryPath) {return;}
@@ -149,6 +149,7 @@ const DuplicateDetector: React.FC = () => {
   }, [duplicates, selectedDuplicates, hasScanned, libraryPath, currentLibraryPath]);
 
   const scanForDuplicates = async () => {
+    if (!libraryData) { return; }
     setIsScanning(true);
     try {
       const tracks = Array.from(libraryData.tracks.values());

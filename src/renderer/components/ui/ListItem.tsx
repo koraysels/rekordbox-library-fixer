@@ -4,7 +4,7 @@ interface ListItemProps {
   /** Whether the item is selected */
   isSelected?: boolean;
   /** Click handler for the entire item */
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLDivElement> | (() => void);
   /** Additional CSS classes */
   className?: string;
   /** Item content */
