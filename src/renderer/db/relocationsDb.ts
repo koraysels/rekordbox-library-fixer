@@ -132,7 +132,7 @@ export const relocationStorage = {
         : { ...storableResult, createdAt: now, updatedAt: now };
 
       // Use put for better performance (handles both insert and update)
-      await db.relocationResults.put(recordToSave);
+      await db.relocationResults.put(recordToSave as any);
     } catch (error) {
       console.error('Failed to save relocation result:', error);
       throw error;
@@ -206,7 +206,7 @@ export const relocationStorage = {
 
     // Use bulkPut for better performance
     const db = await ensureDatabaseConnection();
-    await db.relocationResults.bulkPut(recordsToSave);
+    await db.relocationResults.bulkPut(recordsToSave as any);
   },
 };
 

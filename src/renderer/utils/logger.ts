@@ -1,3 +1,5 @@
+/// <reference types="vite/client" />
+
 /**
  * Renderer process logging utility
  *

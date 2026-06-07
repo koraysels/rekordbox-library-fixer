@@ -4,6 +4,8 @@ import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
 interface SettingsPanelProps {
+  isOpen?: boolean;
+  onClose?: () => void;
   scanOptions: ScanOptions;
   setScanOptions: (options: ScanOptions) => void;
   resolutionStrategy: ResolutionStrategy;
@@ -67,7 +69,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const pathPreferenceInput = useWatch({ control, name: 'pathPreferenceInput' });
 
   // Debounced sync to Zustand store
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const syncToStore = useCallback((scanOpts: ScanOptions, resStrategy: ResolutionStrategy) => {
     if (debounceRef.current) {
