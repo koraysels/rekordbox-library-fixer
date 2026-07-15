@@ -103,4 +103,13 @@ describe('playerStore + audioController', () => {
     await audioController.playTrack({ ...TRACK, id: 't2', location: '/music/two.mp3' });
     expect(revoke).toHaveBeenCalled();
   });
+
+  it('late async pause event after stop does not overwrite idle', async () => {
+    await audioController.playTrack(TRACK);
+    audioController.stop();
+    expect(usePlayerStore.getState().status).toBe('idle');
+    // real HTMLMediaElement fires 'pause' as a queued task — simulate it arriving late
+    fake.emit('pause');
+    expect(usePlayerStore.getState().status).toBe('idle');
+  });
 });
