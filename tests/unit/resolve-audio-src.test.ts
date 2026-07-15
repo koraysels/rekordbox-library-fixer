@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mediaUrl, resolveAudioSrc } from '../../src/renderer/audio/resolveAudioSrc';
 
 describe('mediaUrl', () => {
@@ -44,5 +44,10 @@ describe('resolveAudioSrc', () => {
   it('throws a clear error when the file is missing (404)', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
     await expect(resolveAudioSrc('/gone.aif')).rejects.toThrow('File missing or unreadable');
+  });
+
+  it('throws a clear error when fetch itself rejects', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    await expect(resolveAudioSrc('/gone.aiff')).rejects.toThrow('File missing or unreadable');
   });
 });

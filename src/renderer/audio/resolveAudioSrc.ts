@@ -13,7 +13,12 @@ export async function resolveAudioSrc(
   if (!AIFF_RE.test(location)) {
     return { src: url, revoke: null };
   }
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch {
+    throw new Error('File missing or unreadable');
+  }
   if (!res.ok) { throw new Error('File missing or unreadable'); }
   const wav = aiffToWav(await res.arrayBuffer());
   const blobUrl = URL.createObjectURL(new Blob([wav], { type: 'audio/wav' }));
