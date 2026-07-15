@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { formatFileSize, formatDuration } from '../utils';
 import { useFileOperations } from '../hooks';
-import { ConfidenceBadge } from './ui';
+import { ConfidenceBadge, PlayButton } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
 
 const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
@@ -185,7 +185,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1.5">
-                      <h4 className="font-medium text-sm truncate te-value font-te-mono">{track.name}</h4>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: track.location }} />
+                        <h4 className="font-medium text-sm truncate te-value font-te-mono">{track.name}</h4>
+                      </div>
                       {resolutionStrategy !== 'manual' && (
                         isRecommended ? (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-green-100 text-te-green-600 border border-te-green-200 font-te-mono whitespace-nowrap">
