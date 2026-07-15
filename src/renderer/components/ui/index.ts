@@ -17,3 +17,4 @@ export { PageHeader } from './PageHeader';
 export { ListItem } from './ListItem';
 export { Skeleton, SkeletonText, SkeletonCard } from './Skeleton';
 export { DeleteConfirmModal } from './DeleteConfirmModal';
+export { MiniPlayer } from './MiniPlayer';
