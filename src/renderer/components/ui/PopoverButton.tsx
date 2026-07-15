@@ -28,7 +28,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
   const [showPopover, setShowPopover] = useState(false);
   const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0, placement: 'top' as 'top' | 'bottom' | 'left' | 'right' });
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const hideTimeoutRef = useRef<NodeJS.Timeout>();
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const variantClasses = {
     primary: 'btn-primary',
@@ -178,7 +178,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
     // Clear any existing hide timeout
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = undefined;
+      hideTimeoutRef.current = null;
     }
 
     updatePopoverPosition();
@@ -196,7 +196,7 @@ export const PopoverButton: React.FC<PopoverButtonProps> = ({
     // Keep popover open when mouse enters it
     if (hideTimeoutRef.current) {
       clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = undefined;
+      hideTimeoutRef.current = null;
     }
   }, []);
 

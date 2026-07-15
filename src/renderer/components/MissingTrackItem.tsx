@@ -58,7 +58,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
                   {track.name}
                 </h3>
                 {track.isUnlocatable && (
-                  <AlertTriangle size={14} className="text-te-orange" title="Marked as unlocatable" />
+                  <AlertTriangle size={14} className="text-te-orange" />
                 )}
               </div>
               <p className={`text-sm ${track.isUnlocatable ? 'text-te-orange' : 'te-label'} font-te-mono`}>

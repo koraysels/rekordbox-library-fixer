@@ -23,8 +23,8 @@ export const useDuplicates = (
     const setResolutionStrategy = useSettingsStore((state) => state.setResolutionStrategy);
 
     // Debounced save reference
-    const debouncedSaveRef = useRef<NodeJS.Timeout>();
-    const debouncedSearchRef = useRef<NodeJS.Timeout>();
+    const debouncedSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const debouncedSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Debounce search filter to improve performance
     useEffect(() => {

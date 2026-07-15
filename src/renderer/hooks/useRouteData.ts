@@ -1,7 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { relocationStorage } from '../db/relocationsDb';
-import { useSettingsStore } from '../stores/settingsStore';
 
 /**
  * Hook to fetch data based on current route

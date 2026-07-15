@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Wrench, FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Info, Filter, Plus, Trash2 } from 'lucide-react';
+import { Wrench, FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Info, Plus, Trash2 } from 'lucide-react';
 import { PageHeader } from '../ui';
 import { useAppContext } from '../../AppWithRouter';
 import { formatFileSize } from '../../utils';
