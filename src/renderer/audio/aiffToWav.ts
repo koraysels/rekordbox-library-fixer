@@ -31,25 +31,35 @@ export function aiffToWav(input: ArrayBuffer): ArrayBuffer {
     const id = readTag(dv, o);
     const size = dv.getUint32(o + 4);
     const body = o + 8;
-    if (id === 'COMM') {
-      seenComm = true;
-      channels = dv.getUint16(body);
-      sampleSize = dv.getUint16(body + 6);
-      sampleRate = Math.round(readExtendedFloat(dv, body + 8));
-      if (formType === 'AIFC') {
-        const compression = readTag(dv, body + 18);
-        if (compression === 'sowt') { littleEndian = true; }
-        else if (compression !== 'NONE') { throw new Error('Unsupported AIFF variant'); }
+    try {
+      if (id === 'COMM') {
+        seenComm = true;
+        channels = dv.getUint16(body);
+        sampleSize = dv.getUint16(body + 6);
+        sampleRate = Math.round(readExtendedFloat(dv, body + 8));
+        if (formType === 'AIFC') {
+          const compression = readTag(dv, body + 18);
+          if (compression === 'sowt') { littleEndian = true; }
+          else if (compression !== 'NONE') { throw new Error('Unsupported AIFF variant'); }
+        }
+      } else if (id === 'SSND') {
+        const dataOffset = dv.getUint32(body);
+        dataStart = body + 8 + dataOffset;
+        dataLength = size - 8 - dataOffset;
       }
-    } else if (id === 'SSND') {
-      const dataOffset = dv.getUint32(body);
-      dataStart = body + 8 + dataOffset;
-      dataLength = size - 8 - dataOffset;
+    } catch (e) {
+      if (e instanceof Error && e.message === 'Unsupported AIFF variant') {
+        throw e;
+      }
+      if (e instanceof RangeError) {
+        throw new Error('Invalid AIFF file');
+      }
+      throw e;
     }
     o = body + size + (size % 2); // chunks pad to even
   }
 
-  if (!seenComm || dataStart < 0 || channels === 0 || sampleSize === 0 || sampleRate === 0) {
+  if (!seenComm || dataStart < 0 || dataLength < 0 || dataStart > input.byteLength || channels === 0 || sampleSize === 0 || sampleRate === 0) {
     throw new Error('Invalid AIFF file');
   }
   dataLength = Math.min(dataLength, input.byteLength - dataStart);
