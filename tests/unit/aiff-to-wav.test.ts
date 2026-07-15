@@ -90,4 +90,22 @@ describe('aiffToWav', () => {
     const junk = new Uint8Array(64).fill(65);
     expect(() => aiffToWav(junk.buffer)).toThrow('Not an AIFF file');
   });
+
+  it('rejects truncated AIFF (COMM header but no body)', () => {
+    const buf = new ArrayBuffer(20);
+    const dv = new DataView(buf);
+    const str = (at: number, s: string) => { for (let i = 0; i < s.length; i++) { dv.setUint8(at + i, s.charCodeAt(i)); } };
+    str(0, 'FORM'); dv.setUint32(4, 12); str(8, 'AIFF');
+    str(12, 'COMM'); dv.setUint32(16, 18); // declares 18-byte body that doesn't exist
+    expect(() => aiffToWav(buf)).toThrow('Invalid AIFF file');
+  });
+
+  it('rejects SSND offset pointing past the buffer', () => {
+    // valid COMM, then SSND whose declared data offset exceeds the chunk
+    const buf = buildAiff({ samples: [1] });
+    const dv = new DataView(buf);
+    // SSND chunk starts at byte 38; its offset field is at 46 — poison it
+    dv.setUint32(46, 0xffff);
+    expect(() => aiffToWav(buf)).toThrow('Invalid AIFF file');
+  });
 });
