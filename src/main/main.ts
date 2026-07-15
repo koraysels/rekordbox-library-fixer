@@ -1,5 +1,7 @@
 import * as path from 'path';
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net } from 'electron';
+import { pathToFileURL } from 'url';
+import { mediaUrlToFilePath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
@@ -9,6 +11,11 @@ import { LibraryConsolidator } from './libraryConsolidator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
+
+// Must run before app ready — grants media:// streaming + fetch privileges
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'media', privileges: { stream: true, supportFetchAPI: true } }
+]);
 
 const libraryConsolidator = new LibraryConsolidator();
 
@@ -243,6 +250,15 @@ function createMenu() {
 }
 
 app.whenReady().then(async () => {
+  protocol.handle('media', (request) => {
+    try {
+      const filePath = mediaUrlToFilePath(request.url);
+      return net.fetch(pathToFileURL(filePath).toString());
+    } catch {
+      return new Response('Bad media URL', { status: 400 });
+    }
+  });
+
   // Enable context menu with copy/paste support using eval to bypass TypeScript compilation
   try {
     // electron-context-menu is ESM-only; TypeScript compiles import() to require()
