@@ -91,6 +91,7 @@
     "fuzzy-search": "^3.2.1",
     "glob": "^13.0.6",
     "lucide-react": "^1.17.0",
+    "media-chrome": "^4.19.2",
     "music-metadata": "^10.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

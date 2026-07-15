@@ -3,7 +3,7 @@ import { useLocation, Outlet } from '@tanstack/react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
-import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler } from './components/ui';
+import { NotificationToast, EmptyLibraryState, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler, MiniPlayer } from './components/ui';
 import { Sidebar } from './components/Sidebar';
 import type { TabType, LibraryData, NotificationType } from './types';
 
@@ -150,6 +150,9 @@ const AppWithRouter: React.FC = () => {
           </AppContext.Provider>
         )}
         </div>
+
+        {/* Mini player */}
+        <MiniPlayer showNotification={showNotification} />
 
         {/* Footer */}
         <AppFooter libraryData={libraryData} />
