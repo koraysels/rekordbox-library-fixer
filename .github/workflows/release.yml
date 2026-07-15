@@ -32,9 +32,8 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
 
+      # pnpm version comes from packageManager field in package.json
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
