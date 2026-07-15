@@ -58,25 +58,13 @@ export const useFileDropzone = ({
       const file = acceptedFiles[0];
 
       try {
-        // Prefer native file path when available (more efficient)
-        if (file.path) {
-          try {
-            const result = await window.electronAPI.saveDroppedFile({
-              filePath: file.path
-            });
-
-            if (result.success && result.data?.filePath) {
-              onDrop(result.data.filePath);
-              return;
-            } else {
-              console.warn('Failed to use direct file path, falling back to content read:', result.error);
-            }
-          } catch (pathError) {
-            console.warn('Direct file path access failed, falling back to content read:', pathError);
-          }
+        // In Electron, use the native file path directly (most efficient)
+        if (file.path && file.path !== file.name) {
+          onDrop(file.path);
+          return;
         }
 
-        // Fallback: read file content and send to main process
+        // Fallback: read file content and send to main process to write a temp file
         const content = await file.text();
 
         const result = await window.electronAPI.saveDroppedFile({
@@ -106,18 +94,8 @@ export const useFileDropzone = ({
       };
     }
 
-    // Use configurable patterns for file name validation
-    const patterns = fileNamePatterns && fileNamePatterns.length > 0
-      ? fileNamePatterns
-      : ['rekordbox', 'library', 'collection'];
-    const matchesPattern = patterns.some(pattern => {
-      if (typeof pattern === 'string') {
-        return fileName.includes(pattern.toLowerCase());
-      } else if (pattern instanceof RegExp) {
-        return pattern.test(fileName);
-      }
-      return false;
-    });
+    const patterns = ['rekordbox', 'library', 'collection'];
+    const matchesPattern = patterns.some(pattern => fileName.includes(pattern));
     if (!matchesPattern) {
       return {
         code: 'file-not-rekordbox',

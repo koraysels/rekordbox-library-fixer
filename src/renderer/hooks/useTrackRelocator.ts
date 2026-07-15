@@ -345,7 +345,7 @@ export function useTrackRelocator(
         // and clear their relocations from the map
         setState(prev => {
           const newRelocations = new Map(prev.relocations);
-          successfulTrackIds.forEach(trackId => {
+          successfulTrackIds.forEach((trackId: string) => {
             newRelocations.delete(trackId);
           });
 
@@ -367,7 +367,7 @@ export function useTrackRelocator(
         // Update candidates cache to remove relocated tracks
         setRelocationCandidatesCache(prev => {
           const newCache = new Map(prev);
-          successfulTrackIds.forEach(trackId => {
+          successfulTrackIds.forEach((trackId: string) => {
             newCache.delete(trackId);
           });
           return newCache;

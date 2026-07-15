@@ -132,25 +132,25 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
         {stats && (
           <div className="flex items-center justify-between space-x-6 mb-3">
             <div className="flex items-center space-x-2">
-              <BarChart3 size={16} className="text-te-grey-600" title="Total number of relocated tracks" />
+              <BarChart3 size={16} className="text-te-grey-600" />
               <span className="text-sm te-label">Total:</span>
               <span className="text-lg font-bold te-value">{stats.totalRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Zap size={16} className="text-te-green-500" title="Automatically relocated tracks" />
+              <Zap size={16} className="text-te-green-500" />
               <span className="text-sm te-label">Auto:</span>
               <span className="text-lg font-bold te-value">{stats.autoRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Target size={16} className="text-te-orange" title="Manually relocated tracks" />
+              <Target size={16} className="text-te-orange" />
               <span className="text-sm te-label">Manual:</span>
               <span className="text-lg font-bold te-value">{stats.manualRelocations}</span>
             </div>
 
             <div className="flex items-center space-x-2">
-              <TrendingUp size={16} className="text-te-amber-500" title="Average confidence score of auto-relocations" />
+              <TrendingUp size={16} className="text-te-amber-500" />
               <span className="text-sm te-label">Avg Confidence:</span>
               <span className="text-lg font-bold te-value">
                 {stats.averageConfidence > 0 ? `${Math.round(stats.averageConfidence * 100)}%` : 'N/A'}
@@ -184,14 +184,14 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                 className="p-2 bg-te-grey-300 hover:bg-te-grey-400 rounded-te border-2 border-te-grey-400 transition-colors disabled:opacity-50"
                 title="Refresh History"
             >
-              <RefreshCw size={16} className={`text-te-grey-700 ${isLoading ? 'animate-spin' : ''}`} title="Refresh history" />
+              <RefreshCw size={16} className={`text-te-grey-700 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
                 onClick={clearHistory}
                 className="p-2 bg-te-red-500 hover:bg-te-red-600 rounded-te border-2 border-te-red-500 text-te-cream transition-colors"
                 title="Clear History"
             >
-              <Trash2 size={16} title="Clear all history" />
+              <Trash2 size={16} />
             </button>
           </div>
         </div>
@@ -225,9 +225,9 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       {entry.relocationMethod === 'auto' ? (
-                        <Zap size={16} className="text-te-green-500" title="Automatically relocated tracks" />
+                        <Zap size={16} className="text-te-green-500" />
                       ) : (
-                        <Target size={16} className="text-te-orange" title="Manually relocated tracks" />
+                        <Target size={16} className="text-te-orange" />
                       )}
                       <span className="text-sm font-medium te-label uppercase">
                         {entry.relocationMethod}
@@ -244,10 +244,10 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                         </span>
                       )}
                       {entry.xmlUpdated && (
-                        <FileText size={12} className="text-te-grey-600" title="Library XML file was updated with new location" />
+                        <FileText size={12} className="text-te-grey-600" />
                       )}
                       {entry.backupCreated && (
-                        <Shield size={12} className="text-te-green-500" title="Backup of original XML was created before changes" />
+                        <Shield size={12} className="text-te-green-500" />
                       )}
                     </div>
                     <span className="text-xs text-te-grey-500">

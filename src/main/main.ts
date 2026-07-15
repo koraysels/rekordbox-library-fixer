@@ -631,7 +631,7 @@ ipcMain.handle('reset-track-locations', async (_, trackIds: string[]) => {
 // Store active operations for cancellation
 const activeOperations = new Map<string, { cancelled: boolean }>();
 
-ipcMain.handle('auto-relocate-tracks', async (event, data: {
+ipcMain.handle('auto-relocate-tracks', async (_event, data: {
   tracks: any[];
   options: any;
   libraryPath: string;
