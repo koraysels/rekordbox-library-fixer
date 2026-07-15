@@ -11,6 +11,7 @@ import {
   Star
 } from 'lucide-react';
 import { formatFileSize, formatDuration, formatDate } from '../utils';
+import { PlayButton } from './ui';
 
 interface TrackDetailsProps {
   track: any;
@@ -20,6 +21,11 @@ const TrackDetails: React.FC<TrackDetailsProps> = ({ track }) => {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center space-x-2">
+        <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: track.location }} size={18} />
+        <span className="text-sm font-medium font-te-mono">Preview</span>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <div className="flex items-center space-x-2">

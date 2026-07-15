@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Trash2, AlertTriangle } from 'lucide-react';
 import type { MissingTrack } from '../types';
-import { ListItem, PopoverButton } from './ui';
+import { ListItem, PlayButton, PopoverButton } from './ui';
 
 interface MissingTrackItemProps {
   track: MissingTrack;
@@ -54,6 +54,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             />
             <div>
               <div className="flex items-center space-x-2">
+                <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: track.originalLocation }} />
                 <h3 className={`font-medium ${track.isUnlocatable ? 'text-te-orange' : 'te-value'} font-te-mono`}>
                   {track.name}
                 </h3>
