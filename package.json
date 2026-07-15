@@ -132,16 +132,14 @@
           "target": "dmg",
           "arch": [
             "x64",
-            "arm64",
-            "universal"
+            "arm64"
           ]
         },
         {
           "target": "zip",
           "arch": [
             "x64",
-            "arm64",
-            "universal"
+            "arm64"
           ]
         }
       ]
