@@ -7,75 +7,108 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v0.0.6-alpha)'
+        description: 'Tag to release (e.g. v0.0.8-alpha)'
         required: true
 
 permissions:
   contents: write
 
 jobs:
-  build-mac:
-    runs-on: macos-14  # Apple Silicon — electron-builder cross-compiles x64 via Rosetta
+  build:
+    strategy:
+      # One failing platform must not cancel the others
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: mac # x64 + arm64 + universal, driven by package.json build.mac.target
+          - os: windows-latest
+            target: win
+          - os: ubuntu-latest
+            target: linux
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - run: pnpm install --frozen-lockfile
-
-      - run: pnpm build
-
-      - name: Build Mac (x64, arm64, universal)
-        run: npx electron-builder --mac --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+          cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm build
 
-      - name: Build Windows
-        run: npx electron-builder --win --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Package only — publishing happens once in the release job below,
+      # so parallel jobs can't race each other creating/uploading to the release
+      - name: Package ${{ matrix.target }}
+        run: npx electron-builder --${{ matrix.target }} --publish never
 
-  build-linux:
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          if-no-files-found: error
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.AppImage
+            release/*.deb
+            release/*.blockmap
+            release/latest*.yml
+
+  release:
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/download-artifact@v4
         with:
-          node-version: '24'
+          path: artifacts
+          merge-multiple: true
 
-      - uses: pnpm/action-setup@v4
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          version: 10
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.event.inputs.tag || github.ref_name, '-') }}
+          generate_release_notes: true
+          files: artifacts/**
+          append_body: true
+          body: |
+            ## macOS – Which file to download
 
-      - run: pnpm install --frozen-lockfile
+            | Your Mac | File to download |
+            |----------|-----------------|
+            | Apple Silicon (M1/M2/M3/M4) | `...-arm64.dmg` |
+            | Intel (2019 and earlier) | `....dmg` (no arch suffix) |
+            | Not sure | `...-universal.dmg` (works on both) |
 
-      - run: pnpm build
+            **Not sure which chip you have?** Click the Apple menu → About This Mac. It will say "Apple M1" (or M2/M3/M4) or "Intel Core".
 
-      - name: Build Linux
-        run: npx electron-builder --linux --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ---
+
+            ## macOS – Opening an unsigned app
+
+            Since this app is not signed with an Apple Developer certificate, macOS may warn you. To open it:
+
+            **Option 1 – Remove quarantine via Terminal (most reliable):**
+            ```bash
+            xattr -dr com.apple.quarantine /Applications/Rekordbox\ Library\ Fixer.app
+            ```
+
+            **Option 2 – Right-click to open:**
+            1. Right-click the app → **Open**
+            2. Click **Open** in the warning dialog
+            3. macOS will remember the app as safe from now on
+
+            If you see "this app is not supported on this Mac" rather than a security warning, you've downloaded the wrong architecture — use the universal DMG instead.
+
+            ---
+            *Built with ❤️ for DJs*
