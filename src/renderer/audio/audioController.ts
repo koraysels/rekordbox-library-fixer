@@ -71,7 +71,11 @@ export const audioController = {
 
   toggle(): void {
     if (!audio) { return; }
-    if (audio.paused) { void audio.play(); } else { audio.pause(); }
+    if (audio.paused) {
+      audio.play().catch(() => sync({ status: 'error', errorMessage: 'Playback failed' }));
+    } else {
+      audio.pause();
+    }
   },
 
   stop(): void {

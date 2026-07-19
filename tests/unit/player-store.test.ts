@@ -112,4 +112,14 @@ describe('playerStore + audioController', () => {
     fake.emit('pause');
     expect(usePlayerStore.getState().status).toBe('idle');
   });
+
+  it('toggle() sets error status when play() rejects', async () => {
+    await audioController.playTrack(TRACK);
+    audioController.toggle(); // pause
+    expect(usePlayerStore.getState().status).toBe('paused');
+    vi.mocked(fake.el.play).mockRejectedValueOnce(new Error('boom'));
+    audioController.toggle(); // resume -> rejected play()
+    await vi.waitFor(() => expect(usePlayerStore.getState().status).toBe('error'));
+    expect(usePlayerStore.getState().errorMessage).toBe('Playback failed');
+  });
 });

@@ -43,7 +43,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ showNotification }) => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Space') { return; }
       const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, [contenteditable="true"]')) { return; }
+      if (target?.closest('input, textarea, select, button, [contenteditable]')) { return; }
       if (usePlayerStore.getState().status === 'idle') { return; }
       e.preventDefault();
       audioController.toggle();
@@ -58,6 +58,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ showNotification }) => {
       className={`flex-shrink-0 bg-te-grey-700 border-t border-te-grey-600 px-3 py-1.5 ${currentTrack ? '' : 'hidden'}`}
     >
       <MediaController audio className="w-full" style={{ '--media-background-color': 'transparent' } as React.CSSProperties}>
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption -- music preview, captions not applicable */}
         <audio slot="media" ref={audioRef} />
         <div className="flex items-center gap-3">
           <MediaPlayButton className="w-8 h-8 rounded bg-te-grey-600 hover:bg-te-orange transition-colors" />

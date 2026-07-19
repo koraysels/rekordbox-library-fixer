@@ -9,7 +9,7 @@ Preview audio tracks directly in the app: play, pause, seek, and volume control 
 
 ## Requirements
 
-- Play button on every track row: duplicates list, relocate/missing tracks, filter page, track details panel.
+- Play button on every track row: duplicates list, relocate/missing tracks, track details panel (filter page has no per-track rows — dropped).
 - Persistent bottom mini-player bar between page content and the existing `AppFooter`; hidden when idle, survives page switches.
 - Controls: play/pause, seek bar with `elapsed / total` time display, volume slider with mute toggle, stop (✕).
 - Volume persists across sessions.
@@ -42,7 +42,7 @@ Everything plays through a **single `<audio>` element**; media-chrome components
 
 3. **UI components** — player UI is composed from **media-chrome** (`media-chrome/react`), not hand-built:
    - **`src/renderer/components/ui/MiniPlayer.tsx`** — bottom bar rendered in `AppWithRouter` above `AppFooter`. `<MediaController audio>` wrapping the single `<audio slot="media">` plus ready-made `<MediaPlayButton>`, `<MediaTimeRange>`, `<MediaTimeDisplay showDuration>`, `<MediaMuteButton>`, `<MediaVolumeRange>`; custom bits are only the track title/artist text and the stop ✕ button. Styled via media-chrome CSS vars + Tailwind to match the TE theme. Hidden when `status === 'idle'`.
-   - **`src/renderer/components/ui/PlayButton.tsx`** — small reusable button: ▶ (idle/other track), ⏸ (this track playing), spinner (this track loading). Dropped into `DuplicateItem`, `MissingTrackItem`, `VirtualizedList` rows, `TrackDetails`, filter page rows. Reads `playerStore`; never touches the element directly.
+   - **`src/renderer/components/ui/PlayButton.tsx`** — small reusable button: ▶ (idle/other track), ⏸ (this track playing), spinner (this track loading). Dropped into `DuplicateItem`, `MissingTrackItem`, `VirtualizedList` rows, `TrackDetails`. Reads `playerStore`; never touches the element directly. Note: `TrackDetails` is currently not mounted anywhere in the app (pre-existing); its PlayButton becomes active if/when the panel is used.
 
 ### New dependency
 

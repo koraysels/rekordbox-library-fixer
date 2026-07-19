@@ -108,4 +108,15 @@ describe('aiffToWav', () => {
     dv.setUint32(46, 0xffff);
     expect(() => aiffToWav(buf)).toThrow('Invalid AIFF file');
   });
+
+  it('rejects a non-finite sample rate from a garbage 80-bit extended float', () => {
+    const buf = buildAiff({ samples: [1] });
+    const dv = new DataView(buf);
+    // COMM body starts at byte 20 (tag 'COMM' at 12, size at 16); the extended-float
+    // sampleRate field is body+8 = 28: exponent (u16 @28), mantissa hi (u32 @30), lo (u32 @34).
+    dv.setUint16(28, 0x7fff); // maxed-out exponent
+    dv.setUint32(30, 0);     // zero mantissa hi -> exponent overflow * 0 mantissa = NaN
+    dv.setUint32(34, 0);     // zero mantissa lo
+    expect(() => aiffToWav(buf)).toThrow('Invalid AIFF file');
+  });
 });

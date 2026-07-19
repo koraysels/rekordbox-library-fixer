@@ -59,7 +59,7 @@ export function aiffToWav(input: ArrayBuffer): ArrayBuffer {
     o = body + size + (size % 2); // chunks pad to even
   }
 
-  if (!seenComm || dataStart < 0 || dataLength < 0 || dataStart > input.byteLength || channels === 0 || sampleSize === 0 || sampleRate === 0) {
+  if (!seenComm || dataStart < 0 || dataLength < 0 || dataStart > input.byteLength || channels === 0 || sampleSize === 0 || !Number.isFinite(sampleRate) || sampleRate <= 0) {
     throw new Error('Invalid AIFF file');
   }
   dataLength = Math.min(dataLength, input.byteLength - dataStart);

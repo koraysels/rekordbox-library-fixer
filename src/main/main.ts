@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net } from 'electron';
 import { pathToFileURL } from 'url';
-import { mediaUrlToFilePath } from './mediaProtocol';
+import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
@@ -253,7 +253,10 @@ app.whenReady().then(async () => {
   protocol.handle('media', (request) => {
     try {
       const filePath = mediaUrlToFilePath(request.url);
-      return net.fetch(pathToFileURL(filePath).toString());
+      if (!isAllowedMediaPath(filePath)) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      return net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers });
     } catch {
       return new Response('Bad media URL', { status: 400 });
     }

@@ -54,7 +54,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             />
             <div>
               <div className="flex items-center space-x-2">
-                <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: track.originalLocation }} />
+                <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: relocationPath ?? track.originalLocation }} />
                 <h3 className={`font-medium ${track.isUnlocatable ? 'text-te-orange' : 'te-value'} font-te-mono`}>
                   {track.name}
                 </h3>
