@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mediaUrlToFilePath } from '../../src/main/mediaProtocol';
+import { mediaUrlToFilePath, isAllowedMediaPath } from '../../src/main/mediaProtocol';
 
 describe('mediaUrlToFilePath', () => {
   it('decodes a mac path', () => {
@@ -15,5 +15,18 @@ describe('mediaUrlToFilePath', () => {
   it('decodes a windows path', () => {
     const p = 'C:\\Music\\track.flac';
     expect(mediaUrlToFilePath(`media:///${encodeURIComponent(p)}`)).toBe(p);
+  });
+});
+
+describe('isAllowedMediaPath', () => {
+  it('allows known audio extensions', () => {
+    expect(isAllowedMediaPath('/Users/dj/Music/track.mp3')).toBe(true);
+    expect(isAllowedMediaPath('/Users/dj/Music/track.AIFF')).toBe(true);
+  });
+
+  it('rejects paths without an allowed audio extension', () => {
+    expect(isAllowedMediaPath('/Users/dj/.ssh/id_rsa')).toBe(false);
+    expect(isAllowedMediaPath('/etc/passwd')).toBe(false);
+    expect(isAllowedMediaPath('/Users/dj/Music/track.mp3.txt')).toBe(false);
   });
 });
