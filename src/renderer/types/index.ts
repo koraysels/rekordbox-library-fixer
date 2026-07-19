@@ -170,6 +170,9 @@ export interface FilterRule {
 
 // Electron API types
 declare global {
+  // Injected at build time by Vite define (package.json version)
+  const __APP_VERSION__: string | undefined;
+
   interface Window {
     electronAPI: {
       selectRekordboxXML: () => Promise<string | null>;
