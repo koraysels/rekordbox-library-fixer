@@ -7,7 +7,8 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  version: '0.0.2', // Default fallback version
+  // Build-time version from package.json (vite define) — IPC value overrides at runtime
+  version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0',
   isVersionLoaded: false,
 
   loadVersion: async () => {
