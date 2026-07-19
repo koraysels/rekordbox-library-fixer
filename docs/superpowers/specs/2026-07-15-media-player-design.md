@@ -20,8 +20,8 @@ Preview audio tracks directly in the app: play, pause, seek, and volume control 
 
 ### Main process — `media://` protocol
 
-- `protocol.registerSchemesAsPrivileged([{ scheme: 'media', privileges: { stream: true, supportFetchAPI: true } }])` before `app.whenReady()`.
-- In `whenReady`: `protocol.handle('media', req => net.fetch(pathToFileURL(decodedPath).toString()))`.
+- `protocol.registerSchemesAsPrivileged([{ scheme: 'media', privileges: { stream: true, supportFetchAPI: true, corsEnabled: true } }])` before `app.whenReady()`. `corsEnabled` + an `Access-Control-Allow-Origin: *` response header are required for renderer `fetch()` (the AIFF path) — verified empirically; without them Chromium blocks cross-origin fetch to the custom scheme.
+- In `whenReady`: `protocol.handle('media', …)` decodes the path, rejects non-audio extensions (403), forwards `request.headers` to `net.fetch(pathToFileURL(path))` so range requests work, and adds the ACAO header.
 - Streams from disk with HTTP range request support → instant start and seek without loading whole files into memory. Missing file → 404 response.
 - Renderer URL shape: `media:///${encodeURIComponent(track.location)}`.
 

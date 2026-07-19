@@ -12,9 +12,11 @@ import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
 
-// Must run before app ready — grants media:// streaming + fetch privileges
+// Must run before app ready — grants media:// streaming + fetch privileges.
+// corsEnabled is required for renderer fetch() (the AIFF rewrap path); without
+// it Chromium refuses cross-origin fetches to the custom scheme entirely.
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'media', privileges: { stream: true, supportFetchAPI: true } }
+  { scheme: 'media', privileges: { stream: true, supportFetchAPI: true, corsEnabled: true } }
 ]);
 
 const libraryConsolidator = new LibraryConsolidator();
@@ -250,13 +252,17 @@ function createMenu() {
 }
 
 app.whenReady().then(async () => {
-  protocol.handle('media', (request) => {
+  protocol.handle('media', async (request) => {
     try {
       const filePath = mediaUrlToFilePath(request.url);
       if (!isAllowedMediaPath(filePath)) {
         return new Response('Forbidden', { status: 403 });
       }
-      return net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers });
+      const res = await net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers });
+      // CORS-enabled scheme: renderer fetch() needs an explicit allow header
+      const headers = new Headers(res.headers);
+      headers.set('Access-Control-Allow-Origin', '*');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
     } catch {
       return new Response('Bad media URL', { status: 400 });
     }
