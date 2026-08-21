@@ -23,8 +23,8 @@ export const BackupsPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    if (!libraryPath) { setBackups([]); return; }
-    const result = await window.electronAPI.listBackups(libraryPath);
+    // An empty path asks the main process for every backup it can find.
+    const result = await window.electronAPI.listBackups(libraryPath || '');
     setBackups(result.success ? (result.data ?? []) : []);
   }, [libraryPath]);
 
@@ -33,7 +33,8 @@ export const BackupsPage: React.FC = () => {
   const restore = async (backupPath: string) => {
     setBusy(true);
     try {
-      const result = await window.electronAPI.restoreBackup({ backupPath, libraryPath });
+      const target = libraryPath || backups.find((b) => b.path === backupPath)?.originalPath || '';
+      const result = await window.electronAPI.restoreBackup({ backupPath, libraryPath: target });
       if (result.success) {
         showNotification(
           'success',
@@ -61,13 +62,11 @@ export const BackupsPage: React.FC = () => {
       <PageHeader
         icon={Archive}
         title="Backups"
-        stats={`${backups.length} backup${backups.length !== 1 ? 's' : ''} of this library`}
+        stats={`${backups.length} backup${backups.length !== 1 ? 's' : ''}${libraryPath ? ' of this library' : ' found on this machine'}`}
       />
 
       <div className="flex-1 overflow-y-auto p-4">
-        {!libraryPath ? (
-          <p className="te-label text-center mt-10 normal-case">Load a library to see its backups.</p>
-        ) : backups.length === 0 ? (
+        {backups.length === 0 ? (
           <div className="text-center mt-10 te-value">
             <Archive size={44} className="mx-auto mb-3 text-te-grey-400" />
             <h3 className="te-title mb-2">No backups yet</h3>
@@ -79,9 +78,10 @@ export const BackupsPage: React.FC = () => {
         ) : (
           <>
             <p className="te-label text-xs normal-case mb-3">
-              Taken automatically before each change to{' '}
-              <span className="te-path">{libraryPath}</span>. Restoring keeps your current
-              state as a new backup, so going back is never one-way.
+              {libraryPath
+                ? <>Taken automatically before each change to <span className="te-path">{libraryPath}</span>.</>
+                : 'Every backup found on this machine. Load its library first if you want to restore one.'}
+              {' '}Restoring keeps your current state as a new backup, so going back is never one-way.
             </p>
 
             <div className="space-y-2">
@@ -92,6 +92,7 @@ export const BackupsPage: React.FC = () => {
                       <p className="te-value text-sm">{formatWhen(backup.created)}</p>
                       <p className="te-label text-xs normal-case">
                         {(backup.size / 1048576).toFixed(1)} MB · {backup.kind === 'database' ? 'database' : 'XML'}
+                        {!libraryPath && <> · of {backup.originalPath.split('/').pop()}</>}
                       </p>
                       <p className="te-path text-[10px] text-te-grey-400 truncate mt-0.5">{backup.path}</p>
                     </div>

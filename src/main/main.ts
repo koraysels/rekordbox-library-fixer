@@ -8,7 +8,7 @@ import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
 import { scanForLibraries } from './libraryScanner';
-import { listBackups, restoreBackup, deleteBackup } from './backupManager';
+import { listBackups, restoreBackup, deleteBackup, scanAllBackups } from './backupManager';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { assertWritableLibraryPath } from './librarySource';
@@ -460,7 +460,9 @@ ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
 
 ipcMain.handle('list-backups', async (_e, libraryPath: string) => {
   try {
-    return { success: true, data: listBackups(libraryPath) };
+    // Without a loaded library, show every backup on the machine — this page is
+    // most needed exactly when nothing is loaded and something went wrong.
+    return { success: true, data: libraryPath ? listBackups(libraryPath) : scanAllBackups() };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
