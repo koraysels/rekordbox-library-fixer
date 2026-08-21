@@ -130,13 +130,14 @@ const AppWithRouter: React.FC = () => {
             showNotification,
             setLibraryData
           }}>
-            <AnimatePresence mode="wait">
+            {/* No mode="wait": the outgoing page's exit would otherwise have to
+                finish before the new one starts, doubling the perceived delay. */}
+            <AnimatePresence initial={false}>
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.15, ease: 'easeInOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.09, ease: 'easeOut' }}
                 className="h-full"
               >
                 <div className="h-full flex flex-col">
