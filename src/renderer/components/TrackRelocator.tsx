@@ -302,12 +302,12 @@ const TrackRelocator: React.FC = () => {
             disabled={isRelocating || relocations.size === 0}
             loading={isRelocating}
             icon={Target}
-            title="Apply Manual Relocations"
-            description="Apply all manually configured track relocations to update file paths in your library"
+            title="Apply queued relocations"
+            description="Write the relocations you picked (click a candidate to queue one) to your library XML, with a backup"
             variant="success"
             className="w-full text-xs"
           >
-            Manual ({relocations.size})
+            Apply ({relocations.size})
           </PopoverButton>
         </div>
 
@@ -434,7 +434,11 @@ const TrackRelocator: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                candidates.map((candidate, index) => (
+                <>
+                <p className="te-label text-xs mb-2 normal-case">
+                  Click a match to queue it, then press <span className="te-value">Apply</span> at the top to write it to your library.
+                </p>
+                {candidates.map((candidate, index) => (
                   <div
                     key={index}
                     className="card cursor-pointer hover:bg-te-grey-100 transition-colors"
@@ -475,7 +479,8 @@ const TrackRelocator: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                ))
+                ))}
+                </>
               )}
             </div>
           </div>
