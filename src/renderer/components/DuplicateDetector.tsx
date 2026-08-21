@@ -151,6 +151,10 @@ const DuplicateDetector: React.FC = () => {
   const scanForDuplicates = async () => {
     if (!libraryData) { return; }
     setIsScanning(true);
+    // Let the browser paint the "Scanning..." state before the heavy,
+    // synchronous work (Array.from over thousands of tracks + IPC clone)
+    // blocks the main thread — otherwise the UI looks frozen for seconds.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       const tracks = Array.from(libraryData.tracks.values());
       const result = await window.electronAPI.findDuplicates({
@@ -405,6 +409,14 @@ const DuplicateDetector: React.FC = () => {
               <CheckCircle2 size={48} className="mx-auto mb-4 text-green-500" />
               <h3 className="text-lg font-medium mb-2">No Duplicates Found</h3>
               <p>Your library appears to be clean! No duplicate tracks were detected.</p>
+            </div>
+          </div>
+        ) : isScanning ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center te-value">
+              <Loader2 size={48} className="mx-auto mb-4 text-te-orange animate-spin spinner-loading" />
+              <h3 className="te-title mb-2">Scanning your library…</h3>
+              <p>Comparing tracks for duplicates — this can take a moment on large libraries.</p>
             </div>
           </div>
         ) : isLoadingDuplicates ? (

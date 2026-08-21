@@ -204,9 +204,11 @@ export function useTrackRelocator(
       return;
     }
 
-    // Check cache first
+    // Check cache first — but an empty cached result is a cache MISS, not a
+    // "no matches" answer. A stale empty array (e.g. cached before search
+    // paths were configured) would otherwise permanently hide a findable file.
     const cachedCandidates = relocationCandidatesCache.get(track.id);
-    if (cachedCandidates) {
+    if (cachedCandidates && cachedCandidates.length > 0) {
       setState(prev => ({
         ...prev,
         selectedTrack: track,
