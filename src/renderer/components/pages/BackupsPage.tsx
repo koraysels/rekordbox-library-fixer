@@ -17,10 +17,11 @@ const formatWhen = (value: string) =>
   });
 
 export const BackupsPage: React.FC = () => {
-  const { libraryPath, showNotification } = useAppContext();
+  const { libraryPath, showNotification, onLoadLibrary } = useAppContext();
   const [backups, setBackups] = useState<Backup[]>([]);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [justRestored, setJustRestored] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     // An empty path asks the main process for every backup it can find.
@@ -38,9 +39,12 @@ export const BackupsPage: React.FC = () => {
       if (result.success) {
         showNotification(
           'success',
-          'Library restored. Your previous state was kept as a new backup, so you can go forward again. Reload the library to see it.'
+          'Library restored. Your previous state was kept as a new backup, so you can go forward again.'
         );
         await load();
+        // The restored file is on disk but the app still holds the old one in
+        // memory, so offer to open it rather than leaving the two out of step.
+        setJustRestored(target);
       } else {
         showNotification('error', result.error || 'Could not restore that backup');
       }
@@ -64,6 +68,26 @@ export const BackupsPage: React.FC = () => {
         title="Backups"
         stats={`${backups.length} backup${backups.length !== 1 ? 's' : ''}${libraryPath ? ' of this library' : ' found on this machine'}`}
       />
+
+      {justRestored && (
+        <div className="mx-4 mt-3 rounded-te border border-te-green-200 bg-te-green-100 p-3">
+          <p className="text-xs font-te-mono text-te-green-600 normal-case mb-2">
+            Restored. The app is still showing the library it had open — load the restored
+            version now?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { const p = justRestored; setJustRestored(null); onLoadLibrary?.(p); }}
+              className="btn-secondary text-xs"
+            >
+              Load restored library
+            </button>
+            <button onClick={() => setJustRestored(null)} className="btn-ghost text-xs">
+              Keep what I have open
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto p-4">
         {backups.length === 0 ? (
