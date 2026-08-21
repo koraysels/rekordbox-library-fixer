@@ -10,6 +10,17 @@ interface DeleteConfirmModalProps {
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePaths, onConfirm, onCancel }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [typed, setTyped] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const copyDeleteWord = async () => {
+    try {
+      await navigator.clipboard.writeText('DELETE');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — the user can still type the word.
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -73,7 +84,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePath
           {step === 3 && (
             <>
               <p className="text-sm text-te-grey-700 font-te-mono mb-3">
-                Type <span className="font-bold text-te-red-500">DELETE</span> to permanently remove {filePaths.length} file{filePaths.length !== 1 ? 's' : ''} from disk.
+                Type{' '}
+                <button
+                  type="button"
+                  onClick={copyDeleteWord}
+                  title="Copy DELETE to clipboard"
+                  className="font-bold text-te-red-500 underline decoration-dotted underline-offset-2 hover:text-te-red-600 cursor-pointer"
+                >
+                  DELETE
+                </button>{' '}
+                {copied && <span className="text-te-green-600 not-italic">(copied)</span>}{' '}
+                to permanently remove {filePaths.length} file{filePaths.length !== 1 ? 's' : ''} from disk.
               </p>
               <input
                 type="text"

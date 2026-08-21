@@ -4,6 +4,8 @@ import { pathToFileURL } from 'url';
 import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
+import { substitutePlaylistTrackIds } from './playlistSubstitution';
+import { computeDeletablePaths } from './safeDeletePaths';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -399,12 +401,38 @@ ipcMain.handle('find-duplicates', async (_, options: {
   metadataFields: string[];
   preferLossless?: boolean;
 }) => {
+  const operationId = `dup-${Date.now()}`;
+  const cancelToken = { cancelled: false };
+  activeOperations.set(operationId, cancelToken);
+
   try {
-    const duplicates = await duplicateDetector.findDuplicates(
+    const send = (channel: string, payload: any) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(channel, { operationId, ...payload });
+      }
+    };
+    send('duplicate-scan-progress', {
+      type: 'start', current: 0, total: options.tracks.length, setsFound: 0
+    });
+
+    const { duplicates, cancelled } = await duplicateDetector.findDuplicates(
       options.tracks,
-      options
+      options,
+      {
+        cancelToken,
+        onProgress: (p) => send('duplicate-scan-progress', { type: 'progress', ...p }),
+        onDuplicateSet: (set) => send('duplicate-scan-set', { set }),
+      }
     );
-    return { success: true, data: duplicates };
+
+    send('duplicate-scan-progress', {
+      type: cancelled ? 'cancelled' : 'complete',
+      current: options.tracks.length,
+      total: options.tracks.length,
+      setsFound: duplicates.length,
+    });
+
+    return { success: true, data: duplicates, cancelled, operationId };
   } catch (error) {
     logger.error('DUPLICATE_DETECTION_FAILED', {
       trackCount: options.tracks.length,
@@ -415,7 +443,18 @@ ipcMain.handle('find-duplicates', async (_, options: {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
+  } finally {
+    activeOperations.delete(operationId);
   }
+});
+
+ipcMain.handle('cancel-duplicate-scan', async (_, operationId: string) => {
+  const token = activeOperations.get(operationId);
+  if (token) {
+    token.cancelled = true;
+    return { success: true };
+  }
+  return { success: false, error: 'Operation not found' };
 });
 
 ipcMain.handle('resolve-duplicates', async (_, resolution: {
@@ -441,6 +480,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
     // Step 3: Determine which tracks to remove for each duplicate set
     const tracksToRemove: string[] = [];
+    // removedTrackId -> keptTrackId, so playlist references can be re-pointed
+    // (not dropped) and playlists stay complete.
+    const replacement = new Map<string, string>();
 
     for (const duplicateSet of resolution.duplicates) {
       const tracksInSet = duplicateSet.tracks;
@@ -496,6 +538,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
         .filter((track: any) => track.id !== trackToKeep.id);
 
       tracksToRemove.push(...tracksToRemoveFromSet.map((t: any) => t.id));
+      tracksToRemoveFromSet.forEach((t: any) => replacement.set(t.id, trackToKeep.id));
 
       safeConsole.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
     }
@@ -515,29 +558,11 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       library.tracks.delete(trackId);
     });
 
-    // Remove from playlists (recursive function to handle nested playlist structure)
-    const removeTracksFromPlaylists = (playlists: any[]) => {
-      playlists.forEach((playlist: any) => {
-        // Filter tracks from current playlist
-        if (playlist.tracks) {
-          const originalCount = playlist.tracks.length;
-          playlist.tracks = playlist.tracks.filter((trackId: string) =>
-            !tracksToRemove.includes(trackId)
-          );
-          const removedCount = originalCount - playlist.tracks.length;
-          if (removedCount > 0) {
-            safeConsole.log(`🎵 Removed ${removedCount} duplicate tracks from playlist "${playlist.name}"`);
-          }
-        }
-
-        // Recursively process child playlists
-        if (playlist.children && playlist.children.length > 0) {
-          removeTracksFromPlaylists(playlist.children);
-        }
-      });
-    };
-
-    removeTracksFromPlaylists(library.playlists);
+    // Re-point playlist references from each removed track to the kept track,
+    // so playlists stay complete (a song that lived only in the removed
+    // duplicate is preserved, now pointing at the kept file) and no playlist
+    // gains a duplicate entry.
+    substitutePlaylistTrackIds(library.playlists, replacement);
 
     // Step 5: Save updated library
     await rekordboxParser.saveLibrary(library, resolution.libraryPath);
@@ -545,19 +570,33 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     safeConsole.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
     logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
 
-    // Step 6 (optional): Delete files from disk
-    const deleteResults = { deleted: 0, failed: [] as { file: string; error: string }[] };
-    if (resolution.deleteFromDisk && locationsToDelete.length > 0) {
-      const fsSync = require('fs');
-      for (const loc of locationsToDelete) {
+    // Step 6 (optional): Delete files from disk.
+    // Several rekordbox entries can point at the SAME file. Only delete a path
+    // that no remaining track still references, or we would destroy the audio
+    // belonging to a track the user chose to keep.
+    const remainingLocations = Array.from(library.tracks.values())
+      .map((t: any) => t?.location)
+      .filter((loc: any): loc is string => typeof loc === 'string' && loc.length > 0);
+    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations);
+    const skippedStillReferenced = locationsToDelete.length - deletablePaths.length;
+    if (skippedStillReferenced > 0) {
+      safeConsole.log(`🛡️ Skipped ${skippedStillReferenced} path(s) still referenced by kept tracks or duplicated in the delete list`);
+    }
+
+    const deleteResults = { deleted: 0, trashed: [] as string[], failed: [] as { file: string; error: string }[] };
+    if (resolution.deleteFromDisk && deletablePaths.length > 0) {
+      for (const loc of deletablePaths) {
         try {
-          fsSync.unlinkSync(loc);
+          // Move to the OS trash rather than unlinking, so a wrong call is
+          // recoverable by the user instead of destroying audio permanently.
+          await shell.trashItem(loc);
           deleteResults.deleted++;
-          safeConsole.log(`🗑️ Deleted from disk: ${loc}`);
+          deleteResults.trashed.push(loc);
+          safeConsole.log(`🗑️ Moved to trash: ${loc}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           deleteResults.failed.push({ file: loc, error: msg });
-          safeConsole.error(`❌ Failed to delete ${loc}: ${msg}`);
+          safeConsole.error(`❌ Failed to trash ${loc}: ${msg}`);
         }
       }
     }
@@ -567,6 +606,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       backupPath,
       tracksRemoved: tracksToRemove.length,
       filesDeleted: deleteResults.deleted,
+      trashedPaths: deleteResults.trashed,
       deleteErrors: deleteResults.failed,
       updatedLibrary: library
     };

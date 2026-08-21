@@ -10,6 +10,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
   findDuplicates: (options: any) =>
     ipcRenderer.invoke('find-duplicates', options),
+  cancelDuplicateScan: (operationId: string) =>
+    ipcRenderer.invoke('cancel-duplicate-scan', operationId),
+  onDuplicateScanProgress: (callback: (progress: any) => void) => {
+    const handler = (_e: any, progress: any) => callback(progress);
+    ipcRenderer.on('duplicate-scan-progress', handler);
+    return () => ipcRenderer.removeListener('duplicate-scan-progress', handler);
+  },
+  onDuplicateScanSet: (callback: (payload: any) => void) => {
+    const handler = (_e: any, payload: any) => callback(payload);
+    ipcRenderer.on('duplicate-scan-set', handler);
+    return () => ipcRenderer.removeListener('duplicate-scan-set', handler);
+  },
   resolveDuplicates: (resolution: any) =>
     ipcRenderer.invoke('resolve-duplicates', resolution),
   saveRekordboxXML: (data: any) =>

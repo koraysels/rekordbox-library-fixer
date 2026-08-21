@@ -12,7 +12,6 @@ import {
   Zap,
   Target,
   FileSearch,
-  History
 } from 'lucide-react';
 import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -25,7 +24,6 @@ import { AutoRelocateProgressDialog } from './ui/AutoRelocateProgressDialog';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
-import { RelocationHistoryPanel } from './RelocationHistoryPanel';
 
 const TrackRelocator: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -62,7 +60,6 @@ const TrackRelocator: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMissingTracks, setSelectedMissingTracks] = useState<Set<string>>(new Set());
   const [showSettings, setShowSettings] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [newSearchPath, setNewSearchPath] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
@@ -217,14 +214,6 @@ const TrackRelocator: React.FC = () => {
         actions={
           <>
             <PopoverButton
-              onClick={() => setShowHistory(!showHistory)}
-              icon={History}
-              title="Relocation History"
-              description="View log of all successful track relocations with timestamps and details"
-            >
-              History
-            </PopoverButton>
-            <PopoverButton
               onClick={() => setShowSettings(!showSettings)}
               icon={Settings}
               title="Search Settings"
@@ -302,12 +291,12 @@ const TrackRelocator: React.FC = () => {
             disabled={isRelocating || relocations.size === 0}
             loading={isRelocating}
             icon={Target}
-            title="Apply Manual Relocations"
-            description="Apply all manually configured track relocations to update file paths in your library"
+            title="Apply queued relocations"
+            description="Write the relocations you picked (click a candidate to queue one) to your library XML, with a backup"
             variant="success"
             className="w-full text-xs"
           >
-            Manual ({relocations.size})
+            Apply ({relocations.size})
           </PopoverButton>
         </div>
 
@@ -434,7 +423,11 @@ const TrackRelocator: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                candidates.map((candidate, index) => (
+                <>
+                <p className="te-label text-xs mb-2 normal-case">
+                  Click a match to queue it, then press <span className="te-value">Apply</span> at the top to write it to your library.
+                </p>
+                {candidates.map((candidate, index) => (
                   <div
                     key={index}
                     className="card cursor-pointer hover:bg-te-grey-100 transition-colors"
@@ -445,7 +438,7 @@ const TrackRelocator: React.FC = () => {
                         <p className="te-value text-sm font-medium truncate">
                           {candidate.path.split('/').pop()}
                         </p>
-                        <p className="te-label text-xs font-te-mono">
+                        <p className="te-path text-xs text-te-grey-600 break-all">
                           {candidate.path}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
@@ -475,7 +468,8 @@ const TrackRelocator: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                ))
+                ))}
+                </>
               )}
             </div>
           </div>
@@ -496,20 +490,6 @@ const TrackRelocator: React.FC = () => {
           setNewSearchPath={setNewSearchPath}
           addSearchPath={addSearchPath}
           removeSearchPath={removeSearchPath}
-        />
-      </SettingsSlideout>
-
-      {/* History Slideout */}
-      <SettingsSlideout
-        isOpen={showHistory}
-        onClose={() => setShowHistory(false)}
-        title="RELOCATION HISTORY"
-        subtitle="Log of successful track relocations"
-        width="xl"
-      >
-        <RelocationHistoryPanel
-          libraryPath={libraryData?.libraryPath || null}
-          onShowFileInFolder={showInFolder}
         />
       </SettingsSlideout>
 

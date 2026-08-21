@@ -14,6 +14,8 @@ import { formatFileSize, formatDuration } from '../utils';
 import { useFileOperations } from '../hooks';
 import { ConfidenceBadge, PlayButton } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
+import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
+import { classifyDuplicateSet, deletableFileCount } from '../utils/classifyDuplicateSet';
 
 const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
 const isUniversalLossless = (loc: string) => ['.wav', '.aiff', '.aif'].includes(_ext(loc));
@@ -24,13 +26,15 @@ interface DuplicateItemProps {
   isSelected: boolean;
   onToggleSelection: () => void;
   resolutionStrategy: string;
+  playlistMembership?: Map<string, { count: number; names: string[] }>;
 }
 
 const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   duplicate,
   isSelected,
   onToggleSelection,
-  resolutionStrategy
+  resolutionStrategy,
+  playlistMembership
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -38,68 +42,37 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   const { openFileLocation } = useFileOperations();
   const preferLossless = useSettingsStore((state) => state.scanOptions.preferLossless);
 
-  const recommendedTrack = useMemo(() => {
-    if (resolutionStrategy === 'manual') {return null;}
+  const recommendedTrack = useMemo(
+    () => pickRecommendedTrack(duplicate.tracks, resolutionStrategy, duplicate.pathPreferences, preferLossless),
+    [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences, preferLossless]
+  );
 
-    let recommended = duplicate.tracks[0];
 
-    if (resolutionStrategy === 'keep-highest-quality') {
-      const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
-      const tier = (t: any) => {
-        if (isUniversalLossless(t.location || '')) return 2;
-        if (preferLossless && isFlac(t.location || '')) return 2;
-        return 0;
-      };
-      recommended = duplicate.tracks.reduce((best: any, current: any) => {
-        const bt = tier(best); const ct = tier(current);
-        if (ct > bt) return current;
-        if (bt > ct) return best;
-        return qualityScore(current) > qualityScore(best) ? current : best;
-      });
-    } else if (resolutionStrategy === 'keep-newest') {
-      recommended = duplicate.tracks.reduce((newest: any, current: any) => {
-        if (!newest.dateModified) {return current;}
-        if (!current.dateModified) {return newest;}
-        return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
-      });
-    } else if (resolutionStrategy === 'keep-oldest') {
-      recommended = duplicate.tracks.reduce((oldest: any, current: any) => {
-        if (!oldest.dateAdded) {return current;}
-        if (!current.dateAdded) {return oldest;}
-        return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
-      });
-    } else if (resolutionStrategy === 'keep-preferred-path') {
-      // Find track with path that matches any of the preferred paths
-      const pathPreferences = duplicate.pathPreferences || [];
-      console.log('🔍 Path preferences:', pathPreferences);
-
-      if (pathPreferences.length > 0) {
-        // Sort tracks by preference priority (lower index = higher priority)
-        const sortedTracks = [...duplicate.tracks].sort((a: any, b: any) => {
-          const aMatch = pathPreferences.findIndex((pref: string) =>
-            a.location && a.location.toLowerCase().includes(pref.toLowerCase())
-          );
-          const bMatch = pathPreferences.findIndex((pref: string) =>
-            b.location && b.location.toLowerCase().includes(pref.toLowerCase())
-          );
-
-          // If both match, return the one with lower index (higher priority)
-          if (aMatch !== -1 && bMatch !== -1) {return aMatch - bMatch;}
-          // If only one matches, prioritize the matching one
-          if (aMatch !== -1) {return -1;}
-          if (bMatch !== -1) {return 1;}
-          // If neither match, keep original order
-          return 0;
-        });
-
-        recommended = sortedTracks[0];
-        console.log('📁 Recommended track by path preference:', recommended?.location);
-      }
+  // Total playlist reach of this song across ALL its duplicate copies (the
+  // union of every copy's playlists). After we reduce the set to one file,
+  // that single file ends up in all of these playlists.
+  const playlistReach = useMemo(() => {
+    const names = new Set<string>();
+    for (const track of duplicate.tracks) {
+      const m = playlistMembership?.get(track.id);
+      if (m) { m.names.forEach((n) => names.add(n)); }
     }
+    return { count: names.size, names: Array.from(names) };
+  }, [duplicate.tracks, playlistMembership]);
 
-    return recommended;
-  }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
+  // Two very different situations wear the word "duplicate": several rekordbox
+  // entries for ONE file (nothing to delete) versus genuinely duplicated files.
+  const kind = useMemo(() => classifyDuplicateSet(duplicate.tracks), [duplicate.tracks]);
+  const filesToRemove = useMemo(
+    () => deletableFileCount(duplicate.tracks, recommendedTrack?.id),
+    [duplicate.tracks, recommendedTrack]
+  );
 
+  const kindBadge = {
+    entries: { label: 'Same file · duplicate entries', className: 'bg-te-grey-200 text-te-grey-700 border-te-grey-300' },
+    files: { label: 'Duplicate files', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
+    mixed: { label: 'Mixed · some share a file', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
+  }[kind];
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -148,6 +121,22 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400">•</span>
               <span className="text-xs text-zinc-400 capitalize">
                 {duplicate.matchType} match
+              </span>
+              <span className="text-xs text-zinc-400">•</span>
+              <span
+                className={`text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border normal-case ${kindBadge.className}`}
+                title={kind === 'entries'
+                  ? 'Every copy points at the same file on disk — resolving removes the extra entries only.'
+                  : `Resolving can move ${filesToRemove} file${filesToRemove !== 1 ? 's' : ''} to the trash.`}
+              >
+                {kindBadge.label}
+              </span>
+              <span className="text-xs text-zinc-400">•</span>
+              <span
+                className="text-xs text-te-grey-500 font-te-mono"
+                title={playlistReach.count > 0 ? playlistReach.names.join('\n') : undefined}
+              >
+                in {playlistReach.count} playlist{playlistReach.count === 1 ? '' : 's'}
               </span>
               <ConfidenceBadge confidence={duplicate.confidence} />
             </div>

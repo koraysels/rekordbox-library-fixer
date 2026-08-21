@@ -7,38 +7,30 @@ import { relocationStorage } from '../db/relocationsDb';
  * Uses Dexie's useLiveQuery for reactive data
  */
 export function useRouteData(route: string, libraryPath?: string) {
-  // Get settings from Zustand - currently unused, commented for performance
-  // const settings = useSettingsStore();
+  const wantsDuplicates = route === '/' && !!libraryPath;
+  const wantsRelocations = route === '/relocate' && !!libraryPath;
 
-  // Fetch cached duplicate results
+  // Each query depends only on whether ITS route is active. Keying on the raw
+  // route made both queries re-run on every navigation, and a pending
+  // useLiveQuery is `undefined` — which used to flip isLoading and replace the
+  // page with a skeleton on every tab switch, re-reading the whole duplicate
+  // cache even for tabs that never use it.
   const duplicateResults = useLiveQuery(
-    async () => {
-      if (route === '/' && libraryPath) {
-        return await duplicateStorage.getDuplicateResult(libraryPath);
-      }
-      return null;
-    },
-    [route, libraryPath]
+    async () => (wantsDuplicates ? await duplicateStorage.getDuplicateResult(libraryPath!) : null),
+    [wantsDuplicates, libraryPath]
   );
 
-  // Fetch cached relocation results
   const relocationResults = useLiveQuery(
-    async () => {
-      if (route === '/relocate' && libraryPath) {
-        return await relocationStorage.getRelocationResult(libraryPath);
-      }
-      return null;
-    },
-    [route, libraryPath]
+    async () => (wantsRelocations ? await relocationStorage.getRelocationResult(libraryPath!) : null),
+    [wantsRelocations, libraryPath]
   );
 
-  // Return loading state and data
-  return {
-    isLoading: duplicateResults === undefined || relocationResults === undefined,
-    duplicateResults,
-    relocationResults
-    // settings // Commented out for performance - currently unused
-  };
+  // Only the data this route actually needs may hold up rendering.
+  const isLoading =
+    (wantsDuplicates && duplicateResults === undefined) ||
+    (wantsRelocations && relocationResults === undefined);
+
+  return { isLoading, duplicateResults, relocationResults };
 }
 
 /**
