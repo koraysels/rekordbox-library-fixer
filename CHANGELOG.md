@@ -6,11 +6,16 @@
 - **Read the rekordbox database directly**: Load a library from rekordbox's own encrypted `master.db`, no XML export needed. Opened strictly read-only from a copy (including its WAL), so rekordbox can stay open and the database is never written to. Needs the SQLCipher key, pasted once in Settings; the key is not shipped with the app.
 - **Duplicate files vs duplicate entries**: Every duplicate set now states the real numbers, for example `4 entries · 2 files`, and each entry says whether it is an extra listing of the kept file or a separate copy that the trash option can remove. A filter narrows the list to one kind, and Select All follows it.
 - **In-app help**: A "How duplicate resolving works" section explains entries versus files, what merging does to playlists, and what each label means.
+- **Find your libraries**: The load screen lists the libraries already on this machine — rekordbox's database and XML exports in the usual folders — newest first, with full paths.
+- **Backups tab**: Every backup the app has taken, restorable in one click. Restoring keeps your current state as a fresh backup, so going back is never one-way, and it asks whether to load the restored library. Reachable without a library loaded, which is when you need it most.
+- **Broken entries**: Maintenance finds entries that can never point at a file — folders, streaming tracks, paths cut short by a bad import — and removes them from the library and its playlists, after writing a backup. A real library held 214 of them.
 
 ### 🐛 Bug Fixes
 - **Never write over master.db**: Loading from the database set the library path to `master.db`, while resolve and relocate write XML to that path — which would have destroyed the database. Every write path now refuses a `.db` path, and a banner marks a database-backed library as read-only.
 - **Unicode paths compared correctly**: macOS stores accents composed (ö) or decomposed (o + combining diaeresis) and treats both as one file; rekordbox libraries contain both spellings. Paths are now normalised before comparison. Previously a single file looked like two, and the delete guard could have trashed the file the kept entry still points at.
 - **Resolution strategy is remembered**: Picking a strategy went through the same debounce as typed fields, and the unmount cleanup discarded a pending write. It is now stored immediately. React Hook Form's own blur handler is no longer overwritten.
+- **Never trash a folder**: rekordbox stores entries whose location is a folder. The delete guard would have passed one straight to the trash, taking an album of music with it. Deletion now confirms each path is a regular file, and the confirmation dialog no longer proposes folders, streaming entries or truncated paths.
+- **Cancel stays visible during a scan**: it lived in the empty results area, which disappears as soon as the first streamed result arrives, so it vanished seconds into every scan.
 - **Wording**: Entries are described as merged into the kept track, not "removed from XML"; files are described as moved to the trash, which is what happens.
 
 ## [0.4.0] - 2026-08-21
