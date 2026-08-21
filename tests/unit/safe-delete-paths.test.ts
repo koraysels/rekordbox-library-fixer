@@ -56,3 +56,24 @@ describe('computeDeletablePaths', () => {
     expect(computeDeletablePaths([composed, decomposed], [])).toHaveLength(1);
   });
 });
+
+describe('computeDeletablePaths — only ever regular files', () => {
+  // Rekordbox libraries really contain these: verified in a user's XML.
+  const isFile = (p: string) => p.endsWith('.mp3');
+
+  it('refuses a folder, which would take a whole album with it', () => {
+    expect(computeDeletablePaths(['/Music/Handbraekes/'], [], isFile)).toEqual([]);
+  });
+
+  it('refuses a streaming entry that has no file at all', () => {
+    expect(computeDeletablePaths(['/x/tidal:tracks:105015500'], [], isFile)).toEqual([]);
+  });
+
+  it('refuses a truncated location', () => {
+    expect(computeDeletablePaths(['/Music/Unknown Album/Pancake - Don&'], [], isFile)).toEqual([]);
+  });
+
+  it('still deletes a genuine duplicate file', () => {
+    expect(computeDeletablePaths(['/Music/dup.mp3'], [], isFile)).toEqual(['/Music/dup.mp3']);
+  });
+});

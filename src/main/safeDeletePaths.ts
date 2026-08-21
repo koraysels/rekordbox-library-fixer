@@ -20,7 +20,14 @@ const normalize = (p: string) => (p ?? '').normalize('NFC').toLowerCase();
 
 export function computeDeletablePaths(
   candidatePaths: string[],
-  remainingLocations: Iterable<string>
+  remainingLocations: Iterable<string>,
+  /**
+   * Must confirm the path is a regular file. Rekordbox libraries contain
+   * entries whose Location is a FOLDER, a truncated string, or a streaming id
+   * such as `tidal:tracks:123`. Trashing a folder would take an entire album
+   * of music with it, so anything that is not a plain file is refused.
+   */
+  isRegularFile: (p: string) => boolean = () => true
 ): string[] {
   const stillReferenced = new Set<string>();
   for (const loc of remainingLocations) {
@@ -34,6 +41,7 @@ export function computeDeletablePaths(
     const key = normalize(path);
     if (stillReferenced.has(key) || seen.has(key)) { continue; }
     seen.add(key);
+    if (!isRegularFile(path)) { continue; }
     deletable.push(path);
   }
   return deletable;

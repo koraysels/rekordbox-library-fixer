@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyDuplicateSet, deletableFileCount, distinctFileCount } from '../../src/renderer/utils/classifyDuplicateSet';
+import { classifyDuplicateSet, deletableFileCount, distinctFileCount, looksLikePlayableFile } from '../../src/renderer/utils/classifyDuplicateSet';
 
 describe('classifyDuplicateSet', () => {
   it('calls it entries when every copy points at the same file', () => {
@@ -89,5 +89,40 @@ describe('distinctFileCount', () => {
       { location: '/m/Bökken.mp3' },
       { location: '/m/Bökken.mp3' },
     ])).toBe(1);
+  });
+});
+
+describe('looksLikePlayableFile', () => {
+  it('rejects a folder location, which rekordbox really stores', () => {
+    expect(looksLikePlayableFile('/Music/Handbraekes/')).toBe(false);
+  });
+
+  it('rejects a streaming entry', () => {
+    expect(looksLikePlayableFile('/x/tidal:tracks:105015500')).toBe(false);
+  });
+
+  it('rejects a truncated location with no extension', () => {
+    expect(looksLikePlayableFile('/Music/Unknown Album/Remix Medley ')).toBe(false);
+  });
+
+  it('accepts a normal audio file', () => {
+    expect(looksLikePlayableFile('/Music/track.mp3')).toBe(true);
+  });
+});
+
+describe('counting ignores locations that are not files', () => {
+  it('does not count a folder or a stream as a file', () => {
+    expect(distinctFileCount([
+      { location: '/Music/real.mp3' },
+      { location: '/Music/Handbraekes/' },
+      { location: '/x/tidal:tracks:1' },
+    ])).toBe(1);
+  });
+
+  it('calls a set of unplayable locations entries, not files', () => {
+    expect(classifyDuplicateSet([
+      { location: '/x/tidal:tracks:1' },
+      { location: '/x/tidal:tracks:2' },
+    ])).toBe('entries');
   });
 });
