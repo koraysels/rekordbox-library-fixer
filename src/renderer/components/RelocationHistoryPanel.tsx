@@ -263,7 +263,7 @@ export const RelocationHistoryPanel: React.FC<RelocationHistoryPanelProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs text-te-grey-500">From:</span>
-                      <p className="text-xs te-label font-te-mono truncate flex-1" title={entry.originalLocation}>
+                      <p className="text-xs te-path text-te-grey-600 truncate flex-1" title={entry.originalLocation}>
                         {entry.originalLocation}
                       </p>
                     </div>
