@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.5.0] - 2026-08-21
+
+### 🎉 New Features
+- **Read the rekordbox database directly**: Load a library from rekordbox's own encrypted `master.db`, no XML export needed. Opened strictly read-only from a copy (including its WAL), so rekordbox can stay open and the database is never written to. Needs the SQLCipher key, pasted once in Settings; the key is not shipped with the app.
+- **Duplicate files vs duplicate entries**: Every duplicate set now states the real numbers, for example `4 entries · 2 files`, and each entry says whether it is an extra listing of the kept file or a separate copy that the trash option can remove. A filter narrows the list to one kind, and Select All follows it.
+- **In-app help**: A "How duplicate resolving works" section explains entries versus files, what merging does to playlists, and what each label means.
+
+### 🐛 Bug Fixes
+- **Never write over master.db**: Loading from the database set the library path to `master.db`, while resolve and relocate write XML to that path — which would have destroyed the database. Every write path now refuses a `.db` path, and a banner marks a database-backed library as read-only.
+- **Unicode paths compared correctly**: macOS stores accents composed (ö) or decomposed (o + combining diaeresis) and treats both as one file; rekordbox libraries contain both spellings. Paths are now normalised before comparison. Previously a single file looked like two, and the delete guard could have trashed the file the kept entry still points at.
+- **Resolution strategy is remembered**: Picking a strategy went through the same debounce as typed fields, and the unmount cleanup discarded a pending write. It is now stored immediately. React Hook Form's own blur handler is no longer overwritten.
+- **Wording**: Entries are described as merged into the kept track, not "removed from XML"; files are described as moved to the trash, which is what happens.
+
+## [0.4.0] - 2026-08-21
+
+### 🎉 New Features
+- **History tab**: An audit trail of every library-changing operation, with per-item detail (which entries were merged, which files went to the trash, what failed) and the backup path.
+
+### 🐛 Bug Fixes
+- **Faster tab navigation**: Every tab switch re-ran both cached queries, flashing a skeleton and re-reading the whole duplicate cache even for tabs that never use it.
+
+## [0.3.0] - 2026-08-21
+
+### 🎉 New Features
+- **Cancellable, streaming duplicate scan**: Progress with a track counter, results appearing as they are found, and a cancel that keeps what it found.
+
+## [0.2.3] - 2026-08-21
+
+### 🐛 Bug Fixes
+- **Critical: stopped deleting files that were being kept**: Several rekordbox entries can point at one file. Resolving such a set deleted the losers' paths, which are the kept track's path, destroying the audio the user chose to keep. A path is now only trashed when no remaining track references it.
+- **Files go to the trash**, not straight to permanent deletion.
+
+## [0.2.2] - 2026-08-21
+
+### 🐛 Bug Fixes
+- **Playlists stay complete**: Resolving a duplicate filtered the removed entry out of every playlist, so a playlist holding only that copy silently lost the song. References are now re-pointed at the kept track.
+
+## [0.2.0] - 2026-08-21
+
+### 🎉 New Features
+- **In-app track preview**: Play, pause, seek and volume from any track row, including AIFF (rewrapped to WAV, which Chromium cannot play natively).
+
+### 🐛 Bug Fixes
+- **Relocator handles large libraries**: The search re-scanned the whole tree for every track, so thousands of missing tracks pinned the app until it was killed. The file index is now built once per run.
+
 ## [0.0.5-alpha] - 2025-08-29
 
 ### 🎉 New Features
