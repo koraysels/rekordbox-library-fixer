@@ -8,13 +8,15 @@ interface VirtualizedDuplicateListProps {
   selectedDuplicates: Set<string>;
   onToggleSelection: (id: string) => void;
   resolutionStrategy: ResolutionStrategy;
+  playlistMembership: Map<string, { count: number; names: string[] }>;
 }
 
 export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> = ({
   duplicates,
   selectedDuplicates,
   onToggleSelection,
-  resolutionStrategy
+  resolutionStrategy,
+  playlistMembership
 }) => {
   console.log('🎯 VirtualizedDuplicateList render:', {
     duplicatesCount: duplicates.length,
@@ -32,6 +34,7 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
           isSelected={selectedDuplicates.has(duplicate.id)}
           onToggleSelection={() => onToggleSelection(duplicate.id)}
           resolutionStrategy={resolutionStrategy}
+          playlistMembership={playlistMembership}
         />
       )}
       emptyState={<div className="p-5 te-value">No duplicates to show</div>}
