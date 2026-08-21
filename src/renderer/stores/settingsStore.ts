@@ -6,11 +6,14 @@ interface SettingsState {
   // Settings
   scanOptions: ScanOptions;
   resolutionStrategy: ResolutionStrategy;
+  /** SQLCipher key for rekordbox master.db, pasted by the user. */
+  rekordboxDbKey: string;
   relocationOptions: RelocationOptions;
 
   // Actions
   setScanOptions: (options: ScanOptions) => void;
   setResolutionStrategy: (strategy: ResolutionStrategy) => void;
+  setRekordboxDbKey: (key: string) => void;
   updateScanOption: <K extends keyof ScanOptions>(key: K, value: ScanOptions[K]) => void;
   addPathPreference: (path: string) => void;
   removePathPreference: (index: number) => void;
@@ -34,6 +37,7 @@ export const useSettingsStore = create<SettingsState>()(
         preferLossless: false
       },
       resolutionStrategy: 'keep-highest-quality',
+      rekordboxDbKey: '',
       relocationOptions: {
         searchPaths: [],
         searchDepth: 8,
@@ -52,6 +56,8 @@ export const useSettingsStore = create<SettingsState>()(
         console.log('🎯 Zustand: Setting resolution strategy:', strategy);
         set({ resolutionStrategy: strategy });
       },
+
+      setRekordboxDbKey: (key) => set({ rekordboxDbKey: key }),
 
       updateScanOption: (key, value) => {
         console.log(`🔧 Zustand: Updating scan option ${key}:`, value);

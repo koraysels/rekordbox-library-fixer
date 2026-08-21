@@ -1,6 +1,6 @@
 // Global types and interfaces
 
-export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics' | 'history';
+export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics' | 'history' | 'backups';
 
 export type NotificationType = 'success' | 'error' | 'info';
 
@@ -180,6 +180,14 @@ declare global {
       selectFolder: () => Promise<string | null>;
       parseRekordboxLibrary: (xmlPath: string) => Promise<any>;
       findDuplicates: (options: any) => Promise<any>;
+      detectRekordboxDb: () => Promise<{ found: boolean; dbPath: string | null; variant: string | null }>;
+      scanForLibraries: () => Promise<Array<{ kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string }>>;
+      findBrokenEntries: (tracks: any[]) => Promise<{ success: boolean; data?: Array<{ trackId: string; name: string; artist: string; location: string; reason: string }>; error?: string }>;
+      removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) => Promise<{ success: boolean; removed?: number; backupPath?: string; error?: string }>;
+      listBackups: (libraryPath: string) => Promise<{ success: boolean; data?: Array<{ path: string; originalPath: string; created: string; size: number; kind: 'xml' | 'database' }>; error?: string }>;
+      restoreBackup: (args: { backupPath: string; libraryPath: string }) => Promise<{ success: boolean; safetyCopy?: string; error?: string }>;
+      deleteBackup: (backupPath: string) => Promise<{ success: boolean; error?: string }>;
+      parseRekordboxDb: (args: { dbPath: string; key: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
       cancelDuplicateScan: (operationId: string) => Promise<{ success: boolean; error?: string }>;
       onDuplicateScanProgress: (callback: (progress: any) => void) => () => void;
       onDuplicateScanSet: (callback: (payload: any) => void) => () => void;

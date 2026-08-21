@@ -6,6 +6,13 @@ import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { computeDeletablePaths } from './safeDeletePaths';
+import { detectRekordboxDb } from './rekordboxDbLocator';
+import { scanForLibraries } from './libraryScanner';
+import { listBackups, restoreBackup, deleteBackup, scanAllBackups } from './backupManager';
+import { findBrokenEntries } from './brokenEntries';
+import { parseDb } from './rekordboxDbParser';
+import { handleParseRekordboxDb } from './rekordboxDbIpc';
+import { assertWritableLibraryPath } from './librarySource';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -448,6 +455,82 @@ ipcMain.handle('find-duplicates', async (_, options: {
   }
 });
 
+ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
+
+ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
+
+ipcMain.handle('find-broken-entries', async (_e, tracks: any[]) => {
+  try {
+    return { success: true, data: findBrokenEntries(tracks) };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('remove-broken-entries', async (_e, data: { libraryPath: string; trackIds: string[] }) => {
+  try {
+    assertWritableLibraryPath(data.libraryPath);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.libraryPath}.backup.${stamp}`;
+    require('fs').copyFileSync(data.libraryPath, backupPath);
+
+    const library = await rekordboxParser.parseLibrary(data.libraryPath);
+    const removing = new Set(data.trackIds);
+    let removed = 0;
+    for (const id of removing) {
+      if (library.tracks.delete(id)) { removed++; }
+    }
+
+    // These entries point at nothing, so nothing can inherit their playlist
+    // slots: drop the references rather than re-pointing them.
+    const prune = (playlists: any[]) => {
+      for (const playlist of playlists) {
+        if (playlist.tracks) {
+          playlist.tracks = playlist.tracks.filter((id: string) => !removing.has(id));
+        }
+        if (playlist.children?.length) { prune(playlist.children); }
+      }
+    };
+    prune(library.playlists);
+
+    await rekordboxParser.saveLibrary(library, data.libraryPath);
+    return { success: true, removed, backupPath };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('list-backups', async (_e, libraryPath: string) => {
+  try {
+    // Without a loaded library, show every backup on the machine — this page is
+    // most needed exactly when nothing is loaded and something went wrong.
+    return { success: true, data: libraryPath ? listBackups(libraryPath) : scanAllBackups() };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('restore-backup', async (_e, args: { backupPath: string; libraryPath: string }) => {
+  try {
+    const { safetyCopy } = restoreBackup(args.backupPath, args.libraryPath);
+    return { success: true, safetyCopy };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('delete-backup', async (_e, backupPath: string) => {
+  try {
+    deleteBackup(backupPath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('parse-rekordbox-db', async (_e, args: { dbPath: string; key: string }) =>
+  handleParseRekordboxDb(args, parseDb));
+
 ipcMain.handle('cancel-duplicate-scan', async (_, operationId: string) => {
   const token = activeOperations.get(operationId);
   if (token) {
@@ -469,6 +552,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
   try {
     // Step 1: Create backup of original XML
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    // Saving writes XML; doing that to master.db would destroy the database.
+    assertWritableLibraryPath(resolution.libraryPath);
+
     const backupPath = `${resolution.libraryPath}.backup.${timestamp}`;
 
     const fs = require('fs');
@@ -577,7 +663,11 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     const remainingLocations = Array.from(library.tracks.values())
       .map((t: any) => t?.location)
       .filter((loc: any): loc is string => typeof loc === 'string' && loc.length > 0);
-    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations);
+    const fsSync = require('fs');
+    const isRegularFile = (p: string) => {
+      try { return fsSync.statSync(p).isFile(); } catch { return false; }
+    };
+    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations, isRegularFile);
     const skippedStillReferenced = locationsToDelete.length - deletablePaths.length;
     if (skippedStillReferenced > 0) {
       safeConsole.log(`🛡️ Skipped ${skippedStillReferenced} path(s) still referenced by kept tracks or duplicated in the delete list`);
@@ -630,6 +720,7 @@ ipcMain.handle('save-rekordbox-xml', async (_, data: {
   outputPath: string;
 }) => {
   try {
+    assertWritableLibraryPath(data.outputPath);
     await rekordboxParser.saveLibrary(data.library, data.outputPath);
     logger.logLibrarySaving(data.outputPath, data.library.tracks.size);
     return { success: true };
@@ -708,6 +799,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
   activeOperations.set(operationId, cancelToken);
 
   try {
+    // Relocation rewrites the XML; never aim that at master.db.
+    assertWritableLibraryPath(data.libraryPath);
+
     let successCount = 0;
     const results: any[] = [];
     const successfulRelocations: Array<{
@@ -895,7 +989,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
         } else {
           // Step 2b: Create backup of original XML
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+          assertWritableLibraryPath(data.libraryPath);
+
+    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
 
           const fs = require('fs');
           fs.copyFileSync(data.libraryPath, backupPath);

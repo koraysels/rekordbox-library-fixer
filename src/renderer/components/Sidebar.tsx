@@ -7,6 +7,7 @@ import {
     Wrench,
     Copy,
     History,
+    Archive,
     FolderOpen,
     X,
     HelpCircle
@@ -56,6 +57,13 @@ const navItems = [
         label: 'History',
         icon: History,
         description: 'What the app changed in your library'
+    },
+    {
+        id: 'backups' as TabType,
+        path: '/backups',
+        label: 'Backups',
+        icon: Archive,
+        description: 'Go back to any earlier version of your library'
     }
 ];
 

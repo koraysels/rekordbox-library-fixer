@@ -38,6 +38,28 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 - `useDuplicates`: Custom hook managing duplicate detection state and operations
 - `useTrackRelocator`: State management for track relocation operations
 - `SettingsPanel`: Configuration UI with Zustand store integration
+- **Rekordbox database import** (`src/main/rekordboxDbLocator.ts`, `rekordboxDbParser.ts`,
+  `rekordboxDbIpc.ts`): reads an encrypted `master.db` into the same `LibraryData` the XML
+  parser produces. Strictly read-only — the file is copied with its `-wal` and the copy is
+  opened `readonly`. Three facts the code depends on, each verified against a real database:
+  the driver defaults to chacha20 so `PRAGMA cipher='sqlcipher'` and `legacy=4` must precede
+  the key; BPM is stored times 100; ordinary cues store `OutMsec = -1`, so only a positive
+  value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
+  Rekordbox 7. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
+  it persists in the settings store.
+- **Write guard** (`src/main/librarySource.ts`): every write path refuses a `.db` path.
+  Resolve and relocate write XML to `libraryPath`, so a database-backed library would
+  otherwise have been overwritten with XML and destroyed.
+- **Path comparison** (`src/renderer/utils/normalizePath.ts`): macOS stores accents composed
+  or decomposed and treats both as one file, and rekordbox libraries contain both spellings.
+  Any path comparison — duplicate classification and the delete guard — normalises to NFC
+  first, or one file reads as two and the kept track's file can be trashed.
+- **Duplicate kinds** (`src/renderer/utils/classifyDuplicateSet.ts`): distinguishes several
+  entries pointing at one file from genuinely duplicated files, which decides whether
+  resolving can free disk space.
+- **Activity history** (`src/renderer/db/duplicationHistoryDb.ts`): its own Dexie database,
+  separate from the relocation history, recording one entry per library-changing operation
+  with per-item detail. Surfaced by the History tab.
 - `MiniPlayer` / `PlayButton`: In-app track preview (play/pause/seek/volume) via a single
   `<audio>` element + media-chrome transport UI. Audio streams over the custom `media://`
   protocol (`src/main/mediaProtocol.ts`); AIFF is rewrapped to WAV in the renderer
