@@ -108,7 +108,11 @@ export function Sidebar({
             <div className="flex-1 p-te-lg">
                 <ul className="space-y-te-sm">
                     {navItems.map((item) => {
-                        const isDisabled = !libraryData && item.id !== 'duplicates';
+                        // History and Backups must stay reachable without a
+                        // library: they are what you turn to when something
+                        // went wrong and nothing is loaded.
+                        const worksWithoutLibrary = ['duplicates', 'history', 'backups'];
+                        const isDisabled = !libraryData && !worksWithoutLibrary.includes(item.id);
 
                         if (isDisabled) {
                             return (

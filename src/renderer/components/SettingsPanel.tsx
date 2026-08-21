@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FolderOpen, Plus, X, Info } from 'lucide-react';
-import { useSettingsStore } from '../stores/settingsStore';
 import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 

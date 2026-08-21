@@ -201,6 +201,7 @@ declare global {
         deleteErrors?: { file: string; error: string }[];
         updatedLibrary?: any;
         error?: string;
+        trashedPaths?: string[];
       }>;
       saveRekordboxXML: (data: any) => Promise<any>;
       showFileInFolder: (filePath: string) => Promise<any>;
