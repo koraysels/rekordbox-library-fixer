@@ -92,7 +92,7 @@ describe('DuplicateDetector', () => {
         metadataFields: ['artist', 'title', 'album'],
       };
 
-      const duplicates = await detector.findDuplicates(testTracks, options);
+      const { duplicates } = await detector.findDuplicates(testTracks, options);
 
       expect(duplicates).toHaveLength(1);
       expect(duplicates[0].tracks).toHaveLength(3); // Tracks 1, 2, 3 are duplicates
@@ -110,7 +110,7 @@ describe('DuplicateDetector', () => {
         metadataFields: ['artist', 'title'], // Without album
       };
 
-      const duplicates = await detector.findDuplicates(testTracks, options);
+      const { duplicates } = await detector.findDuplicates(testTracks, options);
 
       expect(duplicates).toHaveLength(1);
       expect(duplicates[0].tracks).toHaveLength(3); // Still tracks 1, 2, 3
@@ -132,7 +132,7 @@ describe('DuplicateDetector', () => {
         metadataFields: ['artist', 'title'],
       };
 
-      const duplicates = await detector.findDuplicates(tracksWithDifferentArtist, options);
+      const { duplicates } = await detector.findDuplicates(tracksWithDifferentArtist, options);
 
       expect(duplicates).toHaveLength(0);
     });
@@ -157,7 +157,7 @@ describe('DuplicateDetector', () => {
         metadataFields: ['artist', 'title', 'bpm', 'duration'],
       };
 
-      const duplicates = await detector.findDuplicates(tracksWithClose, options);
+      const { duplicates } = await detector.findDuplicates(tracksWithClose, options);
 
       // Should find duplicates due to tolerance in BPM and duration matching
       expect(duplicates).toHaveLength(1);
@@ -190,7 +190,7 @@ describe('DuplicateDetector', () => {
         metadataFields: [],
       };
 
-      const duplicates = await detector.findDuplicates([testTracks[0], testTracks[1]], options);
+      const { duplicates } = await detector.findDuplicates([testTracks[0], testTracks[1]], options);
 
       // With mocked fingerprinting, tracks should be detected as duplicates
       expect(duplicates.length).toBeGreaterThanOrEqual(0);
@@ -203,7 +203,7 @@ describe('DuplicateDetector', () => {
         metadataFields: ['artist', 'title'],
       };
 
-      const duplicates = await detector.findDuplicates([], options);
+      const { duplicates } = await detector.findDuplicates([], options);
 
       expect(duplicates).toHaveLength(0);
     });
