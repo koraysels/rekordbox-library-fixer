@@ -17,6 +17,7 @@ import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
+import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
 import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
@@ -54,6 +55,31 @@ const DuplicateDetector: React.FC = () => {
     isSearching,
     filteredDuplicates
   } = useDuplicates(libraryPath);
+
+  // "Duplicate" covers two unrelated jobs: real duplicate FILES on disk, and
+  // several rekordbox ENTRIES for one file. They are cleaned up separately.
+  const [kindFilter, setKindFilter] = useState<'all' | 'files' | 'entries'>('all');
+
+  const kindCounts = useMemo(() => {
+    let entries = 0, files = 0;
+    for (const d of duplicates as any[]) {
+      if (classifyDuplicateSet(d.tracks) === 'entries') { entries++; } else { files++; }
+    }
+    return { entries, files };
+  }, [duplicates]);
+
+  // The filter narrows the list; Select All follows it, so you can act on just
+  // the real duplicate files or just the same-file entries.
+  const visibleDuplicates = useMemo(() => {
+    if (kindFilter === 'all') { return filteredDuplicates as any[]; }
+    return (filteredDuplicates as any[]).filter(
+      (d) => (classifyDuplicateSet(d.tracks) === 'entries') === (kindFilter === 'entries')
+    );
+  }, [filteredDuplicates, kindFilter]);
+
+  const selectAllInMode = useCallback(() => {
+    setSelections(visibleDuplicates.map((d: any) => d.id));
+  }, [visibleDuplicates, setSelections]);
 
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
 
@@ -368,7 +394,7 @@ const DuplicateDetector: React.FC = () => {
       <PageHeader
         title="Duplicate Detection"
         icon={Search}
-        stats={`${duplicates.length} sets found${wasCancelled ? ' (partial scan)' : ''} • ${selectedDuplicates.size} selected`}
+        stats={`${visibleDuplicates.length} of ${duplicates.length} sets${wasCancelled ? ' (partial scan)' : ''} • ${selectedDuplicates.size} selected`}
         actions={
           <PopoverButton
             onClick={() => setShowSettings(!showSettings)}
@@ -399,15 +425,36 @@ const DuplicateDetector: React.FC = () => {
                 {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
               </PopoverButton>
 
-              <PopoverButton
-                onClick={selectAll}
+              {/* Filter by what the duplicate actually is: real duplicate files on
+                disk, or several rekordbox entries for one file. */}
+            <div className="flex items-center gap-1 mr-2">
+              {([
+                ['all', `All (${duplicates.length})`],
+                ['files', `Duplicate files (${kindCounts.files})`],
+                ['entries', `Same-file entries (${kindCounts.entries})`],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setKindFilter(value)}
+                  className={`text-[11px] font-te-mono px-2 py-1 rounded-te border transition-colors normal-case ${
+                    kindFilter === value
+                      ? 'bg-te-orange text-te-cream border-te-orange'
+                      : 'bg-te-grey-100 text-te-grey-700 border-te-grey-300 hover:bg-te-grey-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <PopoverButton
+                onClick={selectAllInMode}
                 disabled={duplicates.length === 0}
                 icon={CheckCircle2}
                 title="Select All Duplicates"
                 description="Select all duplicate sets for bulk resolution"
                 variant="secondary"
               >
-                Select All ({duplicates.length})
+                Select All ({visibleDuplicates.length})
               </PopoverButton>
 
               <PopoverButton
@@ -493,7 +540,7 @@ const DuplicateDetector: React.FC = () => {
             </div>
             <div className="relative">
               <VirtualizedDuplicateList
-                duplicates={filteredDuplicates}
+                duplicates={visibleDuplicates}
                 selectedDuplicates={selectedDuplicates}
                 onToggleSelection={toggleDuplicateSelection}
                 resolutionStrategy={resolutionStrategy}
