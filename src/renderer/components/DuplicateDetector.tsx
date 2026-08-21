@@ -17,7 +17,8 @@ import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
-import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
+import { normalizePathForCompare } from '../utils/normalizePath';
+import { classifyDuplicateSet, looksLikePlayableFile } from '../utils/classifyDuplicateSet';
 import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
@@ -365,11 +366,15 @@ const DuplicateDetector: React.FC = () => {
       // rekordbox entries can point at the same file — that file stays).
       const losingPaths = selectedSets.flatMap((d: any) => {
         const keeper = pickRecommendedTrack(d.tracks, resolutionStrategy, d.pathPreferences);
-        const keeperLocation = (keeper?.location ?? '').toLowerCase();
+        const keeperLocation = normalizePathForCompare(keeper?.location);
         return d.tracks
           .filter((t: any) => t.id !== keeper?.id)
           .map((t: any) => t.location)
-          .filter((loc: string) => loc && loc.toLowerCase() !== keeperLocation);
+          // Only real files can be trashed. Rekordbox also stores folders,
+          // truncated locations and streaming ids; proposing those was alarming
+          // and the backend refuses them anyway.
+          .filter((loc: string) => loc && looksLikePlayableFile(loc)
+            && normalizePathForCompare(loc) !== keeperLocation);
       });
       const uniquePaths = Array.from(new Set(losingPaths));
       if (uniquePaths.length === 0) {
@@ -414,17 +419,43 @@ const DuplicateDetector: React.FC = () => {
           {/* Row 1 — the one thing you came here to do, plus finding your way
               around the result. The search grows; nothing else competes. */}
           <div className="flex items-center gap-3 px-4 pt-4">
-            <PopoverButton
-              onClick={scanForDuplicates}
-              disabled={isScanning}
-              loading={isScanning}
-              icon={Search}
-              title="Scan for Duplicates"
-              description="Analyze your library to find duplicate tracks using advanced algorithms"
-              variant="primary"
-            >
-              {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
-            </PopoverButton>
+            {isScanning ? (
+              /* While scanning, this spot carries the progress and the way out.
+                 It used to live in the empty results area, which disappears as
+                 soon as the first streamed set arrives — taking Cancel with it. */
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <button onClick={cancelScan} className="btn-secondary text-xs whitespace-nowrap">
+                  <Trash2 size={13} className="inline mr-1.5" />
+                  Cancel scan
+                </button>
+                <div className="flex-1 min-w-0">
+                  {scanProgress && scanProgress.total > 0 && (
+                    <>
+                      <div className="w-full bg-te-grey-300 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className="bg-te-orange h-full transition-all duration-200"
+                          style={{ width: `${Math.round((scanProgress.current / scanProgress.total) * 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] font-te-mono text-te-grey-600 mt-1 truncate normal-case">
+                        {scanProgress.current} / {scanProgress.total} tracks · {scanProgress.setsFound} sets found
+                        {scanProgress.trackName ? ` · ${scanProgress.trackName}` : ''}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <PopoverButton
+                onClick={scanForDuplicates}
+                icon={Search}
+                title="Scan for Duplicates"
+                description="Analyze your library to find duplicate tracks using advanced algorithms"
+                variant="primary"
+              >
+                Scan for Duplicates
+              </PopoverButton>
+            )}
 
             <input
               type="text"
