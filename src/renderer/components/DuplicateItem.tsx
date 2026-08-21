@@ -15,11 +15,9 @@ import { useFileOperations } from '../hooks';
 import { ConfidenceBadge, PlayButton } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
-import { classifyDuplicateSet, deletableFileCount } from '../utils/classifyDuplicateSet';
+import { deletableFileCount, distinctFileCount } from '../utils/classifyDuplicateSet';
+import { normalizePathForCompare } from '../utils/normalizePath';
 
-const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
-const isUniversalLossless = (loc: string) => ['.wav', '.aiff', '.aif'].includes(_ext(loc));
-const isFlac = (loc: string) => _ext(loc) === '.flac';
 
 interface DuplicateItemProps {
   duplicate: any;
@@ -62,17 +60,33 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 
   // Two very different situations wear the word "duplicate": several rekordbox
   // entries for ONE file (nothing to delete) versus genuinely duplicated files.
-  const kind = useMemo(() => classifyDuplicateSet(duplicate.tracks), [duplicate.tracks]);
   const filesToRemove = useMemo(
     () => deletableFileCount(duplicate.tracks, recommendedTrack?.id),
     [duplicate.tracks, recommendedTrack]
   );
 
+  // Say the actual numbers. "Mixed" left people asking how many files there
+  // really are; "5 entries · 2 files" answers it outright.
+  const fileCount = useMemo(() => distinctFileCount(duplicate.tracks), [duplicate.tracks]);
+  const entryCount = duplicate.tracks.length;
   const kindBadge = {
-    entries: { label: 'Same file · duplicate entries', className: 'bg-te-grey-200 text-te-grey-700 border-te-grey-300' },
-    files: { label: 'Duplicate files', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
-    mixed: { label: 'Mixed · some share a file', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
-  }[kind];
+    label: `${entryCount} entries · ${fileCount} file${fileCount !== 1 ? 's' : ''}`,
+    className: fileCount > 1
+      ? 'bg-te-amber-100 text-te-amber-600 border-te-amber-200'
+      : 'bg-te-grey-200 text-te-grey-700 border-te-grey-300',
+  };
+
+  /**
+   * An entry that points at the kept file is only an extra listing: merging it
+   * touches no file. One that points elsewhere has a file of its own, which is
+   * what the trash option acts on. Calling both "will be removed" hid that.
+   */
+  const sharesKeptFile = useCallback(
+    (track: any) =>
+      !!recommendedTrack
+      && normalizePathForCompare(track.location) === normalizePathForCompare(recommendedTrack.location),
+    [recommendedTrack]
+  );
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -125,9 +139,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400">•</span>
               <span
                 className={`text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border normal-case ${kindBadge.className}`}
-                title={kind === 'entries'
-                  ? 'Every copy points at the same file on disk — resolving removes the extra entries only.'
-                  : `Resolving can move ${filesToRemove} file${filesToRemove !== 1 ? 's' : ''} to the trash.`}
+                title={fileCount === 1
+                  ? 'Every entry points at the same file on disk — resolving removes the extra entries and touches no file.'
+                  : `${entryCount} rekordbox entries pointing at ${fileCount} files on disk. Resolving can move ${filesToRemove} file${filesToRemove !== 1 ? 's' : ''} to the trash.`}
               >
                 {kindBadge.label}
               </span>
@@ -183,9 +197,19 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-green-100 text-te-green-600 border border-te-green-200 font-te-mono whitespace-nowrap">
                             <CheckCircle className="w-3 h-3" /> Will be kept
                           </span>
+                        ) : sharesKeptFile(track) ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
+                            title="This entry points at the same file as the one being kept. Only the extra entry goes; the file stays."
+                          >
+                            Merged · same file
+                          </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap">
-                            Will be removed
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-amber-100 text-te-amber-600 border border-te-amber-200 font-te-mono whitespace-nowrap"
+                            title="This entry points at a different file. It is merged into the kept entry, and its file only moves to the trash if you tick the trash option."
+                          >
+                            Merged · separate file
                           </span>
                         )
                       )}

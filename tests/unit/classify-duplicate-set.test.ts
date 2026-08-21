@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyDuplicateSet, deletableFileCount } from '../../src/renderer/utils/classifyDuplicateSet';
+import { classifyDuplicateSet, deletableFileCount, distinctFileCount } from '../../src/renderer/utils/classifyDuplicateSet';
 
 describe('classifyDuplicateSet', () => {
   it('calls it entries when every copy points at the same file', () => {
@@ -62,5 +62,32 @@ describe('deletableFileCount', () => {
       { id: 'd', location: '/m/dup2.mp3' },
     ];
     expect(deletableFileCount(tracks, 'a')).toBe(2);
+  });
+});
+
+describe('distinctFileCount', () => {
+  it('counts one file when every entry points at it', () => {
+    expect(distinctFileCount([
+      { location: '/m/a.mp3' },
+      { location: '/m/a.mp3' },
+    ])).toBe(1);
+  });
+
+  it('counts the real files behind a mixed set', () => {
+    // The real case: five rekordbox entries, two files on disk.
+    expect(distinctFileCount([
+      { location: '/m/x[www.mp3' },
+      { location: '/m/x[www.MP3Fiber.com].mp3' },
+      { location: '/m/x[www.mp3' },
+      { location: '/m/x[www.MP3Fiber.com].mp3' },
+      { location: '/m/x[www.mp3' },
+    ])).toBe(2);
+  });
+
+  it('folds Unicode variants of one path into a single file', () => {
+    expect(distinctFileCount([
+      { location: '/m/Bökken.mp3' },
+      { location: '/m/Bökken.mp3' },
+    ])).toBe(1);
   });
 });
