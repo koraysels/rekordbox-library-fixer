@@ -9,6 +9,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
+import { useSettingsStore } from '../stores/settingsStore';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
@@ -77,6 +78,17 @@ const DuplicateDetector: React.FC = () => {
       (d) => (classifyDuplicateSet(d.tracks) === 'entries') === (kindFilter === 'entries')
     );
   }, [filteredDuplicates, kindFilter]);
+
+  // A set that the filter hides must not stay selected: Resolve would act on
+  // sets you can no longer see, which is exactly the kind of surprise this
+  // tool must not spring on anyone.
+  useEffect(() => {
+    const visible = new Set(visibleDuplicates.map((d: any) => d.id));
+    const stillValid = Array.from(selectedDuplicates).filter((id) => visible.has(id));
+    if (stillValid.length !== selectedDuplicates.size) {
+      setSelections(stillValid);
+    }
+  }, [visibleDuplicates, selectedDuplicates, setSelections]);
 
   const selectAllInMode = useCallback(() => {
     setSelections(visibleDuplicates.map((d: any) => d.id));
