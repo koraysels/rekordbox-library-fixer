@@ -15,6 +15,7 @@ import { useFileOperations } from '../hooks';
 import { ConfidenceBadge, PlayButton } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
+import { classifyDuplicateSet, deletableFileCount } from '../utils/classifyDuplicateSet';
 
 const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
 const isUniversalLossless = (loc: string) => ['.wav', '.aiff', '.aif'].includes(_ext(loc));
@@ -58,6 +59,20 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
     }
     return { count: names.size, names: Array.from(names) };
   }, [duplicate.tracks, playlistMembership]);
+
+  // Two very different situations wear the word "duplicate": several rekordbox
+  // entries for ONE file (nothing to delete) versus genuinely duplicated files.
+  const kind = useMemo(() => classifyDuplicateSet(duplicate.tracks), [duplicate.tracks]);
+  const filesToRemove = useMemo(
+    () => deletableFileCount(duplicate.tracks, recommendedTrack?.id),
+    [duplicate.tracks, recommendedTrack]
+  );
+
+  const kindBadge = {
+    entries: { label: 'Same file · duplicate entries', className: 'bg-te-grey-200 text-te-grey-700 border-te-grey-300' },
+    files: { label: 'Duplicate files', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
+    mixed: { label: 'Mixed · some share a file', className: 'bg-te-amber-100 text-te-amber-600 border-te-amber-200' },
+  }[kind];
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
@@ -106,6 +121,15 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400">•</span>
               <span className="text-xs text-zinc-400 capitalize">
                 {duplicate.matchType} match
+              </span>
+              <span className="text-xs text-zinc-400">•</span>
+              <span
+                className={`text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border normal-case ${kindBadge.className}`}
+                title={kind === 'entries'
+                  ? 'Every copy points at the same file on disk — resolving removes the extra entries only.'
+                  : `Resolving can move ${filesToRemove} file${filesToRemove !== 1 ? 's' : ''} to the trash.`}
+              >
+                {kindBadge.label}
               </span>
               <span className="text-xs text-zinc-400">•</span>
               <span
