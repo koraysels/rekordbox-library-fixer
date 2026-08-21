@@ -15,6 +15,7 @@ import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
+import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -258,12 +259,18 @@ const DuplicateDetector: React.FC = () => {
     if (deleteFromDisk) {
       // Collect all file paths that will be removed so the modal can show them
       const selectedSets = duplicates.filter(d => selectedDuplicates.has(d.id));
-      // We don't know which track "wins" client-side perfectly, but we show all paths —
-      // the backend will only delete the losers. Show a conservative "up to N files" list.
-      const allPaths = selectedSets.flatMap((d: any) =>
-        d.tracks.map((t: any) => t.location).filter(Boolean)
-      );
-      setPendingDeletePaths(allPaths);
+      // Show only the paths that will actually be trashed: per set, drop the
+      // copy that is kept, and drop any path the kept copy still uses (several
+      // rekordbox entries can point at the same file — that file stays).
+      const losingPaths = selectedSets.flatMap((d: any) => {
+        const keeper = pickRecommendedTrack(d.tracks, resolutionStrategy, d.pathPreferences);
+        const keeperLocation = (keeper?.location ?? '').toLowerCase();
+        return d.tracks
+          .filter((t: any) => t.id !== keeper?.id)
+          .map((t: any) => t.location)
+          .filter((loc: string) => loc && loc.toLowerCase() !== keeperLocation);
+      });
+      setPendingDeletePaths(Array.from(new Set(losingPaths)));
       return;
     }
 

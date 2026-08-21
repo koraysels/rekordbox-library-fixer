@@ -14,6 +14,7 @@ import { formatFileSize, formatDuration } from '../utils';
 import { useFileOperations } from '../hooks';
 import { ConfidenceBadge, PlayButton } from './ui';
 import { useSettingsStore } from '../stores/settingsStore';
+import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 
 const _ext = (loc: string) => '.' + ((loc || '').split('.').pop()?.toLowerCase() ?? '');
 const isUniversalLossless = (loc: string) => ['.wav', '.aiff', '.aif'].includes(_ext(loc));
@@ -40,67 +41,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   const { openFileLocation } = useFileOperations();
   const preferLossless = useSettingsStore((state) => state.scanOptions.preferLossless);
 
-  const recommendedTrack = useMemo(() => {
-    if (resolutionStrategy === 'manual') {return null;}
-
-    let recommended = duplicate.tracks[0];
-
-    if (resolutionStrategy === 'keep-highest-quality') {
-      const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
-      const tier = (t: any) => {
-        if (isUniversalLossless(t.location || '')) return 2;
-        if (preferLossless && isFlac(t.location || '')) return 2;
-        return 0;
-      };
-      recommended = duplicate.tracks.reduce((best: any, current: any) => {
-        const bt = tier(best); const ct = tier(current);
-        if (ct > bt) return current;
-        if (bt > ct) return best;
-        return qualityScore(current) > qualityScore(best) ? current : best;
-      });
-    } else if (resolutionStrategy === 'keep-newest') {
-      recommended = duplicate.tracks.reduce((newest: any, current: any) => {
-        if (!newest.dateModified) {return current;}
-        if (!current.dateModified) {return newest;}
-        return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
-      });
-    } else if (resolutionStrategy === 'keep-oldest') {
-      recommended = duplicate.tracks.reduce((oldest: any, current: any) => {
-        if (!oldest.dateAdded) {return current;}
-        if (!current.dateAdded) {return oldest;}
-        return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
-      });
-    } else if (resolutionStrategy === 'keep-preferred-path') {
-      // Find track with path that matches any of the preferred paths
-      const pathPreferences = duplicate.pathPreferences || [];
-      console.log('🔍 Path preferences:', pathPreferences);
-
-      if (pathPreferences.length > 0) {
-        // Sort tracks by preference priority (lower index = higher priority)
-        const sortedTracks = [...duplicate.tracks].sort((a: any, b: any) => {
-          const aMatch = pathPreferences.findIndex((pref: string) =>
-            a.location && a.location.toLowerCase().includes(pref.toLowerCase())
-          );
-          const bMatch = pathPreferences.findIndex((pref: string) =>
-            b.location && b.location.toLowerCase().includes(pref.toLowerCase())
-          );
-
-          // If both match, return the one with lower index (higher priority)
-          if (aMatch !== -1 && bMatch !== -1) {return aMatch - bMatch;}
-          // If only one matches, prioritize the matching one
-          if (aMatch !== -1) {return -1;}
-          if (bMatch !== -1) {return 1;}
-          // If neither match, keep original order
-          return 0;
-        });
-
-        recommended = sortedTracks[0];
-        console.log('📁 Recommended track by path preference:', recommended?.location);
-      }
-    }
-
-    return recommended;
-  }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
+  const recommendedTrack = useMemo(
+    () => pickRecommendedTrack(duplicate.tracks, resolutionStrategy, duplicate.pathPreferences, preferLossless),
+    [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences, preferLossless]
+  );
 
 
   // Total playlist reach of this song across ALL its duplicate copies (the
