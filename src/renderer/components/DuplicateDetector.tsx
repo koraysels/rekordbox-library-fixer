@@ -410,103 +410,103 @@ const DuplicateDetector: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Actions Bar */}
-        <div className="flex-shrink-0 py-4 px-0 bg-te-grey-200 border-b-2 border-te-grey-300">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <PopoverButton
-                onClick={scanForDuplicates}
-                disabled={isScanning}
-                loading={isScanning}
-                icon={Search}
-                title="Scan for Duplicates"
-                description="Analyze your library to find duplicate tracks using advanced algorithms"
-                variant="primary"
-              >
-                {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
-              </PopoverButton>
-
-              {/* Filter by what the duplicate actually is: real duplicate files on
-                disk, or several rekordbox entries for one file. */}
-            <div className="flex items-center gap-1 mr-2">
-              {([
-                ['all', `All (${duplicates.length})`],
-                ['files', `Duplicate files (${kindCounts.files})`],
-                ['entries', `Same-file entries (${kindCounts.entries})`],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  onClick={() => setKindFilter(value)}
-                  className={`text-[11px] font-te-mono px-2 py-1 rounded-te border transition-colors normal-case ${
-                    kindFilter === value
-                      ? 'bg-te-orange text-te-cream border-te-orange'
-                      : 'bg-te-grey-100 text-te-grey-700 border-te-grey-300 hover:bg-te-grey-200'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        <div className="flex-shrink-0 bg-te-grey-200 border-b-2 border-te-grey-300">
+          {/* Row 1 — the one thing you came here to do, plus finding your way
+              around the result. The search grows; nothing else competes. */}
+          <div className="flex items-center gap-3 px-4 pt-4">
             <PopoverButton
-                onClick={selectAllInMode}
-                disabled={duplicates.length === 0}
-                icon={CheckCircle2}
-                title="Select All Duplicates"
-                description="Select all duplicate sets for bulk resolution"
-                variant="secondary"
-              >
-                Select All ({visibleDuplicates.length})
-              </PopoverButton>
+              onClick={scanForDuplicates}
+              disabled={isScanning}
+              loading={isScanning}
+              icon={Search}
+              title="Scan for Duplicates"
+              description="Analyze your library to find duplicate tracks using advanced algorithms"
+              variant="primary"
+            >
+              {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
+            </PopoverButton>
 
-              <PopoverButton
-                onClick={clearAll}
-                disabled={selectedDuplicates.size === 0}
-                icon={Trash2}
-                title="Clear Selection"
-                description="Deselect all currently selected duplicate sets"
-                variant="secondary"
-              >
-                Clear Selection ({selectedDuplicates.size})
-              </PopoverButton>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search duplicates..."
-                className="input w-72"
-              />
-            </div>
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search duplicates..."
+              className="input flex-1 min-w-0"
+            />
           </div>
 
-          {/* Selection Controls */}
-          <div className="flex items-center justify-between mx-4">
-            <div className="flex items-center space-x-4">
-              {duplicates.length > 0 && (
-                <>
-                  <span className="te-value">
-                    {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
-                  </span>
-                  <span className="te-value">
-                    {selectedDuplicates.size} selected
-                  </span>
-                </>
-              )}
-            </div>
+          {/* Row 2 — which kind of duplicate you are looking at, and what you
+              do with that subset. One segmented control, never wrapping. */}
+          {duplicates.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="inline-flex rounded-te border border-te-grey-300 overflow-hidden">
+                {([
+                  ['all', 'All', duplicates.length,
+                    'Every duplicate set found'],
+                  ['files', 'Duplicate files', kindCounts.files,
+                    'Separate files on disk — resolving can move the extra files to the trash'],
+                  ['entries', 'Same-file entries', kindCounts.entries,
+                    'Several rekordbox entries for one file — resolving removes the extra entries, no file is touched'],
+                ] as const).map(([value, label, count, hint], i) => (
+                  <button
+                    key={value}
+                    onClick={() => setKindFilter(value)}
+                    title={hint}
+                    className={`px-3 py-1.5 text-xs font-te-mono whitespace-nowrap normal-case transition-colors ${
+                      i > 0 ? 'border-l border-te-grey-300' : ''
+                    } ${
+                      kindFilter === value
+                        ? 'bg-te-orange text-te-cream'
+                        : 'bg-te-grey-100 text-te-grey-700 hover:bg-te-grey-50'
+                    }`}
+                  >
+                    {label}
+                    <span className={`ml-1.5 tabular-nums ${kindFilter === value ? 'opacity-70' : 'text-te-grey-500'}`}>
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-            {duplicates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={selectAllInMode}
+                  disabled={visibleDuplicates.length === 0}
+                  className="btn-ghost text-xs disabled:opacity-40"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 inline mr-1.5" />
+                  Select all {visibleDuplicates.length}
+                </button>
+                <button
+                  onClick={clearAll}
+                  disabled={selectedDuplicates.size === 0}
+                  className="btn-ghost text-xs disabled:opacity-40"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Row 3 — the destructive step. Hidden until something is selected,
+              so the resting toolbar has no armed delete control in it. The
+              counts live in the page header; repeating them here was noise. */}
+          {selectedDuplicates.size > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-3 mx-4 pb-4">
+              <span className="te-label text-xs normal-case mr-auto">
+                {selectedDuplicates.size} set{selectedDuplicates.size !== 1 ? 's' : ''} selected
+              </span>
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Permanently delete the losing duplicate files from disk after resolving">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Move the duplicate files of the copies being merged to the system trash. A file the kept track still uses is never touched.">
                   <input
                     type="checkbox"
                     checked={deleteFromDisk}
                     onChange={e => setDeleteFromDisk(e.target.checked)}
                     className="checkbox"
                   />
-                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500">
+                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500 normal-case">
                     <AlertTriangle className="w-3 h-3" />
-                    Also delete files from disk
+                    Also move duplicate files to trash
                   </span>
                 </label>
                 <PopoverButton
@@ -521,8 +521,8 @@ const DuplicateDetector: React.FC = () => {
                   {isScanning ? 'Resolving...' : 'Resolve Selected'}
                 </PopoverButton>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Results List */}
