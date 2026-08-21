@@ -9,6 +9,7 @@ import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
 import { scanForLibraries } from './libraryScanner';
 import { listBackups, restoreBackup, deleteBackup, scanAllBackups } from './backupManager';
+import { findBrokenEntries } from './brokenEntries';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { assertWritableLibraryPath } from './librarySource';
@@ -457,6 +458,47 @@ ipcMain.handle('find-duplicates', async (_, options: {
 ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
 
 ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
+
+ipcMain.handle('find-broken-entries', async (_e, tracks: any[]) => {
+  try {
+    return { success: true, data: findBrokenEntries(tracks) };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('remove-broken-entries', async (_e, data: { libraryPath: string; trackIds: string[] }) => {
+  try {
+    assertWritableLibraryPath(data.libraryPath);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.libraryPath}.backup.${stamp}`;
+    require('fs').copyFileSync(data.libraryPath, backupPath);
+
+    const library = await rekordboxParser.parseLibrary(data.libraryPath);
+    const removing = new Set(data.trackIds);
+    let removed = 0;
+    for (const id of removing) {
+      if (library.tracks.delete(id)) { removed++; }
+    }
+
+    // These entries point at nothing, so nothing can inherit their playlist
+    // slots: drop the references rather than re-pointing them.
+    const prune = (playlists: any[]) => {
+      for (const playlist of playlists) {
+        if (playlist.tracks) {
+          playlist.tracks = playlist.tracks.filter((id: string) => !removing.has(id));
+        }
+        if (playlist.children?.length) { prune(playlist.children); }
+      }
+    };
+    prune(library.playlists);
+
+    await rekordboxParser.saveLibrary(library, data.libraryPath);
+    return { success: true, removed, backupPath };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
 
 ipcMain.handle('list-backups', async (_e, libraryPath: string) => {
   try {
