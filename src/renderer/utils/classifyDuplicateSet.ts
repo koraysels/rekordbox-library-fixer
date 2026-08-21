@@ -41,3 +41,10 @@ export function deletableFileCount(
   );
   return others.size;
 }
+
+/** How many distinct files on disk this set actually points at. */
+export function distinctFileCount(tracks: Array<{ location?: string }>): number {
+  return new Set(
+    tracks.map((t) => normalizePathForCompare(t.location)).filter((p) => p.length > 0)
+  ).size;
+}
