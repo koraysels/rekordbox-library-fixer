@@ -445,7 +445,7 @@ const TrackRelocator: React.FC = () => {
                         <p className="te-value text-sm font-medium truncate">
                           {candidate.path.split('/').pop()}
                         </p>
-                        <p className="te-label text-xs font-te-mono">
+                        <p className="te-path text-xs text-te-grey-600 break-all">
                           {candidate.path}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
