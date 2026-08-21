@@ -40,4 +40,19 @@ describe('computeDeletablePaths', () => {
     );
     expect(result).toEqual(['/Music/real-loser.mp3']);
   });
+
+  it('never deletes a file whose path differs only in Unicode form', () => {
+    // macOS stores accents composed or decomposed and treats both as one file;
+    // rekordbox libraries contain both spellings for the same track.
+    const composed = '/Music/Bökken/WONTON.mp3';
+    const decomposed = '/Music/Bökken/WONTON.mp3';
+    expect(composed).not.toBe(decomposed);
+    expect(computeDeletablePaths([decomposed], [composed])).toEqual([]);
+  });
+
+  it('de-duplicates the same file written in both Unicode forms', () => {
+    const composed = '/Music/Bökken/WONTON.mp3';
+    const decomposed = '/Music/Bökken/WONTON.mp3';
+    expect(computeDeletablePaths([composed, decomposed], [])).toHaveLength(1);
+  });
 });
