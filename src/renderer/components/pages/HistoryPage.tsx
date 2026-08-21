@@ -40,6 +40,11 @@ export const HistoryPage: React.FC = () => {
     if (p === libraryPath) { load(); }
   }), [libraryPath, load]);
 
+  const presentTypes = useMemo(
+    () => Array.from(new Set(entries.map((e) => e.type))),
+    [entries]
+  );
+
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return entries.filter((e) => {
@@ -81,8 +86,9 @@ export const HistoryPage: React.FC = () => {
           className="input text-xs py-1"
         >
           <option value="all">All operations</option>
-          {Object.entries(TYPE_META).map(([value, meta]) => (
-            <option key={value} value={value}>{meta.label}</option>
+          {/* Only offer types that actually occur — an empty filter is a dead end. */}
+          {presentTypes.map((value) => (
+            <option key={value} value={value}>{TYPE_META[value]?.label ?? value}</option>
           ))}
         </select>
         <input
