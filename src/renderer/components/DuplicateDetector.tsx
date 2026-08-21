@@ -17,6 +17,7 @@ import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
+import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -274,6 +275,37 @@ const DuplicateDetector: React.FC = () => {
         }
         msg += `\n📁 Library backup: ${result.backupPath}`;
         showNotification('success', msg);
+
+        // Record what happened so the History tab can be used to verify it.
+        const details: ActivityDetail[] = [];
+        for (const set of selectedDuplicateSets as any[]) {
+          const keeper = pickRecommendedTrack(set.tracks, resolutionStrategy, set.pathPreferences);
+          for (const t of set.tracks) {
+            if (t.id === keeper?.id) { continue; }
+            details.push({
+              action: 'merged',
+              trackName: `${t.artist} - ${t.name}`,
+              from: t.location,
+              to: keeper?.location,
+            });
+          }
+        }
+        for (const trashed of (result.trashedPaths ?? [])) {
+          details.push({ action: 'trashed', from: trashed });
+        }
+        for (const failure of (result.deleteErrors ?? [])) {
+          details.push({ action: 'failed', from: failure.file, error: failure.error });
+        }
+        void duplicationHistoryStorage.record({
+          libraryPath,
+          timestamp: new Date(),
+          type: 'duplicate-merge',
+          summary: `Merged ${sets} duplicate set${sets !== 1 ? 's' : ''}`
+            + ` — ${merged} entr${merged !== 1 ? 'ies' : 'y'} folded in`
+            + (withDelete ? `, ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} to trash` : ''),
+          backupPath: result.backupPath,
+          details,
+        });
 
         if (result.updatedLibrary && libraryData) {
           setLibraryData({

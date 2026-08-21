@@ -583,7 +583,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       safeConsole.log(`🛡️ Skipped ${skippedStillReferenced} path(s) still referenced by kept tracks or duplicated in the delete list`);
     }
 
-    const deleteResults = { deleted: 0, failed: [] as { file: string; error: string }[] };
+    const deleteResults = { deleted: 0, trashed: [] as string[], failed: [] as { file: string; error: string }[] };
     if (resolution.deleteFromDisk && deletablePaths.length > 0) {
       for (const loc of deletablePaths) {
         try {
@@ -591,6 +591,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
           // recoverable by the user instead of destroying audio permanently.
           await shell.trashItem(loc);
           deleteResults.deleted++;
+          deleteResults.trashed.push(loc);
           safeConsole.log(`🗑️ Moved to trash: ${loc}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -605,6 +606,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       backupPath,
       tracksRemoved: tracksToRemove.length,
       filesDeleted: deleteResults.deleted,
+      trashedPaths: deleteResults.trashed,
       deleteErrors: deleteResults.failed,
       updatedLibrary: library
     };
