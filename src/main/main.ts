@@ -5,6 +5,7 @@ import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { substitutePlaylistTrackIds } from './playlistSubstitution';
+import { computeDeletablePaths } from './safeDeletePaths';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -532,19 +533,32 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     safeConsole.log(`✅ Successfully resolved duplicates: removed ${tracksToRemove.length} tracks`);
     logger.logLibrarySaving(resolution.libraryPath, library.tracks.size);
 
-    // Step 6 (optional): Delete files from disk
+    // Step 6 (optional): Delete files from disk.
+    // Several rekordbox entries can point at the SAME file. Only delete a path
+    // that no remaining track still references, or we would destroy the audio
+    // belonging to a track the user chose to keep.
+    const remainingLocations = Array.from(library.tracks.values())
+      .map((t: any) => t?.location)
+      .filter((loc: any): loc is string => typeof loc === 'string' && loc.length > 0);
+    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations);
+    const skippedStillReferenced = locationsToDelete.length - deletablePaths.length;
+    if (skippedStillReferenced > 0) {
+      safeConsole.log(`🛡️ Skipped ${skippedStillReferenced} path(s) still referenced by kept tracks or duplicated in the delete list`);
+    }
+
     const deleteResults = { deleted: 0, failed: [] as { file: string; error: string }[] };
-    if (resolution.deleteFromDisk && locationsToDelete.length > 0) {
-      const fsSync = require('fs');
-      for (const loc of locationsToDelete) {
+    if (resolution.deleteFromDisk && deletablePaths.length > 0) {
+      for (const loc of deletablePaths) {
         try {
-          fsSync.unlinkSync(loc);
+          // Move to the OS trash rather than unlinking, so a wrong call is
+          // recoverable by the user instead of destroying audio permanently.
+          await shell.trashItem(loc);
           deleteResults.deleted++;
-          safeConsole.log(`🗑️ Deleted from disk: ${loc}`);
+          safeConsole.log(`🗑️ Moved to trash: ${loc}`);
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           deleteResults.failed.push({ file: loc, error: msg });
-          safeConsole.error(`❌ Failed to delete ${loc}: ${msg}`);
+          safeConsole.error(`❌ Failed to trash ${loc}: ${msg}`);
         }
       }
     }
