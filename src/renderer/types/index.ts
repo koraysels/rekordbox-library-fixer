@@ -182,6 +182,8 @@ declare global {
       findDuplicates: (options: any) => Promise<any>;
       detectRekordboxDb: () => Promise<{ found: boolean; dbPath: string | null; variant: string | null }>;
       scanForLibraries: () => Promise<Array<{ kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string }>>;
+      findBrokenEntries: (tracks: any[]) => Promise<{ success: boolean; data?: Array<{ trackId: string; name: string; artist: string; location: string; reason: string }>; error?: string }>;
+      removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) => Promise<{ success: boolean; removed?: number; backupPath?: string; error?: string }>;
       listBackups: (libraryPath: string) => Promise<{ success: boolean; data?: Array<{ path: string; originalPath: string; created: string; size: number; kind: 'xml' | 'database' }>; error?: string }>;
       restoreBackup: (args: { backupPath: string; libraryPath: string }) => Promise<{ success: boolean; safetyCopy?: string; error?: string }>;
       deleteBackup: (backupPath: string) => Promise<{ success: boolean; error?: string }>;
