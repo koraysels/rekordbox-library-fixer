@@ -305,7 +305,14 @@ const DuplicateDetector: React.FC = () => {
           .map((t: any) => t.location)
           .filter((loc: string) => loc && loc.toLowerCase() !== keeperLocation);
       });
-      setPendingDeletePaths(Array.from(new Set(losingPaths)));
+      const uniquePaths = Array.from(new Set(losingPaths));
+      if (uniquePaths.length === 0) {
+        // Nothing to trash (e.g. every copy points at the same file) — don't
+        // make the user confirm a deletion that would delete nothing.
+        await executeResolve(false);
+        return;
+      }
+      setPendingDeletePaths(uniquePaths);
       return;
     }
 
