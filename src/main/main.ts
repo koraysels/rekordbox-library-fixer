@@ -4,6 +4,7 @@ import { pathToFileURL } from 'url';
 import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
+import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -441,6 +442,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
 
     // Step 3: Determine which tracks to remove for each duplicate set
     const tracksToRemove: string[] = [];
+    // removedTrackId -> keptTrackId, so playlist references can be re-pointed
+    // (not dropped) and playlists stay complete.
+    const replacement = new Map<string, string>();
 
     for (const duplicateSet of resolution.duplicates) {
       const tracksInSet = duplicateSet.tracks;
@@ -496,6 +500,7 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
         .filter((track: any) => track.id !== trackToKeep.id);
 
       tracksToRemove.push(...tracksToRemoveFromSet.map((t: any) => t.id));
+      tracksToRemoveFromSet.forEach((t: any) => replacement.set(t.id, trackToKeep.id));
 
       safeConsole.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
     }
@@ -515,29 +520,11 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
       library.tracks.delete(trackId);
     });
 
-    // Remove from playlists (recursive function to handle nested playlist structure)
-    const removeTracksFromPlaylists = (playlists: any[]) => {
-      playlists.forEach((playlist: any) => {
-        // Filter tracks from current playlist
-        if (playlist.tracks) {
-          const originalCount = playlist.tracks.length;
-          playlist.tracks = playlist.tracks.filter((trackId: string) =>
-            !tracksToRemove.includes(trackId)
-          );
-          const removedCount = originalCount - playlist.tracks.length;
-          if (removedCount > 0) {
-            safeConsole.log(`🎵 Removed ${removedCount} duplicate tracks from playlist "${playlist.name}"`);
-          }
-        }
-
-        // Recursively process child playlists
-        if (playlist.children && playlist.children.length > 0) {
-          removeTracksFromPlaylists(playlist.children);
-        }
-      });
-    };
-
-    removeTracksFromPlaylists(library.playlists);
+    // Re-point playlist references from each removed track to the kept track,
+    // so playlists stay complete (a song that lived only in the removed
+    // duplicate is preserved, now pointing at the kept file) and no playlist
+    // gains a duplicate entry.
+    substitutePlaylistTrackIds(library.playlists, replacement);
 
     // Step 5: Save updated library
     await rekordboxParser.saveLibrary(library, resolution.libraryPath);
