@@ -64,6 +64,9 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
 
         if (accessible) {
           await loadLibrary(savedPath);
+          // Say so: restoring the last library silently made it easy to act on
+          // a different one than you thought was open.
+          showNotification('info', `Reopened your last library: ${savedPath}`);
         } else {
           localStorage.removeItem('rekordboxLibraryPath');
         }

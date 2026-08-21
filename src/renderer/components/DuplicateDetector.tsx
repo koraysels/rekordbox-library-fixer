@@ -412,6 +412,17 @@ const DuplicateDetector: React.FC = () => {
         }
       />
 
+      {/* Which library every action here will change. Auto-loading the last
+          library on start made it easy to act on the wrong one. */}
+      {libraryPath && (
+        <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-te-grey-100 border-b border-te-grey-300">
+          <span className="te-label text-[10px] normal-case">Working on</span>
+          <span className="te-path text-[11px] text-te-grey-700 truncate flex-1" title={libraryPath}>
+            {libraryPath}
+          </span>
+        </div>
+      )}
+
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Actions Bar */}
@@ -658,6 +669,7 @@ const DuplicateDetector: React.FC = () => {
       {/* 3-step delete confirmation modal */}
       {pendingDeletePaths && (
         <DeleteConfirmModal
+          libraryPath={libraryPath}
           filePaths={pendingDeletePaths}
           onConfirm={() => {
             setPendingDeletePaths(null);
