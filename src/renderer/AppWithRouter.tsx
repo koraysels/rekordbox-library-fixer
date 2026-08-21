@@ -51,6 +51,7 @@ const AppWithRouter: React.FC = () => {
     startupComplete,
     selectLibrary,
     loadLibrary,
+    loadFromDb,
     clearStoredData,
     setLibraryData
   } = useLibrary(showNotification);
@@ -122,7 +123,7 @@ const AppWithRouter: React.FC = () => {
             <p className="text-sm font-te-mono">Parsing library…</p>
           </div>
         ) : !libraryData ? (
-          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
+          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} onLoadFromDb={loadFromDb} />
         ) : (
           <AppContext.Provider value={{
             libraryData,

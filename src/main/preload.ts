@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
   findDuplicates: (options: any) =>
     ipcRenderer.invoke('find-duplicates', options),
+  detectRekordboxDb: () => ipcRenderer.invoke('detect-rekordbox-db'),
+  parseRekordboxDb: (args: { dbPath: string; key: string }) =>
+    ipcRenderer.invoke('parse-rekordbox-db', args),
   cancelDuplicateScan: (operationId: string) =>
     ipcRenderer.invoke('cancel-duplicate-scan', operationId),
   onDuplicateScanProgress: (callback: (progress: any) => void) => {

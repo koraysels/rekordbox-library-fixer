@@ -201,6 +201,9 @@
           "path": "/Applications"
         }
       ]
-    }
+    },
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3-multiple-ciphers/**"
+    ]
   }
 }
