@@ -39,12 +39,83 @@ export interface RelocationResult {
   error?: string;
 }
 
+interface FileIndex {
+  key: string;
+  files: string[];
+  fileNames: Array<{ path: string; name: string }>;
+  fuzzy: FuzzySearch<{ path: string; name: string }>;
+}
+
 export class TrackRelocator {
   private logger: Logger;
   private audioExtensions = ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg'];
+  // Cached filesystem index — built once per (searchPaths+extensions+depth) and
+  // reused across every track in a run so we don't re-glob the whole tree per track.
+  private fileIndex: FileIndex | null = null;
 
   constructor() {
     this.logger = new Logger();
+  }
+
+  /** Key identifying an index: rebuild only when these inputs change. */
+  private indexKey(options: RelocationOptions): string {
+    return JSON.stringify({
+      searchPaths: options.searchPaths,
+      fileExtensions: options.fileExtensions,
+      includeSubdirectories: options.includeSubdirectories,
+      searchDepth: options.searchDepth,
+    });
+  }
+
+  /**
+   * Signal the start of a multi-track relocation run. Optional — a single
+   * findRelocationCandidates call builds and reuses its own index too. Calling
+   * this primes the index up front so the first track isn't slow.
+   */
+  async beginRelocationRun(options: RelocationOptions): Promise<void> {
+    await this.getFileIndex(options);
+  }
+
+  /** Free the cached index so a large library's file list isn't retained. */
+  endRelocationRun(): void {
+    this.fileIndex = null;
+  }
+
+  /** Build (or reuse) the file index for the given options. */
+  private async getFileIndex(options: RelocationOptions): Promise<FileIndex> {
+    const key = this.indexKey(options);
+    if (this.fileIndex && this.fileIndex.key === key) {
+      return this.fileIndex;
+    }
+
+    const extensions = options.fileExtensions.length > 0
+      ? options.fileExtensions
+      : this.audioExtensions;
+
+    const files: string[] = [];
+    for (const searchPath of options.searchPaths) {
+      if (!(await this.fileExists(searchPath))) {
+        this.logger.warning('TRACK_RELOCATOR_PATH_NOT_FOUND', { searchPath });
+        continue;
+      }
+      const globPattern = path.join(
+        searchPath,
+        options.includeSubdirectories ? '**' : '',
+        `*.{${extensions.map(ext => ext.replace('.', '')).join(',')}}`
+      );
+      const found = await glob(globPattern, { maxDepth: options.searchDepth, nocase: true });
+      files.push(...found);
+    }
+
+    const fileNames = files.map(file => ({
+      path: file,
+      name: path.basename(file, path.extname(file)),
+    }));
+    const fuzzy = new FuzzySearch(fileNames, ['name'], { caseSensitive: false, sort: true });
+
+    this.fileIndex = { key, files, fileNames, fuzzy };
+    this.logger.info('TRACK_RELOCATOR_INDEX_BUILT', { files: files.length });
+    return this.fileIndex;
   }
 
   async findMissingTracks(tracks: Map<string, any>): Promise<MissingTrack[]> {
@@ -99,124 +170,91 @@ export class TrackRelocator {
       searchPaths: options.searchPaths.length
     });
 
-    for (const searchPath of options.searchPaths) {
-      try {
-        if (!(await this.fileExists(searchPath))) {
-          this.logger.warning('TRACK_RELOCATOR_PATH_NOT_FOUND', { searchPath });
-          continue;
-        }
+    try {
+      const { files, fileNames, fuzzy } = await this.getFileIndex(options);
 
-        // Build glob pattern for audio files
-        const extensions = options.fileExtensions.length > 0
-          ? options.fileExtensions
-          : this.audioExtensions;
+      // 1. Exact filename match
+      const exactMatch = files.find(file => {
+        const fileName = path.basename(file, path.extname(file));
+        return fileName.toLowerCase() === originalFileName.toLowerCase();
+      });
 
-        const globPattern = path.join(
-          searchPath,
-          options.includeSubdirectories ? '**' : '',
-          `*.{${extensions.map(ext => ext.replace('.', '')).join(',')}}`
-        );
-
-        const files = await glob(globPattern, {
-          maxDepth: options.searchDepth,
-          nocase: true
-        });
-
-        // 1. Exact filename match
-        const exactMatch = files.find(file => {
-          const fileName = path.basename(file, path.extname(file));
-          return fileName.toLowerCase() === originalFileName.toLowerCase();
-        });
-
-        if (exactMatch) {
-          candidates.push({
-            path: exactMatch,
-            score: 100,
-            matchType: 'exact',
-            confidence: 0.95
-          });
-        }
-
-        // 2. Fuzzy filename matching
-        const fileNames = files.map(file => ({
-          path: file,
-          name: path.basename(file, path.extname(file))
-        }));
-
-        const fuzzySearcher = new FuzzySearch(fileNames, ['name'], {
-          caseSensitive: false,
-          sort: true
-        });
-
-        const fuzzyMatches = fuzzySearcher.search(originalFileName);
-        for (let i = 0; i < Math.min(5, fuzzyMatches.length); i++) {
-          const match = fuzzyMatches[i];
-          if (candidates.some(c => c.path === match.path)) {continue;}
-
-          const similarity = this.calculateStringSimilarity(originalFileName, match.name);
-          if (similarity >= options.matchThreshold) {
-            candidates.push({
-              path: match.path,
-              score: Math.round(similarity * 100),
-              matchType: 'fuzzy',
-              confidence: similarity * 0.8
-            });
-          }
-        }
-
-        // 3. Metadata-based matching (artist + title)
-        if (track.artist && track.name) {
-          const metadataMatches = fileNames.filter(file => {
-            const fileName = file.name.toLowerCase();
-            return fileName.includes(track.artist.toLowerCase()) &&
-                   fileName.includes(track.name.toLowerCase());
-          });
-
-          for (const match of metadataMatches.slice(0, 3)) {
-            if (candidates.some(c => c.path === match.path)) {continue;}
-
-            candidates.push({
-              path: match.path,
-              score: 80,
-              matchType: 'metadata',
-              confidence: 0.7
-            });
-          }
-        }
-
-        // 4. File size matching (if available) — async to avoid blocking the main thread
-        if (track.size) {
-          const sizeMatches = await Promise.all(
-            files.slice(0, 20)
-              .filter(file => !candidates.some(c => c.path === file))
-              .map(async file => {
-                try {
-                  const stats = await fs.promises.stat(file);
-                  const sizeDifference = Math.abs(stats.size - track.size!) / track.size!;
-                  if (sizeDifference <= 0.05) {
-                    return {
-                      path: file,
-                      score: Math.round((1 - sizeDifference) * 100),
-                      matchType: 'size' as const,
-                      confidence: 0.6
-                    };
-                  }
-                } catch {
-                  // Skip files that can't be accessed
-                }
-                return null;
-              })
-          );
-          candidates.push(...sizeMatches.filter((m): m is NonNullable<typeof m> => m !== null));
-        }
-
-      } catch (error) {
-        this.logger.error('TRACK_RELOCATOR_SEARCH_ERROR', {
-          searchPath,
-          trackId: track.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+      if (exactMatch) {
+        candidates.push({
+          path: exactMatch,
+          score: 100,
+          matchType: 'exact',
+          confidence: 0.95
         });
       }
+
+      // 2. Fuzzy filename matching
+      const fuzzyMatches = fuzzy.search(originalFileName);
+      for (let i = 0; i < Math.min(5, fuzzyMatches.length); i++) {
+        const match = fuzzyMatches[i];
+        if (candidates.some(c => c.path === match.path)) {continue;}
+
+        const similarity = this.calculateStringSimilarity(originalFileName, match.name);
+        if (similarity >= options.matchThreshold) {
+          candidates.push({
+            path: match.path,
+            score: Math.round(similarity * 100),
+            matchType: 'fuzzy',
+            confidence: similarity * 0.8
+          });
+        }
+      }
+
+      // 3. Metadata-based matching (artist + title)
+      if (track.artist && track.name) {
+        const metadataMatches = fileNames.filter(file => {
+          const fileName = file.name.toLowerCase();
+          return fileName.includes(track.artist.toLowerCase()) &&
+                 fileName.includes(track.name.toLowerCase());
+        });
+
+        for (const match of metadataMatches.slice(0, 3)) {
+          if (candidates.some(c => c.path === match.path)) {continue;}
+
+          candidates.push({
+            path: match.path,
+            score: 80,
+            matchType: 'metadata',
+            confidence: 0.7
+          });
+        }
+      }
+
+      // 4. File size matching (if available) — async to avoid blocking the main thread
+      if (track.size) {
+        const sizeMatches = await Promise.all(
+          files.slice(0, 20)
+            .filter(file => !candidates.some(c => c.path === file))
+            .map(async file => {
+              try {
+                const stats = await fs.promises.stat(file);
+                const sizeDifference = Math.abs(stats.size - track.size!) / track.size!;
+                if (sizeDifference <= 0.05) {
+                  return {
+                    path: file,
+                    score: Math.round((1 - sizeDifference) * 100),
+                    matchType: 'size' as const,
+                    confidence: 0.6
+                  };
+                }
+              } catch {
+                // Skip files that can't be accessed
+              }
+              return null;
+            })
+        );
+        candidates.push(...sizeMatches.filter((m): m is NonNullable<typeof m> => m !== null));
+      }
+    } catch (error) {
+      this.logger.error('TRACK_RELOCATOR_SEARCH_ERROR', {
+        trackId: track.id,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
 
     // Sort candidates by score (descending) and remove duplicates
