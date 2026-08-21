@@ -208,7 +208,12 @@ export function Sidebar({
                                     )}
                                 </div>
                             </div>
+                            {/* Filename first: with several similarly named
+                                exports, that is what tells them apart. */}
                             <p className="text-te-cream text-xs font-te-mono truncate" title={libraryPath}>
+                                {libraryPath.split('/').pop()}
+                            </p>
+                            <p className="text-te-grey-400 text-[10px] te-path-tail" title={libraryPath}>
                                 {libraryPath}
                             </p>
                         </div>
