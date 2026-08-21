@@ -1,5 +1,7 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
+import { databaseCandidates, xmlSearchDirs } from './libraryScanner';
 
 export interface BackupEntry {
   path: string;
@@ -84,4 +86,52 @@ export function deleteBackup(backupPath: string): void {
     throw new Error('Refusing to delete a file that is not a backup.');
   }
   fs.rmSync(backupPath, { force: true });
+}
+
+/** The library a backup was taken from: its own name minus the stamp. */
+export function originalPathOfBackup(backupPath: string): string {
+  const dir = path.dirname(backupPath);
+  const name = path.basename(backupPath).replace(BACKUP_SUFFIX, '');
+  return path.join(dir, name);
+}
+
+/**
+ * Every backup on this machine, whatever library it belongs to. Backups are
+ * most wanted exactly when something has gone wrong and no library is loaded,
+ * so finding them must not depend on having one.
+ */
+export function scanAllBackups(
+  home: string = os.homedir(),
+  platform: NodeJS.Platform = process.platform
+): BackupEntry[] {
+  const dirs = new Set<string>(xmlSearchDirs(home));
+  for (const dbPath of databaseCandidates(home, platform)) {
+    dirs.add(path.dirname(dbPath));
+  }
+
+  const backups: BackupEntry[] = [];
+  const seen = new Set<string>();
+  for (const dir of dirs) {
+    let entries: string[];
+    try { entries = fs.readdirSync(dir); } catch { continue; }
+    for (const entry of entries) {
+      if (!BACKUP_SUFFIX.test(entry)) { continue; }
+      const full = path.join(dir, entry);
+      if (seen.has(full)) { continue; }
+      try {
+        const stat = fs.statSync(full);
+        if (!stat.isFile()) { continue; }
+        seen.add(full);
+        const originalPath = originalPathOfBackup(full);
+        backups.push({
+          path: full,
+          originalPath,
+          created: parseBackupTimestamp(entry, stat.mtime),
+          size: stat.size,
+          kind: originalPath.toLowerCase().endsWith('.db') ? 'database' : 'xml',
+        });
+      } catch { /* unreadable, skip */ }
+    }
+  }
+  return backups.sort((a, b) => b.created.getTime() - a.created.getTime());
 }

@@ -43,6 +43,10 @@ const AppWithRouter: React.FC = () => {
   // Derive active tab from route
   const activeTab = pathToTab[location.pathname] || 'duplicates';
 
+  // Backups are wanted exactly when something went wrong and nothing is
+  // loaded, so this page must not sit behind the load screen.
+  const worksWithoutLibrary = location.pathname === '/backups';
+
   // Custom hooks
   const { notification, showNotification } = useNotifications();
   const {
@@ -123,11 +127,11 @@ const AppWithRouter: React.FC = () => {
             <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
             <p className="text-sm font-te-mono">Parsing library…</p>
           </div>
-        ) : !libraryData ? (
+        ) : !libraryData && !worksWithoutLibrary ? (
           <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} onLoadFromDb={loadFromDb} />
         ) : (
           <AppContext.Provider value={{
-            libraryData,
+            libraryData: libraryData as LibraryData,
             libraryPath,
             showNotification,
             setLibraryData

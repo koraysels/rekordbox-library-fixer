@@ -8,6 +8,7 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   isBackupOf, parseBackupTimestamp, listBackups, restoreBackup, deleteBackup,
+  originalPathOfBackup,
 } from '../../src/main/backupManager';
 
 let dir: string;
@@ -96,5 +97,17 @@ describe('deleteBackup', () => {
     const lib = write(LIB, 'current');
     expect(() => deleteBackup(lib)).toThrow(/not a backup/i);
     expect(fs.existsSync(lib)).toBe(true);
+  });
+});
+
+describe('originalPathOfBackup', () => {
+  it('recovers the library a backup came from', () => {
+    expect(originalPathOfBackup('/lib/newlib.xml.backup.2026-08-21T14-05-35-470Z'))
+      .toBe('/lib/newlib.xml');
+  });
+
+  it('works for a database backup', () => {
+    expect(originalPathOfBackup('/p/master.db.backup.2026-08-21T14-05-35-470Z'))
+      .toBe('/p/master.db');
   });
 });
