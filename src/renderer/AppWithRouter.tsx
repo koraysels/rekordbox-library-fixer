@@ -144,9 +144,9 @@ const AppWithRouter: React.FC = () => {
             {libraryPath.toLowerCase().endsWith('.db') && (
               <div className="flex-shrink-0 mx-4 mb-2 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
                 <p className="text-xs font-te-mono text-te-amber-600 normal-case">
-                  Working on rekordbox's own database. Resolving duplicates edits it directly,
-                  with rekordbox closed and a backup taken first. Relocation still needs an XML
-                  library.
+                  Working on rekordbox&apos;s own database. Resolving duplicates edits it
+                  directly, with rekordbox closed and a backup taken first. Track relocation
+                  cannot write here yet — load an XML library for that.
                 </p>
               </div>
             )}
