@@ -1,6 +1,5 @@
-import React from 'react';
-import { FolderOpen, FileText } from 'lucide-react';
-import { useSettingsStore } from '../../stores/settingsStore';
+import React, { useEffect, useState } from 'react';
+import { FolderOpen, FileText, Database } from 'lucide-react';
 
 interface EmptyLibraryStateProps {
   onSelectLibrary: () => void;
@@ -11,10 +10,17 @@ interface EmptyLibraryStateProps {
 export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onSelectLibrary,
   onLoadFromDb,
-  onLoadLibrary: _onLoadLibrary
+  onLoadLibrary
 }) => {
-  const dbKey = useSettingsStore((state) => state.rekordboxDbKey);
-  const setRekordboxDbKey = useSettingsStore((state) => state.setRekordboxDbKey);
+  const [found, setFound] = useState<Array<{
+    kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string;
+  }>>([]);
+
+  useEffect(() => {
+    window.electronAPI.scanForLibraries?.()
+      .then((libs) => setFound(libs ?? []))
+      .catch(() => setFound([]));
+  }, []);
 
   return (
     <div className="h-full flex items-center justify-center py-te-xl px-te-lg bg-te-grey-100">
@@ -63,54 +69,42 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
           </div>
         </div>
 
-        {/* The database is an alternative to the XML export, so it belongs
-            beside it here, with the key it needs. */}
-        {onLoadFromDb && (
-          <div className="mt-te-lg w-full max-w-md mx-auto">
+        {/* Libraries this machine already has, so the usual case is one click
+            rather than hunting through a file dialog. */}
+        {found.length > 0 && (
+          <div className="mt-te-lg w-full max-w-lg mx-auto">
             <div className="flex items-center gap-3 mb-te-md">
               <div className="flex-1 h-px bg-te-grey-300" />
-              <span className="text-[11px] font-te-mono text-te-grey-400 uppercase tracking-wider">or</span>
+              <span className="text-[11px] font-te-mono text-te-grey-400 uppercase tracking-wider">
+                found on this machine
+              </span>
               <div className="flex-1 h-px bg-te-grey-300" />
             </div>
 
-            <div className="rounded-te border-2 border-te-grey-300 bg-te-grey-100 p-te-md">
-              <h4 className="font-te-display text-sm font-semibold text-te-grey-800 uppercase tracking-te-display mb-1">
-                Read rekordbox&apos;s database
-              </h4>
-              <p className="text-[11px] font-te-mono text-te-grey-500 normal-case leading-relaxed mb-te-sm">
-                Skips the XML export. The database is opened read-only, so rekordbox can stay
-                open. It is encrypted, so paste its key once. Applying changes still needs an
-                XML library.
-              </p>
-
-              <input
-                type="text"
-                value={dbKey}
-                onChange={(e) => setRekordboxDbKey(e.target.value.trim())}
-                placeholder="Paste your master.db key"
-                spellCheck={false}
-                autoComplete="off"
-                className="input w-full te-path text-xs mb-te-sm"
-              />
-
-              <button
-                type="button"
-                onClick={onLoadFromDb}
-                disabled={!dbKey.trim()}
-                className="w-full bg-te-grey-200 hover:bg-te-grey-300 disabled:opacity-40
-                           disabled:hover:bg-te-grey-200 text-te-grey-800 font-te-display text-xs
-                           font-semibold py-te-sm px-te-md rounded-te border-2 border-te-grey-300
-                           transition-all duration-200 uppercase tracking-wider"
-              >
-                Load from database
-              </button>
-
-              {!dbKey.trim() && (
-                <p className="text-[11px] font-te-mono text-te-grey-400 normal-case mt-te-xs">
-                  The key is not shipped with this app. It is the same for every rekordbox 6/7
-                  install and is documented by the open-source pyrekordbox project.
-                </p>
-              )}
+            <div className="space-y-1.5">
+              {found.map((lib) => (
+                <button
+                  key={lib.path}
+                  type="button"
+                  onClick={() => (lib.kind === 'database' ? onLoadFromDb?.() : onLoadLibrary(lib.path))}
+                  title={lib.path}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-te border border-te-grey-300
+                             bg-te-grey-100 hover:bg-te-grey-200 hover:border-te-orange
+                             transition-colors text-left group"
+                >
+                  {lib.kind === 'database'
+                    ? <Database className="w-4 h-4 flex-shrink-0 text-te-orange" />
+                    : <FileText className="w-4 h-4 flex-shrink-0 text-te-grey-500" />}
+                  <span className="flex-1 min-w-0">
+                    <span className="block te-path text-xs text-te-grey-800 truncate">{lib.label}</span>
+                    <span className="block text-[10px] font-te-mono text-te-grey-500 normal-case">
+                      {lib.kind === 'database' ? 'rekordbox database · read-only' : 'XML export'}
+                      {' · '}{(lib.size / 1048576).toFixed(1)} MB
+                      {' · '}{new Date(lib.modified).toLocaleDateString()}
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         )}
