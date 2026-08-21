@@ -8,6 +8,7 @@ import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
 import { scanForLibraries } from './libraryScanner';
+import { listBackups, restoreBackup, deleteBackup } from './backupManager';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { assertWritableLibraryPath } from './librarySource';
@@ -456,6 +457,32 @@ ipcMain.handle('find-duplicates', async (_, options: {
 ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
 
 ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
+
+ipcMain.handle('list-backups', async (_e, libraryPath: string) => {
+  try {
+    return { success: true, data: listBackups(libraryPath) };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('restore-backup', async (_e, args: { backupPath: string; libraryPath: string }) => {
+  try {
+    const { safetyCopy } = restoreBackup(args.backupPath, args.libraryPath);
+    return { success: true, safetyCopy };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('delete-backup', async (_e, backupPath: string) => {
+  try {
+    deleteBackup(backupPath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
 
 ipcMain.handle('parse-rekordbox-db', async (_e, args: { dbPath: string; key: string }) =>
   handleParseRekordboxDb(args, parseDb));

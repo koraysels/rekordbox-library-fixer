@@ -32,6 +32,7 @@ const pathToTab: Record<string, TabType> = {
   '/maintenance': 'maintenance',
   '/statistics': 'statistics',
   '/history': 'history',
+  '/backups': 'backups',
 };
 
 const AppWithRouter: React.FC = () => {
