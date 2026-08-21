@@ -13,6 +13,8 @@ interface AppContextType {
   libraryPath: string;
   showNotification: (type: NotificationType, message: string) => void;
   setLibraryData: (data: LibraryData) => void;
+  /** Open a library file by path, e.g. after restoring a backup. */
+  onLoadLibrary?: (path: string) => void;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -134,7 +136,8 @@ const AppWithRouter: React.FC = () => {
             libraryData: libraryData as LibraryData,
             libraryPath,
             showNotification,
-            setLibraryData
+            setLibraryData,
+            onLoadLibrary: loadLibrary
           }}>
             {/* No mode="wait": the outgoing page's exit would otherwise have to
                 finish before the new one starts, doubling the perceived delay. */}
