@@ -102,6 +102,11 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
                       {' · '}{(lib.size / 1048576).toFixed(1)} MB
                       {' · '}{new Date(lib.modified).toLocaleDateString()}
                     </span>
+                    {/* The full path: two exports can share a name, and it is
+                        the only way to be sure which file you are opening. */}
+                    <span className="block te-path text-[10px] text-te-grey-400 truncate mt-0.5">
+                      {lib.path}
+                    </span>
                   </span>
                 </button>
               ))}
