@@ -34,6 +34,15 @@ describe('classifyDuplicateSet', () => {
   it('treats a set without locations as entries', () => {
     expect(classifyDuplicateSet([{}, {}])).toBe('entries');
   });
+
+  it('calls it entries when the paths differ only in Unicode form', () => {
+    // The real case: one rekordbox entry stores "Bökken" composed, the other
+    // decomposed. One folder, one file — nothing to delete.
+    expect(classifyDuplicateSet([
+      { location: '/Music/Bökken/WONTON.mp3' },
+      { location: '/Music/Bökken/WONTON.mp3' },
+    ])).toBe('entries');
+  });
 });
 
 describe('deletableFileCount', () => {

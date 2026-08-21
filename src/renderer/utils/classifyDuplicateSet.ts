@@ -1,3 +1,5 @@
+import { normalizePathForCompare } from './normalizePath';
+
 export type DuplicateKind = 'entries' | 'files' | 'mixed';
 
 /**
@@ -10,11 +12,12 @@ export type DuplicateKind = 'entries' | 'files' | 'mixed';
  *                the others can be moved to the trash.
  * - 'mixed'    — some copies share a file, others don't (both of the above).
  *
- * Comparison is case-insensitive: macOS and Windows filesystems are.
+ * Paths are compared normalised: macOS stores accents composed or decomposed
+ * and treats both as one file, so "Bökken" in either form is the same folder.
  */
 export function classifyDuplicateSet(tracks: Array<{ location?: string }>): DuplicateKind {
   const paths = tracks
-    .map((t) => (t.location ?? '').toLowerCase())
+    .map((t) => normalizePathForCompare(t.location))
     .filter((p) => p.length > 0);
   if (paths.length === 0) { return 'entries'; }
 
@@ -29,11 +32,11 @@ export function deletableFileCount(
   tracks: Array<{ id: string; location?: string }>,
   keptTrackId?: string
 ): number {
-  const keptLocation = (tracks.find((t) => t.id === keptTrackId)?.location ?? '').toLowerCase();
+  const keptLocation = normalizePathForCompare(tracks.find((t) => t.id === keptTrackId)?.location);
   const others = new Set(
     tracks
       .filter((t) => t.id !== keptTrackId)
-      .map((t) => (t.location ?? '').toLowerCase())
+      .map((t) => normalizePathForCompare(t.location))
       .filter((p) => p.length > 0 && p !== keptLocation)
   );
   return others.size;
