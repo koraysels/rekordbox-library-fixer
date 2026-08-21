@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.2.0-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.1-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -139,11 +139,10 @@ Quality priority order when lossless preference is enabled:
 - `Rekordbox.Library.Fixer-x.x.x-alpha-win.zip` — portable
 
 **macOS:**
-- `Rekordbox.Library.Fixer-x.x.x-alpha-universal.dmg` — works on both Intel and Apple Silicon Macs
-- `Rekordbox.Library.Fixer-x.x.x-alpha-arm64.dmg` — Apple Silicon only (M1/M2/M3/M4)
-- `Rekordbox.Library.Fixer-x.x.x-alpha.dmg` — Intel only (pre-2020 Macs)
+- `Rekordbox.Library.Fixer-x.x.x-arm64.dmg` — Apple Silicon (M1/M2/M3/M4)
+- `Rekordbox.Library.Fixer-x.x.x.dmg` — Intel (pre-2020 Macs)
 
-> **Not sure which Mac you have?** Click the Apple menu > About This Mac. If it says "Intel" under Processor/Chip, use the Intel DMG or the universal one. If it says "Apple M1/M2/M3", use the arm64 or universal one.
+> **Not sure which Mac you have?** Click the Apple menu > About This Mac. If it says "Intel" under Processor/Chip, use the Intel DMG. If it says "Apple M1/M2/M3/M4", use the arm64 one.
 
 **Linux:**
 - `rekordbox-library-manager-x.x.x-alpha.AppImage` — universal AppImage
