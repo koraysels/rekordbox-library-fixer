@@ -265,6 +265,63 @@ const DuplicateDetector: React.FC = () => {
     }
   }, [showNotification]);
 
+  /**
+   * With a database-backed library, resolving edits rekordbox's own catalogue:
+   * the XML format cannot remove tracks, so an export can never clean the
+   * collection. Playlist links move to the kept entry and the extra entries are
+   * marked deleted; no audio file is touched.
+   */
+  const resolveInDatabase = useCallback(async () => {
+    const selectedSets = duplicates.filter((d) => selectedDuplicates.has(d.id));
+    if (selectedSets.length === 0) { return; }
+
+    const { running } = await window.electronAPI.isRekordboxRunning();
+    if (running) {
+      showNotification('error', 'Close rekordbox first — it keeps its database open while it runs.');
+      return;
+    }
+
+    const plans = selectedSets.map((d: any) => {
+      const keeper = pickRecommendedTrack(d.tracks, resolutionStrategy, d.pathPreferences);
+      return {
+        keepId: keeper?.id ?? d.tracks[0].id,
+        removeIds: d.tracks.filter((t: any) => t.id !== (keeper?.id ?? d.tracks[0].id)).map((t: any) => t.id),
+      };
+    });
+
+    setIsScanning(true);
+    try {
+      const result = await window.electronAPI.mergeDuplicatesInDb({
+        dbPath: libraryPath,
+        key: useSettingsStore.getState().rekordboxDbKey,
+        plans,
+      });
+      if (result.success) {
+        showNotification(
+          'success',
+          `Merged ${plans.length} set${plans.length !== 1 ? 's' : ''} in rekordbox — `
+          + `${result.entriesRemoved} extra entr${result.entriesRemoved === 1 ? 'y' : 'ies'} removed, `
+          + `${result.playlistLinksMoved} playlist link${result.playlistLinksMoved === 1 ? '' : 's'} moved to the kept track. `
+          + 'Reopen rekordbox to see it. The database was backed up first — undo from the Backups tab.'
+        );
+        void duplicationHistoryStorage.record({
+          libraryPath,
+          timestamp: new Date(),
+          type: 'duplicate-merge',
+          summary: `Merged ${plans.length} sets directly in the rekordbox database`,
+          backupPath: result.backupPath,
+          details: plans.flatMap((p) => p.removeIds.map((id) => ({ action: 'merged' as const, from: id, to: p.keepId }))),
+        });
+        setDuplicates((prev: any[]) => prev.filter((d) => !selectedDuplicates.has(d.id)));
+        clearAll();
+      } else {
+        showNotification('error', result.error || 'Could not update the rekordbox database');
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  }, [duplicates, selectedDuplicates, resolutionStrategy, libraryPath, showNotification, setDuplicates, clearAll, setIsScanning]);
+
   const executeResolve = useCallback(async (withDelete: boolean) => {
     const selectedDuplicateSets = duplicates.filter(d => selectedDuplicates.has(d.id));
 
@@ -358,6 +415,11 @@ const DuplicateDetector: React.FC = () => {
       return;
     }
 
+    if (libraryPath.toLowerCase().endsWith('.db')) {
+      await resolveInDatabase();
+      return;
+    }
+
     if (deleteFromDisk) {
       // Collect all file paths that will be removed so the modal can show them
       const selectedSets = duplicates.filter(d => selectedDuplicates.has(d.id));
@@ -388,7 +450,7 @@ const DuplicateDetector: React.FC = () => {
     }
 
     await executeResolve(false);
-  }, [selectedDuplicates, duplicates, deleteFromDisk, executeResolve, showNotification]);
+  }, [selectedDuplicates, duplicates, deleteFromDisk, executeResolve, showNotification, libraryPath, resolveInDatabase]);
 
 
   // Memoize expensive calculations
