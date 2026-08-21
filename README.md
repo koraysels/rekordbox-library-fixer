@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.0.7--alpha-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.2.0-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -81,6 +81,13 @@ Quality priority order when lossless preference is enabled:
 | Sample rate | 96kHz beats 44.1kHz for ties between lossless files |
 | File size | Larger as final fallback |
 | Metadata richness | BPM, key, cues, loops, beatgrid bonuses |
+
+### In-app Track Preview
+- **Play, pause, seek, volume** — audition tracks without leaving the app
+- **Play button on every track row**: duplicates, missing/relocate, track details
+- **Persistent mini-player** bar that survives page switches
+- **AIFF supported** (rewrapped to WAV on the fly — Chromium can't play AIFF natively); mp3/m4a/flac/wav/ogg play directly
+- Volume is remembered across sessions; space bar toggles play/pause
 
 ### Statistics
 - Genre distribution (top 10 with track list on hover)
@@ -334,24 +341,18 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.0.7-alpha** *(current)*
-- Consolidate Library — copy/move all tracks to a single destination folder with conflict resolution and XML location updates
+**v0.2.0** *(current)*
+- In-app track preview — play/pause/seek/volume from any track row, with AIFF support
+- Relocator: handles libraries with thousands of missing tracks without crashing; safe cancellation; search settings now persist
 
-**v0.0.8 — master.db support**
+**Next — master.db support**
 - Read directly from Rekordbox's `master.db` SQLite database — no XML export step needed
-- Write changes back to the database without going through Rekordbox's import flow
-- Works alongside the existing XML workflow
+- Works alongside the existing XML workflow (read-only first)
 
-**v0.0.9 — FLAC conversion**
+**FLAC conversion**
 - Convert FLAC files to WAV or AIFF for compatibility with older CDJs (CDJ-2000NXS and earlier) that don't support FLAC playback
 - Batch conversion with original file preservation
 - Automatic library location update after conversion
-
-**v0.1.0 — Stability & performance**
-- Async file operations so the UI stays responsive during large consolidations and relocations
-- Cancellation that works mid-file, not just between files
-- Comprehensive test coverage for core operations
-- Bug fixes driven by real-world usage reports
 
 ---
 
