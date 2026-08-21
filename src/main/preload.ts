@@ -10,6 +10,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
   findDuplicates: (options: any) =>
     ipcRenderer.invoke('find-duplicates', options),
+  detectRekordboxDb: () => ipcRenderer.invoke('detect-rekordbox-db'),
+  scanForLibraries: () => ipcRenderer.invoke('scan-for-libraries'),
+  findBrokenEntries: (tracks: any[]) => ipcRenderer.invoke('find-broken-entries', tracks),
+  removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) =>
+    ipcRenderer.invoke('remove-broken-entries', data),
+  listBackups: (libraryPath: string) => ipcRenderer.invoke('list-backups', libraryPath),
+  restoreBackup: (args: { backupPath: string; libraryPath: string }) =>
+    ipcRenderer.invoke('restore-backup', args),
+  deleteBackup: (backupPath: string) => ipcRenderer.invoke('delete-backup', backupPath),
+  parseRekordboxDb: (args: { dbPath: string; key: string }) =>
+    ipcRenderer.invoke('parse-rekordbox-db', args),
   cancelDuplicateScan: (operationId: string) =>
     ipcRenderer.invoke('cancel-duplicate-scan', operationId),
   onDuplicateScanProgress: (callback: (progress: any) => void) => {

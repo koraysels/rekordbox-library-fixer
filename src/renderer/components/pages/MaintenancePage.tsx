@@ -3,6 +3,7 @@ import { Wrench, FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Inf
 import { PageHeader } from '../ui';
 import { useAppContext } from '../../AppWithRouter';
 import { formatFileSize } from '../../utils';
+import { BrokenEntriesPanel } from '../BrokenEntriesPanel';
 
 // ── Filter & Move types ──────────────────────────────────────────────────────
 type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
@@ -265,6 +266,11 @@ export const MaintenancePage: React.FC = () => {
   return (
     <div className="p-te-lg h-full overflow-auto">
       <PageHeader title="Maintenance" icon={Wrench} />
+
+      <div className="px-4 pt-4">
+        <BrokenEntriesPanel />
+      </div>
+
 
       {/* Consolidate Library */}
       <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md">

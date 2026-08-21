@@ -13,6 +13,8 @@ interface AppContextType {
   libraryPath: string;
   showNotification: (type: NotificationType, message: string) => void;
   setLibraryData: (data: LibraryData) => void;
+  /** Open a library file by path, e.g. after restoring a backup. */
+  onLoadLibrary?: (path: string) => void;
 }
 
 export const AppContext = createContext<AppContextType | null>(null);
@@ -32,6 +34,7 @@ const pathToTab: Record<string, TabType> = {
   '/maintenance': 'maintenance',
   '/statistics': 'statistics',
   '/history': 'history',
+  '/backups': 'backups',
 };
 
 const AppWithRouter: React.FC = () => {
@@ -42,6 +45,10 @@ const AppWithRouter: React.FC = () => {
   // Derive active tab from route
   const activeTab = pathToTab[location.pathname] || 'duplicates';
 
+  // Backups are wanted exactly when something went wrong and nothing is
+  // loaded, so this page must not sit behind the load screen.
+  const worksWithoutLibrary = location.pathname === '/backups';
+
   // Custom hooks
   const { notification, showNotification } = useNotifications();
   const {
@@ -51,6 +58,7 @@ const AppWithRouter: React.FC = () => {
     startupComplete,
     selectLibrary,
     loadLibrary,
+    loadFromDb,
     clearStoredData,
     setLibraryData
   } = useLibrary(showNotification);
@@ -121,17 +129,26 @@ const AppWithRouter: React.FC = () => {
             <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
             <p className="text-sm font-te-mono">Parsing library…</p>
           </div>
-        ) : !libraryData ? (
-          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} />
+        ) : !libraryData && !worksWithoutLibrary ? (
+          <EmptyLibraryState onSelectLibrary={selectLibrary} onLoadLibrary={loadLibrary} onLoadFromDb={loadFromDb} />
         ) : (
           <AppContext.Provider value={{
-            libraryData,
+            libraryData: libraryData as LibraryData,
             libraryPath,
             showNotification,
-            setLibraryData
+            setLibraryData,
+            onLoadLibrary: loadLibrary
           }}>
             {/* No mode="wait": the outgoing page's exit would otherwise have to
                 finish before the new one starts, doubling the perceived delay. */}
+            {libraryPath.toLowerCase().endsWith('.db') && (
+              <div className="flex-shrink-0 mx-4 mb-2 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
+                <p className="text-xs font-te-mono text-te-amber-600 normal-case">
+                  Reading the rekordbox database read-only. Duplicate resolution and
+                  relocation need an XML library to write back to.
+                </p>
+              </div>
+            )}
             <AnimatePresence initial={false}>
               <motion.div
                 key={location.pathname}

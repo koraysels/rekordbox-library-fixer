@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.4.0-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.5.0-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -51,6 +51,10 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 
 ## What It Does
 
+### Two ways to load your library
+- **XML export** — the classic route: export from Rekordbox, load the file
+- **Rekordbox's own database** — read `master.db` directly, no export needed. Opened strictly read-only from a copy (including its WAL), so Rekordbox can stay open and the database is never written to. It is encrypted, so paste its key once on the load screen. Applying changes still goes through an XML library.
+
 ### Duplicate Detection
 - **Audio fingerprinting**: Finds identical tracks even with different filenames
 - **Metadata matching**: Compares artist, title, BPM, key — configurable
@@ -95,9 +99,11 @@ Quality priority order when lossless preference is enabled:
 - Backup path for each operation, revealable in Finder/Explorer
 
 ### Duplicate files vs duplicate entries
-Two different situations wear the word "duplicate". The app labels each set and lets you filter on it:
-- **Duplicate files** — separate files on disk; resolving can move the extra files to the trash
-- **Same-file entries** — several Rekordbox entries pointing at one file; resolving removes the extra entries and no file is touched
+Two different situations wear the word "duplicate", and the difference decides whether a file leaves your disk. Every set states the real numbers, for example `4 entries · 2 files`, and each entry says what will happen to it:
+- **Extra listing · no file removed** — points at the same file as the entry being kept. Rekordbox simply listed it twice; only the duplicate listing goes.
+- **Own file · trashed if enabled** — a second copy in another folder. The only kind that frees disk space, and only when you tick the trash option.
+
+Resolving **merges** the other entries into the kept one: every playlist that referenced any of them now points at the kept entry, so no playlist loses the song. Files move to the system trash, never straight to deletion, and a file the kept entry still uses is never touched. A filter narrows the list to one kind, and Select All follows it. An in-app help section explains all of this next to the results.
 
 ### Statistics
 - Genre distribution (top 10 with track list on hover)
@@ -350,7 +356,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.4.0** *(current)*
+**v0.5.0** *(current)*
+- Read the library straight from Rekordbox's `master.db`, no XML export needed (read-only)
+- Duplicate sets state how many entries and how many real files they involve, with in-app help
+- Never writes over the database, and paths differing only in Unicode form are recognised as one file
+
+**v0.4.0**
 - History tab: an audit trail of everything the app changed, with per-item detail
 - Duplicate files and duplicate Rekordbox entries are told apart and can be cleaned up separately
 - Faster tab navigation, and settings that stay put

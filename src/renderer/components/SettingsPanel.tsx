@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FolderOpen, Plus, X, Info } from 'lucide-react';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
@@ -70,15 +71,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 
   // Debounced sync to Zustand store
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBlurSyncRef = useRef<(() => void) | null>(null);
 
+  // Typed fields are debounced; the resolution strategy is a single discrete
+  // choice, so it is written immediately. Debouncing it meant a pending write
+  // could still be sitting in the timer when the panel unmounted (the cleanup
+  // clears it), silently discarding the user's pick.
   const syncToStore = useCallback((scanOpts: ScanOptions, resStrategy: ResolutionStrategy) => {
+    setResolutionStrategy(resStrategy);
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
     debounceRef.current = setTimeout(() => {
       setScanOptions(scanOpts);
-      setResolutionStrategy(resStrategy);
-    }, 500); // 500ms debounce
+    }, 500);
   }, [setScanOptions, setResolutionStrategy]);
 
   // Sync changes with debounce.
@@ -168,6 +174,21 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   }, [getValues, setValue]);
 
   // Immediate sync for critical changes (blur handlers)
+  /**
+   * Spreading register() and then declaring onBlur replaces react-hook-form's
+   * own blur handler. Compose the two instead so both run.
+   */
+  const registerWithBlur = useCallback((name: any) => {
+    const field = register(name);
+    return {
+      ...field,
+      onBlur: (event: any) => {
+        field.onBlur(event);
+        handleBlurSyncRef.current?.();
+      },
+    };
+  }, [register]);
+
   const handleBlurSync = useCallback(() => {
     const currentScanOptions = getValues('scanOptions');
     const currentResolutionStrategy = getValues('resolutionStrategy');
@@ -179,6 +200,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     setScanOptions(currentScanOptions);
     setResolutionStrategy(currentResolutionStrategy);
   }, [getValues, setScanOptions, setResolutionStrategy]);
+  handleBlurSyncRef.current = handleBlurSync;
   return (
     <div className="space-y-8 p-6">
           {/* Detection Methods */}
@@ -239,8 +261,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <input
                   type="radio"
                   value="keep-highest-quality"
-                  {...register('resolutionStrategy')}
-                  onBlur={handleBlurSync}
+                  {...registerWithBlur('resolutionStrategy')}
                   className="mt-1 text-te-orange"
                 />
                 <div className="flex-1">
@@ -250,8 +271,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                     <label className="flex items-center gap-2 mt-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        {...register('scanOptions.preferLossless')}
-                        onBlur={handleBlurSync}
+                        {...registerWithBlur('scanOptions.preferLossless')}
                         className="text-te-orange"
                       />
                       <span className="text-sm text-te-grey-700">Prefer FLAC over lossy formats</span>
@@ -264,8 +284,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <input
                   type="radio"
                   value="keep-newest"
-                  {...register('resolutionStrategy')}
-                  onBlur={handleBlurSync}
+                  {...registerWithBlur('resolutionStrategy')}
                   className="mt-1 text-te-orange"
                 />
                 <div>
@@ -278,8 +297,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <input
                   type="radio"
                   value="keep-oldest"
-                  {...register('resolutionStrategy')}
-                  onBlur={handleBlurSync}
+                  {...registerWithBlur('resolutionStrategy')}
                   className="mt-1 text-te-orange"
                 />
                 <div>
@@ -296,8 +314,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <input
                   type="radio"
                   value="keep-preferred-path"
-                  {...register('resolutionStrategy')}
-                  onBlur={handleBlurSync}
+                  {...registerWithBlur('resolutionStrategy')}
                   className="mt-1 text-te-orange"
                 />
                 <div>
@@ -310,8 +327,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <input
                   type="radio"
                   value="manual"
-                  {...register('resolutionStrategy')}
-                  onBlur={handleBlurSync}
+                  {...registerWithBlur('resolutionStrategy')}
                   className="mt-1 text-te-orange"
                 />
                 <div>
