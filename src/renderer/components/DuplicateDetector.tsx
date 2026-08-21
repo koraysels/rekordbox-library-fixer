@@ -258,13 +258,21 @@ const DuplicateDetector: React.FC = () => {
         setDuplicates(remainingDuplicates);
         setSelections([]);
 
-        let msg = `✅ Resolved ${selectedDuplicates.size} duplicate sets — ${result.tracksRemoved} tracks removed from XML.\n📁 Backup: ${result.backupPath}`;
+        // Say what actually happened: duplicate entries are merged into the
+        // copy you keep and playlists follow it. "Removed from XML" read like
+        // music had been lost.
+        const sets = selectedDuplicates.size;
+        const merged = result.tracksRemoved;
+        let msg = `✅ Merged ${sets} duplicate set${sets !== 1 ? 's' : ''} — ${merged} extra entr${merged !== 1 ? 'ies' : 'y'} folded into the track you kept. Playlists now point at it.`;
         if (withDelete) {
-          msg += `\n🗑️ ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} deleted from disk`;
+          msg += result.filesDeleted > 0
+            ? `\n🗑️ ${result.filesDeleted} duplicate file${result.filesDeleted !== 1 ? 's' : ''} moved to the trash`
+            : '\n🗑️ No files needed removing — every copy pointed at the same file';
           if ((result.deleteErrors?.length ?? 0) > 0) {
-            msg += ` (${result.deleteErrors!.length} failed — check paths)`;
+            msg += ` (${result.deleteErrors!.length} could not be trashed — check paths)`;
           }
         }
+        msg += `\n📁 Library backup: ${result.backupPath}`;
         showNotification('success', msg);
 
         if (result.updatedLibrary && libraryData) {
