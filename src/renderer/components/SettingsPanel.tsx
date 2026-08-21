@@ -239,9 +239,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div>
             <h3 className="font-te-display font-semibold mb-4 text-lg text-te-grey-800 uppercase tracking-te-display">Rekordbox Database</h3>
             <p className="te-label text-xs normal-case mb-2">
-              Reading rekordbox&apos;s own master.db skips the XML export. The file is
-              encrypted, so it needs its key. The app only ever reads a copy of the
-              database, and the key stays on this machine.
+              Reading rekordbox&apos;s own master.db skips the XML export. The database is
+              opened <strong>read-only</strong>: the app reads a copy and never writes to it,
+              so rekordbox can stay open. Applying changes still goes through an XML export.
+            </p>
+            <p className="te-label text-xs normal-case mb-2">
+              The file is encrypted and the key is not shipped with this app. It is the same
+              for every rekordbox 6/7 install and is documented by the open-source
+              <span className="te-path"> pyrekordbox </span> project (see its
+              &ldquo;Rekordbox 6 database key&rdquo; notes). Paste it once; it stays on this machine.
             </p>
             <input
               type="text"

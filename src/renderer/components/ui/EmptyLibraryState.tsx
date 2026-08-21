@@ -71,7 +71,7 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
               Or read the rekordbox database directly
             </button>
             <p className="text-[11px] font-te-mono text-te-grey-400 mt-1 normal-case">
-              No XML export needed. Needs your master.db key, set once in Settings.
+              No XML export needed. Read-only, so rekordbox can stay open. Needs your master.db key, set once in Settings.
             </p>
           </div>
         )}

@@ -9,6 +9,7 @@ import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
+import { assertWritableLibraryPath } from './librarySource';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -477,6 +478,9 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
   try {
     // Step 1: Create backup of original XML
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    // Saving writes XML; doing that to master.db would destroy the database.
+    assertWritableLibraryPath(resolution.libraryPath);
+
     const backupPath = `${resolution.libraryPath}.backup.${timestamp}`;
 
     const fs = require('fs');
@@ -638,6 +642,7 @@ ipcMain.handle('save-rekordbox-xml', async (_, data: {
   outputPath: string;
 }) => {
   try {
+    assertWritableLibraryPath(data.outputPath);
     await rekordboxParser.saveLibrary(data.library, data.outputPath);
     logger.logLibrarySaving(data.outputPath, data.library.tracks.size);
     return { success: true };
@@ -716,6 +721,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
   activeOperations.set(operationId, cancelToken);
 
   try {
+    // Relocation rewrites the XML; never aim that at master.db.
+    assertWritableLibraryPath(data.libraryPath);
+
     let successCount = 0;
     const results: any[] = [];
     const successfulRelocations: Array<{
@@ -903,7 +911,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
         } else {
           // Step 2b: Create backup of original XML
           const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const backupPath = `${data.libraryPath}.backup.${timestamp}`;
+          assertWritableLibraryPath(data.libraryPath);
+
+    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
 
           const fs = require('fs');
           fs.copyFileSync(data.libraryPath, backupPath);
