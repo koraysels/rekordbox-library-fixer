@@ -100,7 +100,7 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
 
       const key = useSettingsStore.getState().rekordboxDbKey;
       if (!key.trim()) {
-        showNotification('error', 'Paste your master.db key in Settings to read the rekordbox database.');
+        showNotification('error', 'The rekordbox database needs its key — click the database entry on the load screen to paste it.');
         return;
       }
 
