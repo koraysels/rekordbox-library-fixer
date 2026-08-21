@@ -200,16 +200,16 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         ) : sharesKeptFile(track) ? (
                           <span
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
-                            title="This entry points at the same file as the one being kept. Only the extra entry goes; the file stays."
+                            title="Rekordbox lists the kept file twice. Only the extra listing disappears — no file leaves your disk."
                           >
-                            Merged · same file
+                            Extra listing · no file removed
                           </span>
                         ) : (
                           <span
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-amber-100 text-te-amber-600 border border-te-amber-200 font-te-mono whitespace-nowrap"
-                            title="This entry points at a different file. It is merged into the kept entry, and its file only moves to the trash if you tick the trash option."
+                            title="A second copy of the song, in another folder. Its listing is merged into the kept one, and this file moves to the trash only if you tick the trash option."
                           >
-                            Merged · separate file
+                            Own file · trashed if enabled
                           </span>
                         )
                       )}
