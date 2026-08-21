@@ -111,7 +111,7 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
                     </span>
                     {/* The full path: two exports can share a name, and it is
                         the only way to be sure which file you are opening. */}
-                    <span className="block te-path text-[10px] text-te-grey-400 truncate mt-0.5">
+                    <span className="block te-path-tail text-[10px] text-te-grey-400 mt-0.5">
                       {lib.path}
                     </span>
                   </span>

@@ -125,6 +125,15 @@
     @apply font-te-mono normal-case tracking-normal;
   }
 
+  /* A truncated path must keep its END: the filename is what tells two
+     similarly-named libraries apart. Ellipsis therefore falls at the start. */
+  .te-path-tail {
+    @apply font-te-mono normal-case tracking-normal truncate;
+    direction: rtl;
+    text-align: left;
+    unicode-bidi: plaintext;
+  }
+
   .te-value {
     @apply font-te-mono text-sm font-semibold text-te-grey-800 tracking-wide;
   }

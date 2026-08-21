@@ -116,7 +116,7 @@ export const BrokenEntriesPanel: React.FC = () => {
                       <p className="te-value text-xs truncate">
                         {entry.artist ? `${entry.artist} — ` : ''}{entry.name || '(no title)'}
                       </p>
-                      <p className="te-path text-[10px] text-te-grey-500 truncate">
+                      <p className="te-path-tail text-[10px] text-te-grey-500">
                         {REASON_LABEL[entry.reason] ?? entry.reason}: {entry.location || '(empty)'}
                       </p>
                     </div>
