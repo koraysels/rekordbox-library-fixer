@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Search,
   Settings,
@@ -14,9 +14,17 @@ import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal } from './ui';
 import { SettingsPanel } from './SettingsPanel';
+import { countPlaylistMembership } from '../utils/playlistMembership';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
+
+  // How many playlists each track belongs to — shown in each duplicate row so
+  // you can see a track's playlist reach before choosing which copy to keep.
+  const playlistMembership = useMemo(
+    () => (libraryData ? countPlaylistMembership(libraryData.playlists) : new Map()),
+    [libraryData]
+  );
 
   // Use the custom duplicates hook
   const {
@@ -400,6 +408,7 @@ const DuplicateDetector: React.FC = () => {
                 selectedDuplicates={selectedDuplicates}
                 onToggleSelection={toggleDuplicateSelection}
                 resolutionStrategy={resolutionStrategy}
+                playlistMembership={playlistMembership}
               />
             </div>
           </div>

@@ -24,13 +24,15 @@ interface DuplicateItemProps {
   isSelected: boolean;
   onToggleSelection: () => void;
   resolutionStrategy: string;
+  playlistMembership?: Map<string, { count: number; names: string[] }>;
 }
 
 const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   duplicate,
   isSelected,
   onToggleSelection,
-  resolutionStrategy
+  resolutionStrategy,
+  playlistMembership
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -101,6 +103,18 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   }, [duplicate.tracks, resolutionStrategy, duplicate.pathPreferences]);
 
 
+  // Total playlist reach of this song across ALL its duplicate copies (the
+  // union of every copy's playlists). After we reduce the set to one file,
+  // that single file ends up in all of these playlists.
+  const playlistReach = useMemo(() => {
+    const names = new Set<string>();
+    for (const track of duplicate.tracks) {
+      const m = playlistMembership?.get(track.id);
+      if (m) { m.names.forEach((n) => names.add(n)); }
+    }
+    return { count: names.size, names: Array.from(names) };
+  }, [duplicate.tracks, playlistMembership]);
+
   const toggleExpanded = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
@@ -148,6 +162,13 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400">•</span>
               <span className="text-xs text-zinc-400 capitalize">
                 {duplicate.matchType} match
+              </span>
+              <span className="text-xs text-zinc-400">•</span>
+              <span
+                className="text-xs text-te-grey-500 font-te-mono"
+                title={playlistReach.count > 0 ? playlistReach.names.join('\n') : undefined}
+              >
+                in {playlistReach.count} playlist{playlistReach.count === 1 ? '' : 's'}
               </span>
               <ConfidenceBadge confidence={duplicate.confidence} />
             </div>
