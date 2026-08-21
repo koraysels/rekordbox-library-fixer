@@ -10,6 +10,8 @@ import { detectRekordboxDb } from './rekordboxDbLocator';
 import { scanForLibraries } from './libraryScanner';
 import { listBackups, restoreBackup, deleteBackup, scanAllBackups } from './backupManager';
 import { findBrokenEntries } from './brokenEntries';
+import { mergeDuplicateEntries, type MergePlan } from './rekordboxDbWriter';
+import { isRekordboxRunning } from './rekordboxRunning';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { assertWritableLibraryPath } from './librarySource';
@@ -472,6 +474,21 @@ ipcMain.handle('find-duplicates', async (_, options: {
 ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
 
 ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
+
+ipcMain.handle('is-rekordbox-running', async () => ({ running: isRekordboxRunning() }));
+
+ipcMain.handle('merge-duplicates-in-db', async (_e, data: {
+  dbPath: string; key: string; plans: MergePlan[];
+}) => {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.dbPath}.backup.${stamp}`;
+    const outcome = mergeDuplicateEntries(data.dbPath, data.key, data.plans, { backupPath });
+    return { success: true, ...outcome, backupPath };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
 
 ipcMain.handle('find-broken-entries', async (_e, tracks: any[]) => {
   try {
