@@ -118,7 +118,7 @@ export const BackupsPage: React.FC = () => {
                         {(backup.size / 1048576).toFixed(1)} MB · {backup.kind === 'database' ? 'database' : 'XML'}
                         {!libraryPath && <> · of {backup.originalPath.split('/').pop()}</>}
                       </p>
-                      <p className="te-path text-[10px] text-te-grey-400 truncate mt-0.5">{backup.path}</p>
+                      <p className="te-path-tail text-[10px] text-te-grey-400 mt-0.5">{backup.path}</p>
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">

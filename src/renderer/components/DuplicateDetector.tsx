@@ -417,7 +417,7 @@ const DuplicateDetector: React.FC = () => {
       {libraryPath && (
         <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-te-grey-100 border-b border-te-grey-300">
           <span className="te-label text-[10px] normal-case">Working on</span>
-          <span className="te-path text-[11px] text-te-grey-700 truncate flex-1" title={libraryPath}>
+          <span className="te-path-tail text-[11px] text-te-grey-700 flex-1" title={libraryPath}>
             {libraryPath}
           </span>
         </div>

@@ -28,6 +28,20 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'media', privileges: { stream: true, supportFetchAPI: true, corsEnabled: true } }
 ]);
 
+// One window only. A second instance carries its own loaded library, and with
+// several similarly named exports that makes it possible to act on a different
+// file than the window you are looking at.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) { mainWindow.restore(); }
+      mainWindow.focus();
+    }
+  });
+}
+
 const libraryConsolidator = new LibraryConsolidator();
 
 // Safe console logging to prevent EPIPE errors
