@@ -621,7 +621,11 @@ ipcMain.handle('resolve-duplicates', async (_, resolution: {
     const remainingLocations = Array.from(library.tracks.values())
       .map((t: any) => t?.location)
       .filter((loc: any): loc is string => typeof loc === 'string' && loc.length > 0);
-    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations);
+    const fsSync = require('fs');
+    const isRegularFile = (p: string) => {
+      try { return fsSync.statSync(p).isFile(); } catch { return false; }
+    };
+    const deletablePaths = computeDeletablePaths(locationsToDelete, remainingLocations, isRegularFile);
     const skippedStillReferenced = locationsToDelete.length - deletablePaths.length;
     if (skippedStillReferenced > 0) {
       safeConsole.log(`🛡️ Skipped ${skippedStillReferenced} path(s) still referenced by kept tracks or duplicated in the delete list`);

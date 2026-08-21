@@ -1,5 +1,18 @@
 import { normalizePathForCompare } from './normalizePath';
 
+/**
+ * Rekordbox stores locations that are not files at all: folders (ending in a
+ * separator), truncated strings left over from bad imports, and streaming ids
+ * such as `tidal:tracks:123`. They are not separate copies of anything, so
+ * counting them as files would promise disk space that resolving cannot free.
+ */
+export function looksLikePlayableFile(location: string | undefined): boolean {
+  const path = (location ?? '').trim();
+  if (!path || path.endsWith('/') || path.endsWith('\\')) { return false; }
+  if (/^[a-z]+:[a-z]+:/i.test(path.split('/').pop() ?? '')) { return false; }
+  return /\.[a-z0-9]{2,5}$/i.test(path);
+}
+
 export type DuplicateKind = 'entries' | 'files' | 'mixed';
 
 /**
@@ -17,6 +30,7 @@ export type DuplicateKind = 'entries' | 'files' | 'mixed';
  */
 export function classifyDuplicateSet(tracks: Array<{ location?: string }>): DuplicateKind {
   const paths = tracks
+    .filter((t) => looksLikePlayableFile(t.location))
     .map((t) => normalizePathForCompare(t.location))
     .filter((p) => p.length > 0);
   if (paths.length === 0) { return 'entries'; }
@@ -45,6 +59,9 @@ export function deletableFileCount(
 /** How many distinct files on disk this set actually points at. */
 export function distinctFileCount(tracks: Array<{ location?: string }>): number {
   return new Set(
-    tracks.map((t) => normalizePathForCompare(t.location)).filter((p) => p.length > 0)
+    tracks
+      .filter((t) => looksLikePlayableFile(t.location))
+      .map((t) => normalizePathForCompare(t.location))
+      .filter((p) => p.length > 0)
   ).size;
 }
