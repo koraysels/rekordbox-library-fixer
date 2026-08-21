@@ -120,6 +120,11 @@
     @apply font-te-mono text-xs font-medium text-te-grey-600 uppercase tracking-wider;
   }
   
+  /* Filesystem paths: monospace, never uppercased (paths are case-bearing). */
+  .te-path {
+    @apply font-te-mono normal-case tracking-normal;
+  }
+
   .te-value {
     @apply font-te-mono text-sm font-semibold text-te-grey-800 tracking-wide;
   }

@@ -74,7 +74,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
           </div>
           <div className="mt-2 ml-6">
             <p className="te-label text-xs font-te-mono">
-              Missing: {track.originalLocation}
+              Missing: <span className="te-path">{track.originalLocation}</span>
             </p>
             {track.isUnlocatable && (
               <p className="text-te-orange text-xs font-semibold mt-1 font-te-mono">
@@ -83,7 +83,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             )}
             {hasRelocation && relocationPath && (
               <p className="text-te-green-500 text-xs font-te-mono mt-1">
-                → Relocate to: {relocationPath}
+                → Relocate to: <span className="te-path">{relocationPath}</span>
               </p>
             )}
           </div>
