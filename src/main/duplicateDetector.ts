@@ -20,6 +20,34 @@ export interface DuplicateOptions {
   preferLossless?: boolean;
 }
 
+export interface ScanProgress {
+  current: number;
+  total: number;
+  trackName?: string;
+  setsFound: number;
+}
+
+export interface ScanHooks {
+  /** Called as tracks are fingerprinted, so the UI can show progress. */
+  onProgress?: (progress: ScanProgress) => void;
+  /**
+   * Called when a duplicate set is first discovered and again each time it
+   * grows. The set id is stable across those emissions so the renderer can
+   * upsert rather than append.
+   */
+  onDuplicateSet?: (set: DuplicateSet) => void;
+  /** Checked between tracks; set `cancelled` to stop the scan early. */
+  cancelToken?: { cancelled: boolean };
+}
+
+export interface ScanResult {
+  duplicates: DuplicateSet[];
+  cancelled: boolean;
+}
+
+/** Emit progress at most this often (tracks) to avoid flooding IPC. */
+const PROGRESS_INTERVAL = 10;
+
 export class DuplicateDetector {
   private fingerprintCache: Map<string, string> = new Map();
   private logger: Logger;
@@ -30,31 +58,68 @@ export class DuplicateDetector {
 
   async findDuplicates(
     tracks: Track[],
-    options: DuplicateOptions
-  ): Promise<DuplicateSet[]> {
+    options: DuplicateOptions,
+    hooks: ScanHooks = {}
+  ): Promise<ScanResult> {
+    const { onProgress, onDuplicateSet, cancelToken } = hooks;
     const duplicateSets: DuplicateSet[] = [];
     const processedTracks = new Set<string>();
+    let cancelled = false;
 
     // Create fingerprint map if using audio fingerprinting
     const fingerprintMap = new Map<string, Track[]>();
     if (options.useFingerprint) {
+      // Stable set id per fingerprint, so a growing set keeps its identity.
+      const setIdByFingerprint = new Map<string, string>();
+      const emit = (fingerprint: string, group: Track[]) => {
+        let id = setIdByFingerprint.get(fingerprint);
+        if (!id) {
+          id = crypto.createHash('md5').update(fingerprint).digest('hex').slice(0, 16);
+          setIdByFingerprint.set(fingerprint, id);
+        }
+        onDuplicateSet?.({
+          id,
+          tracks: [...group],
+          matchType: 'fingerprint',
+          confidence: 100,
+        });
+      };
+
+      let index = 0;
       for (const track of tracks) {
+        // Cancel is checked between tracks — each iteration is one file read,
+        // so the response is prompt without aborting a read mid-flight.
+        if (cancelToken?.cancelled) {
+          cancelled = true;
+          break;
+        }
+
         try {
           const fingerprint = await this.generateFingerprint(track);
           if (!fingerprintMap.has(fingerprint)) {
             fingerprintMap.set(fingerprint, []);
           }
-          fingerprintMap.get(fingerprint)!.push(track);
+          const group = fingerprintMap.get(fingerprint)!;
+          group.push(track);
+          // A set exists from the second member on; re-emit as it grows.
+          if (group.length > 1) { emit(fingerprint, group); }
         } catch (error) {
           console.error(`Failed to fingerprint track ${track.name}:`, error);
+        }
+
+        index++;
+        if (onProgress && (index % PROGRESS_INTERVAL === 0 || index === tracks.length)) {
+          const setsFound = Array.from(fingerprintMap.values()).filter(g => g.length > 1).length;
+          onProgress({ current: index, total: tracks.length, trackName: track.name, setsFound });
         }
       }
 
       // Add fingerprint-based duplicates
-      for (const [, duplicateTracks] of fingerprintMap) {
+      for (const [fingerprint, duplicateTracks] of fingerprintMap) {
         if (duplicateTracks.length > 1) {
           duplicateSets.push({
-            id: crypto.randomBytes(8).toString('hex'),
+            id: setIdByFingerprint.get(fingerprint)
+              ?? crypto.createHash('md5').update(fingerprint).digest('hex').slice(0, 16),
             tracks: duplicateTracks,
             matchType: 'fingerprint',
             confidence: 100,
@@ -62,6 +127,13 @@ export class DuplicateDetector {
           duplicateTracks.forEach(t => processedTracks.add(t.id));
         }
       }
+    }
+
+    // A cancelled scan returns the partial results gathered so far; the
+    // metadata pass below would otherwise report matches over a partial set.
+    if (cancelled) {
+      this.logger.logDuplicateDetection(tracks.length, duplicateSets.length, options);
+      return { duplicates: duplicateSets, cancelled: true };
     }
 
     // Create metadata map if using metadata matching
@@ -79,21 +151,23 @@ export class DuplicateDetector {
         metadataMap.get(metadataKey)!.push(track);
       }
 
-      // Add metadata-based duplicates
+      // Add metadata-based duplicates (fast: no file I/O, emitted in one batch)
       for (const [, duplicateTracks] of metadataMap) {
         if (duplicateTracks.length > 1) {
-          duplicateSets.push({
+          const set: DuplicateSet = {
             id: crypto.randomBytes(8).toString('hex'),
             tracks: duplicateTracks,
             matchType: 'metadata',
             confidence: this.calculateMetadataConfidence(duplicateTracks, options.metadataFields),
-          });
+          };
+          duplicateSets.push(set);
+          onDuplicateSet?.(set);
         }
       }
     }
 
     this.logger.logDuplicateDetection(tracks.length, duplicateSets.length, options);
-    return duplicateSets;
+    return { duplicates: duplicateSets, cancelled: false };
   }
 
   private async generateFingerprint(track: Track): Promise<string> {

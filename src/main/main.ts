@@ -401,12 +401,38 @@ ipcMain.handle('find-duplicates', async (_, options: {
   metadataFields: string[];
   preferLossless?: boolean;
 }) => {
+  const operationId = `dup-${Date.now()}`;
+  const cancelToken = { cancelled: false };
+  activeOperations.set(operationId, cancelToken);
+
   try {
-    const duplicates = await duplicateDetector.findDuplicates(
+    const send = (channel: string, payload: any) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(channel, { operationId, ...payload });
+      }
+    };
+    send('duplicate-scan-progress', {
+      type: 'start', current: 0, total: options.tracks.length, setsFound: 0
+    });
+
+    const { duplicates, cancelled } = await duplicateDetector.findDuplicates(
       options.tracks,
-      options
+      options,
+      {
+        cancelToken,
+        onProgress: (p) => send('duplicate-scan-progress', { type: 'progress', ...p }),
+        onDuplicateSet: (set) => send('duplicate-scan-set', { set }),
+      }
     );
-    return { success: true, data: duplicates };
+
+    send('duplicate-scan-progress', {
+      type: cancelled ? 'cancelled' : 'complete',
+      current: options.tracks.length,
+      total: options.tracks.length,
+      setsFound: duplicates.length,
+    });
+
+    return { success: true, data: duplicates, cancelled, operationId };
   } catch (error) {
     logger.error('DUPLICATE_DETECTION_FAILED', {
       trackCount: options.tracks.length,
@@ -417,7 +443,18 @@ ipcMain.handle('find-duplicates', async (_, options: {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
+  } finally {
+    activeOperations.delete(operationId);
   }
+});
+
+ipcMain.handle('cancel-duplicate-scan', async (_, operationId: string) => {
+  const token = activeOperations.get(operationId);
+  if (token) {
+    token.cancelled = true;
+    return { success: true };
+  }
+  return { success: false, error: 'Operation not found' };
 });
 
 ipcMain.handle('resolve-duplicates', async (_, resolution: {

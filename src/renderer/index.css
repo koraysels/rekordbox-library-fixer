@@ -155,8 +155,11 @@
     @apply bg-te-grey-50 border-2 border-te-grey-200 rounded-te p-te-md;
   }
   
+  /* Code and paths are case-bearing: never inherit uppercase from a parent
+     label (text-transform inherits, so a .te-label wrapper would capitalise
+     file paths and make them wrong to read and copy). */
   .te-code-block {
-    @apply bg-te-grey-100 border border-te-grey-300 rounded-te p-te-sm font-te-mono text-xs text-te-grey-700;
+    @apply bg-te-grey-100 border border-te-grey-300 rounded-te p-te-sm font-te-mono text-xs text-te-grey-700 normal-case;
   }
 }
 

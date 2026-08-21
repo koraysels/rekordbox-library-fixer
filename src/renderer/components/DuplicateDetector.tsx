@@ -16,6 +16,7 @@ import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal } from 
 import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
+import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -59,6 +60,9 @@ const DuplicateDetector: React.FC = () => {
   const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
   const [deleteFromDisk, setDeleteFromDisk] = useState(false);
   const [pendingDeletePaths, setPendingDeletePaths] = useState<string[] | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; trackName?: string; setsFound: number } | null>(null);
+  const [wasCancelled, setWasCancelled] = useState(false);
+  const scanOperationIdRef = React.useRef<string | null>(null);
 
   // Preferences are now loaded in the useDuplicates hook
 
@@ -160,9 +164,26 @@ const DuplicateDetector: React.FC = () => {
   const scanForDuplicates = async () => {
     if (!libraryData) { return; }
     setIsScanning(true);
-    // Let the browser paint the "Scanning..." state before the heavy,
-    // synchronous work (Array.from over thousands of tracks + IPC clone)
-    // blocks the main thread — otherwise the UI looks frozen for seconds.
+    setScanProgress({ current: 0, total: libraryData.tracks.size, setsFound: 0 });
+    setWasCancelled(false);
+    setDuplicates([]);
+
+    // Sets stream in while the main process scans; each one is upserted so a
+    // growing set replaces its earlier version instead of appearing twice.
+    const stopSets = window.electronAPI.onDuplicateScanSet(({ set }: any) => {
+      setDuplicates((prev: any[]) =>
+        upsertDuplicateSet(prev, { ...set, pathPreferences: scanOptions.pathPreferences })
+      );
+    });
+    const stopProgress = window.electronAPI.onDuplicateScanProgress((p: any) => {
+      if (p.operationId) { scanOperationIdRef.current = p.operationId; }
+      if (p.type === 'progress' || p.type === 'start') {
+        setScanProgress({ current: p.current, total: p.total, trackName: p.trackName, setsFound: p.setsFound });
+      }
+    });
+
+    // Let the browser paint the scanning state before the heavy, synchronous
+    // work (Array.from over thousands of tracks + IPC clone) blocks the thread.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       const tracks = Array.from(libraryData.tracks.values());
@@ -182,15 +203,15 @@ const DuplicateDetector: React.FC = () => {
 
         setDuplicates(enhancedDuplicates);
         setHasScanned(true);
-
-        // Immediately save scan results to Dexie
-        // (The auto-save effect will handle this, but this ensures immediate save)
+        setWasCancelled(!!result.cancelled);
 
         showNotification(
-          duplicatesFound.length > 0 ? 'info' : 'success',
-          duplicatesFound.length > 0
-            ? `Found ${duplicatesFound.length} duplicate sets`
-            : 'No duplicates found in your library!'
+          result.cancelled ? 'info' : (duplicatesFound.length > 0 ? 'info' : 'success'),
+          result.cancelled
+            ? `Scan cancelled — keeping ${duplicatesFound.length} sets found so far`
+            : duplicatesFound.length > 0
+              ? `Found ${duplicatesFound.length} duplicate sets`
+              : 'No duplicates found in your library!'
         );
       } else {
         showNotification('error', result.error || 'Scan failed');
@@ -198,9 +219,23 @@ const DuplicateDetector: React.FC = () => {
     } catch {
       showNotification('error', 'Failed to scan for duplicates');
     } finally {
+      stopSets();
+      stopProgress();
+      scanOperationIdRef.current = null;
+      setScanProgress(null);
       setIsScanning(false);
     }
   };
+
+  const cancelScan = useCallback(async () => {
+    const id = scanOperationIdRef.current;
+    if (!id) { return; }
+    try {
+      await window.electronAPI.cancelDuplicateScan(id);
+    } catch {
+      showNotification('error', 'Failed to cancel scan');
+    }
+  }, [showNotification]);
 
   const executeResolve = useCallback(async (withDelete: boolean) => {
     const selectedDuplicateSets = duplicates.filter(d => selectedDuplicates.has(d.id));
@@ -270,7 +305,14 @@ const DuplicateDetector: React.FC = () => {
           .map((t: any) => t.location)
           .filter((loc: string) => loc && loc.toLowerCase() !== keeperLocation);
       });
-      setPendingDeletePaths(Array.from(new Set(losingPaths)));
+      const uniquePaths = Array.from(new Set(losingPaths));
+      if (uniquePaths.length === 0) {
+        // Nothing to trash (e.g. every copy points at the same file) — don't
+        // make the user confirm a deletion that would delete nothing.
+        await executeResolve(false);
+        return;
+      }
+      setPendingDeletePaths(uniquePaths);
       return;
     }
 
@@ -286,7 +328,7 @@ const DuplicateDetector: React.FC = () => {
       <PageHeader
         title="Duplicate Detection"
         icon={Search}
-        stats={`${duplicates.length} sets found • ${selectedDuplicates.size} selected`}
+        stats={`${duplicates.length} sets found${wasCancelled ? ' (partial scan)' : ''} • ${selectedDuplicates.size} selected`}
         actions={
           <PopoverButton
             onClick={() => setShowSettings(!showSettings)}
@@ -429,10 +471,31 @@ const DuplicateDetector: React.FC = () => {
           </div>
         ) : isScanning ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center te-value">
+            <div className="text-center te-value max-w-md w-full px-6">
               <Loader2 size={48} className="mx-auto mb-4 text-te-orange animate-spin spinner-loading" />
               <h3 className="te-title mb-2">Scanning your library…</h3>
-              <p>Comparing tracks for duplicates — this can take a moment on large libraries.</p>
+              {scanProgress && scanProgress.total > 0 && (
+                <>
+                  <div className="w-full bg-te-grey-300 rounded-full h-2 overflow-hidden my-3">
+                    <div
+                      className="bg-te-orange h-full transition-all duration-200"
+                      style={{ width: `${Math.round((scanProgress.current / scanProgress.total) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs font-te-mono text-te-grey-600">
+                    {scanProgress.current} / {scanProgress.total} tracks • {scanProgress.setsFound} sets found
+                  </p>
+                  {scanProgress.trackName && (
+                    <p className="te-path text-xs text-te-grey-500 truncate mt-1">{scanProgress.trackName}</p>
+                  )}
+                </>
+              )}
+              <button onClick={cancelScan} className="btn-secondary mt-4 inline-flex items-center gap-2">
+                <Trash2 size={14} /> Cancel scan
+              </button>
+              <p className="text-xs text-te-grey-500 mt-2 normal-case">
+                Results found so far are kept.
+              </p>
             </div>
           </div>
         ) : isLoadingDuplicates ? (
