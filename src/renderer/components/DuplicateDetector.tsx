@@ -17,6 +17,8 @@ import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
+import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
+import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -54,6 +56,31 @@ const DuplicateDetector: React.FC = () => {
     filteredDuplicates
   } = useDuplicates(libraryPath);
 
+  // "Duplicate" covers two unrelated jobs: real duplicate FILES on disk, and
+  // several rekordbox ENTRIES for one file. They are cleaned up separately.
+  const [kindFilter, setKindFilter] = useState<'all' | 'files' | 'entries'>('all');
+
+  const kindCounts = useMemo(() => {
+    let entries = 0, files = 0;
+    for (const d of duplicates as any[]) {
+      if (classifyDuplicateSet(d.tracks) === 'entries') { entries++; } else { files++; }
+    }
+    return { entries, files };
+  }, [duplicates]);
+
+  // The filter narrows the list; Select All follows it, so you can act on just
+  // the real duplicate files or just the same-file entries.
+  const visibleDuplicates = useMemo(() => {
+    if (kindFilter === 'all') { return filteredDuplicates as any[]; }
+    return (filteredDuplicates as any[]).filter(
+      (d) => (classifyDuplicateSet(d.tracks) === 'entries') === (kindFilter === 'entries')
+    );
+  }, [filteredDuplicates, kindFilter]);
+
+  const selectAllInMode = useCallback(() => {
+    setSelections(visibleDuplicates.map((d: any) => d.id));
+  }, [visibleDuplicates, setSelections]);
+
   console.log('🎯 DuplicateDetector render - duplicates:', { length: duplicates.length, hasScanned, isScanning });
 
   const [showSettings, setShowSettings] = useState(false);
@@ -89,10 +116,10 @@ const DuplicateDetector: React.FC = () => {
             setDuplicates(stored.duplicates || []);
             setSelections(stored.selectedDuplicates || []);
             setHasScanned(stored.hasScanned || false);
-            // Merge stored scan options with current preferences
-            if (stored.scanOptions) {
-              setScanOptions({...scanOptions, ...stored.scanOptions});
-            }
+            // NOTE: scan options and the resolution strategy are NOT restored
+            // from this per-library cache. The persisted settings store is the
+            // single source of truth; restoring a stale snapshot here used to
+            // reset the user's chosen strategy back to the default.
           } else {
             // No stored results for this library, reset to default state
             setHasScanned(false);
@@ -258,14 +285,53 @@ const DuplicateDetector: React.FC = () => {
         setDuplicates(remainingDuplicates);
         setSelections([]);
 
-        let msg = `✅ Resolved ${selectedDuplicates.size} duplicate sets — ${result.tracksRemoved} tracks removed from XML.\n📁 Backup: ${result.backupPath}`;
+        // Say what actually happened: duplicate entries are merged into the
+        // copy you keep and playlists follow it. "Removed from XML" read like
+        // music had been lost.
+        const sets = selectedDuplicates.size;
+        const merged = result.tracksRemoved;
+        let msg = `✅ Merged ${sets} duplicate set${sets !== 1 ? 's' : ''} — ${merged} extra entr${merged !== 1 ? 'ies' : 'y'} folded into the track you kept. Playlists now point at it.`;
         if (withDelete) {
-          msg += `\n🗑️ ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} deleted from disk`;
+          msg += result.filesDeleted > 0
+            ? `\n🗑️ ${result.filesDeleted} duplicate file${result.filesDeleted !== 1 ? 's' : ''} moved to the trash`
+            : '\n🗑️ No files needed removing — every copy pointed at the same file';
           if ((result.deleteErrors?.length ?? 0) > 0) {
-            msg += ` (${result.deleteErrors!.length} failed — check paths)`;
+            msg += ` (${result.deleteErrors!.length} could not be trashed — check paths)`;
           }
         }
+        msg += `\n📁 Library backup: ${result.backupPath}`;
         showNotification('success', msg);
+
+        // Record what happened so the History tab can be used to verify it.
+        const details: ActivityDetail[] = [];
+        for (const set of selectedDuplicateSets as any[]) {
+          const keeper = pickRecommendedTrack(set.tracks, resolutionStrategy, set.pathPreferences);
+          for (const t of set.tracks) {
+            if (t.id === keeper?.id) { continue; }
+            details.push({
+              action: 'merged',
+              trackName: `${t.artist} - ${t.name}`,
+              from: t.location,
+              to: keeper?.location,
+            });
+          }
+        }
+        for (const trashed of (result.trashedPaths ?? [])) {
+          details.push({ action: 'trashed', from: trashed });
+        }
+        for (const failure of (result.deleteErrors ?? [])) {
+          details.push({ action: 'failed', from: failure.file, error: failure.error });
+        }
+        void duplicationHistoryStorage.record({
+          libraryPath,
+          timestamp: new Date(),
+          type: 'duplicate-merge',
+          summary: `Merged ${sets} duplicate set${sets !== 1 ? 's' : ''}`
+            + ` — ${merged} entr${merged !== 1 ? 'ies' : 'y'} folded in`
+            + (withDelete ? `, ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} to trash` : ''),
+          backupPath: result.backupPath,
+          details,
+        });
 
         if (result.updatedLibrary && libraryData) {
           setLibraryData({
@@ -328,7 +394,7 @@ const DuplicateDetector: React.FC = () => {
       <PageHeader
         title="Duplicate Detection"
         icon={Search}
-        stats={`${duplicates.length} sets found${wasCancelled ? ' (partial scan)' : ''} • ${selectedDuplicates.size} selected`}
+        stats={`${visibleDuplicates.length} of ${duplicates.length} sets${wasCancelled ? ' (partial scan)' : ''} • ${selectedDuplicates.size} selected`}
         actions={
           <PopoverButton
             onClick={() => setShowSettings(!showSettings)}
@@ -344,82 +410,103 @@ const DuplicateDetector: React.FC = () => {
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Actions Bar */}
-        <div className="flex-shrink-0 py-4 px-0 bg-te-grey-200 border-b-2 border-te-grey-300">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4 mx-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <PopoverButton
-                onClick={scanForDuplicates}
-                disabled={isScanning}
-                loading={isScanning}
-                icon={Search}
-                title="Scan for Duplicates"
-                description="Analyze your library to find duplicate tracks using advanced algorithms"
-                variant="primary"
-              >
-                {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
-              </PopoverButton>
+        <div className="flex-shrink-0 bg-te-grey-200 border-b-2 border-te-grey-300">
+          {/* Row 1 — the one thing you came here to do, plus finding your way
+              around the result. The search grows; nothing else competes. */}
+          <div className="flex items-center gap-3 px-4 pt-4">
+            <PopoverButton
+              onClick={scanForDuplicates}
+              disabled={isScanning}
+              loading={isScanning}
+              icon={Search}
+              title="Scan for Duplicates"
+              description="Analyze your library to find duplicate tracks using advanced algorithms"
+              variant="primary"
+            >
+              {isScanning ? 'Scanning...' : 'Scan for Duplicates'}
+            </PopoverButton>
 
-              <PopoverButton
-                onClick={selectAll}
-                disabled={duplicates.length === 0}
-                icon={CheckCircle2}
-                title="Select All Duplicates"
-                description="Select all duplicate sets for bulk resolution"
-                variant="secondary"
-              >
-                Select All ({duplicates.length})
-              </PopoverButton>
-
-              <PopoverButton
-                onClick={clearAll}
-                disabled={selectedDuplicates.size === 0}
-                icon={Trash2}
-                title="Clear Selection"
-                description="Deselect all currently selected duplicate sets"
-                variant="secondary"
-              >
-                Clear Selection ({selectedDuplicates.size})
-              </PopoverButton>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <input
-                type="text"
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search duplicates..."
-                className="input w-72"
-              />
-            </div>
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search duplicates..."
+              className="input flex-1 min-w-0"
+            />
           </div>
 
-          {/* Selection Controls */}
-          <div className="flex items-center justify-between mx-4">
-            <div className="flex items-center space-x-4">
-              {duplicates.length > 0 && (
-                <>
-                  <span className="te-value">
-                    {searchFilter ? `${filteredDuplicates.length} of ${duplicates.length} sets` : `${duplicates.length} sets`}
-                  </span>
-                  <span className="te-value">
-                    {selectedDuplicates.size} selected
-                  </span>
-                </>
-              )}
-            </div>
+          {/* Row 2 — which kind of duplicate you are looking at, and what you
+              do with that subset. One segmented control, never wrapping. */}
+          {duplicates.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="inline-flex rounded-te border border-te-grey-300 overflow-hidden">
+                {([
+                  ['all', 'All', duplicates.length,
+                    'Every duplicate set found'],
+                  ['files', 'Duplicate files', kindCounts.files,
+                    'Separate files on disk — resolving can move the extra files to the trash'],
+                  ['entries', 'Same-file entries', kindCounts.entries,
+                    'Several rekordbox entries for one file — resolving removes the extra entries, no file is touched'],
+                ] as const).map(([value, label, count, hint], i) => (
+                  <button
+                    key={value}
+                    onClick={() => setKindFilter(value)}
+                    title={hint}
+                    className={`px-3 py-1.5 text-xs font-te-mono whitespace-nowrap normal-case transition-colors ${
+                      i > 0 ? 'border-l border-te-grey-300' : ''
+                    } ${
+                      kindFilter === value
+                        ? 'bg-te-orange text-te-cream'
+                        : 'bg-te-grey-100 text-te-grey-700 hover:bg-te-grey-50'
+                    }`}
+                  >
+                    {label}
+                    <span className={`ml-1.5 tabular-nums ${kindFilter === value ? 'opacity-70' : 'text-te-grey-500'}`}>
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-            {duplicates.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={selectAllInMode}
+                  disabled={visibleDuplicates.length === 0}
+                  className="btn-ghost text-xs disabled:opacity-40"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 inline mr-1.5" />
+                  Select all {visibleDuplicates.length}
+                </button>
+                <button
+                  onClick={clearAll}
+                  disabled={selectedDuplicates.size === 0}
+                  className="btn-ghost text-xs disabled:opacity-40"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Row 3 — the destructive step. Hidden until something is selected,
+              so the resting toolbar has no armed delete control in it. The
+              counts live in the page header; repeating them here was noise. */}
+          {selectedDuplicates.size > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-3 mx-4 pb-4">
+              <span className="te-label text-xs normal-case mr-auto">
+                {selectedDuplicates.size} set{selectedDuplicates.size !== 1 ? 's' : ''} selected
+              </span>
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Permanently delete the losing duplicate files from disk after resolving">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Move the duplicate files of the copies being merged to the system trash. A file the kept track still uses is never touched.">
                   <input
                     type="checkbox"
                     checked={deleteFromDisk}
                     onChange={e => setDeleteFromDisk(e.target.checked)}
                     className="checkbox"
                   />
-                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500">
+                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500 normal-case">
                     <AlertTriangle className="w-3 h-3" />
-                    Also delete files from disk
+                    Also move duplicate files to trash
                   </span>
                 </label>
                 <PopoverButton
@@ -434,8 +521,8 @@ const DuplicateDetector: React.FC = () => {
                   {isScanning ? 'Resolving...' : 'Resolve Selected'}
                 </PopoverButton>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Results List */}
@@ -453,7 +540,7 @@ const DuplicateDetector: React.FC = () => {
             </div>
             <div className="relative">
               <VirtualizedDuplicateList
-                duplicates={filteredDuplicates}
+                duplicates={visibleDuplicates}
                 selectedDuplicates={selectedDuplicates}
                 onToggleSelection={toggleDuplicateSelection}
                 resolutionStrategy={resolutionStrategy}

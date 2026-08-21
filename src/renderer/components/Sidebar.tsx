@@ -6,6 +6,7 @@ import {
     BarChart2,
     Wrench,
     Copy,
+    History,
     FolderOpen,
     X,
     HelpCircle
@@ -48,6 +49,13 @@ const navItems = [
         label: 'Statistics',
         icon: BarChart2,
         description: 'Get insights for your library'
+    },
+    {
+        id: 'history' as TabType,
+        path: '/history',
+        label: 'History',
+        icon: History,
+        description: 'What the app changed in your library'
     }
 ];
 
