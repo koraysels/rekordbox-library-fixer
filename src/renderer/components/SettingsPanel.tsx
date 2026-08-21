@@ -81,12 +81,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }, 500); // 500ms debounce
   }, [setScanOptions, setResolutionStrategy]);
 
-  // Sync changes with debounce
+  // Sync changes with debounce.
+  // Skipped on mount: the panel is always mounted (the slideout only slides it
+  // off-screen), so writing the form's initial values back would overwrite the
+  // persisted settings with whatever the form captured at first render.
+  const hasUserEdited = useRef(false);
   useEffect(() => {
+    if (!hasUserEdited.current) { hasUserEdited.current = true; return; }
     if (watchedScanOptions && watchedResolutionStrategy) {
       syncToStore(watchedScanOptions, watchedResolutionStrategy);
     }
   }, [watchedScanOptions, watchedResolutionStrategy, syncToStore]);
+
+  // The form's defaultValues are captured once; re-apply the stored settings
+  // whenever they change so the panel never shows or re-saves a stale strategy.
+  useEffect(() => {
+    setValue('resolutionStrategy', resolutionStrategy);
+  }, [resolutionStrategy, setValue]);
 
   // Cleanup debounce on unmount
   useEffect(() => {

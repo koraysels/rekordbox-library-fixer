@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
 import { historyStorage, historyEvents } from '../db/historyDb';
+import { duplicationHistoryStorage } from '../db/duplicationHistoryDb';
 import type {
   MissingTrack,
   RelocationCandidate,
@@ -204,9 +205,11 @@ export function useTrackRelocator(
       return;
     }
 
-    // Check cache first
+    // Check cache first — but an empty cached result is a cache MISS, not a
+    // "no matches" answer. A stale empty array (e.g. cached before search
+    // paths were configured) would otherwise permanently hide a findable file.
     const cachedCandidates = relocationCandidatesCache.get(track.id);
-    if (cachedCandidates) {
+    if (cachedCandidates && cachedCandidates.length > 0) {
       setState(prev => ({
         ...prev,
         selectedTrack: track,
@@ -319,6 +322,21 @@ export function useTrackRelocator(
         const successfulTrackIds = result.data
           .filter((r: RelocationResult) => r.success)
           .map((r: RelocationResult) => r.trackId);
+
+        // Record in the activity history so the History tab shows relocations too.
+        void duplicationHistoryStorage.record({
+          libraryPath: effectiveLibraryPath,
+          timestamp: new Date(),
+          type: 'relocation',
+          summary: `Relocated ${successfulTrackIds.length} of ${result.data.length} track${result.data.length !== 1 ? 's' : ''}`,
+          backupPath: result.backupPath,
+          details: result.data.map((r: RelocationResult) => ({
+            action: r.success ? ('relocated' as const) : ('failed' as const),
+            from: r.oldLocation,
+            to: r.newLocation,
+            error: r.error,
+          })),
+        });
 
         // Update the main library data with new track locations
         if (libraryData && result.xmlUpdated) {
