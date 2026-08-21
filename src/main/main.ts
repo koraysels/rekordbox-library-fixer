@@ -6,6 +6,9 @@ import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { computeDeletablePaths } from './safeDeletePaths';
+import { detectRekordboxDb } from './rekordboxDbLocator';
+import { parseDb } from './rekordboxDbParser';
+import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -447,6 +450,11 @@ ipcMain.handle('find-duplicates', async (_, options: {
     activeOperations.delete(operationId);
   }
 });
+
+ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
+
+ipcMain.handle('parse-rekordbox-db', async (_e, args: { dbPath: string; key: string }) =>
+  handleParseRekordboxDb(args, parseDb));
 
 ipcMain.handle('cancel-duplicate-scan', async (_, operationId: string) => {
   const token = activeOperations.get(operationId);

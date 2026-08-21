@@ -3,11 +3,13 @@ import { FolderOpen, FileText } from 'lucide-react';
 
 interface EmptyLibraryStateProps {
   onSelectLibrary: () => void;
+  onLoadFromDb?: () => void;
   onLoadLibrary: (filePath: string) => void;
 }
 
 export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onSelectLibrary,
+  onLoadFromDb,
   onLoadLibrary: _onLoadLibrary
 }) => {
   return (
@@ -56,6 +58,23 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Reading rekordbox's own database skips the export step entirely.
+            It is encrypted, so it needs a key the user supplies once. */}
+        {onLoadFromDb && (
+          <div className="mt-te-lg text-center">
+            <button
+              type="button"
+              onClick={onLoadFromDb}
+              className="text-xs font-te-mono text-te-grey-600 hover:text-te-orange underline underline-offset-4 decoration-dotted transition-colors normal-case"
+            >
+              Or read the rekordbox database directly
+            </button>
+            <p className="text-[11px] font-te-mono text-te-grey-400 mt-1 normal-case">
+              No XML export needed. Needs your master.db key, set once in Settings.
+            </p>
+          </div>
+        )}
 
         {/* File Type Info - Minimal TE */}
         <div className="text-center">

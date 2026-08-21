@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FolderOpen, Plus, X, Info } from 'lucide-react';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 
@@ -54,6 +55,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   resolutionStrategy,
   setResolutionStrategy
 }) => {
+  const rekordboxDbKey = useSettingsStore((state) => state.rekordboxDbKey);
+  const setRekordboxDbKey = useSettingsStore((state) => state.setRekordboxDbKey);
+
   // React Hook Form for local state
   const { register, control, setValue, getValues } = useForm<FormData>({
     defaultValues: {
@@ -229,6 +233,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Rekordbox database key */}
+          <div>
+            <h3 className="font-te-display font-semibold mb-4 text-lg text-te-grey-800 uppercase tracking-te-display">Rekordbox Database</h3>
+            <p className="te-label text-xs normal-case mb-2">
+              Reading rekordbox&apos;s own master.db skips the XML export. The file is
+              encrypted, so it needs its key. The app only ever reads a copy of the
+              database, and the key stays on this machine.
+            </p>
+            <input
+              type="text"
+              value={rekordboxDbKey}
+              onChange={(e) => setRekordboxDbKey(e.target.value.trim())}
+              placeholder="Paste your master.db key"
+              spellCheck={false}
+              autoComplete="off"
+              className="input w-full te-path text-xs"
+            />
           </div>
 
           {/* Resolution Strategy */}

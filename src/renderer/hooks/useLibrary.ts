@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LibraryData, NotificationType } from '../types';
+import { useSettingsStore } from '../stores/settingsStore';
 
 export const useLibrary = (showNotification: (type: NotificationType, message: string) => void) => {
   const [libraryPath, setLibraryPath] = useState<string>('');
@@ -84,6 +85,41 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
     }
   }, [libraryPath]);
 
+  /**
+   * Load straight from Rekordbox's own database instead of an exported XML.
+   * Read-only: the app copies master.db and never writes to it.
+   */
+  const loadFromDb = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const detected = await window.electronAPI.detectRekordboxDb();
+      if (!detected.found || !detected.dbPath) {
+        showNotification('error', 'No rekordbox database found on this machine — use XML import instead.');
+        return;
+      }
+
+      const key = useSettingsStore.getState().rekordboxDbKey;
+      if (!key.trim()) {
+        showNotification('error', 'Paste your master.db key in Settings to read the rekordbox database.');
+        return;
+      }
+
+      setLibraryData(null);
+      const result = await window.electronAPI.parseRekordboxDb({ dbPath: detected.dbPath, key });
+      if (result.success && result.data) {
+        setLibraryPath(detected.dbPath);
+        setLibraryData(result.data);
+        showNotification('success', `Loaded ${result.data.tracks.size} tracks from the rekordbox database`);
+      } else {
+        showNotification('error', result.error || 'Could not read the rekordbox database');
+      }
+    } catch {
+      showNotification('error', 'Could not read the rekordbox database');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showNotification]);
+
   return {
     libraryPath,
     libraryData,
@@ -91,6 +127,7 @@ export const useLibrary = (showNotification: (type: NotificationType, message: s
     startupComplete,
     selectLibrary,
     loadLibrary,
+    loadFromDb,
     clearStoredData,
     setLibraryData,
   };

@@ -180,6 +180,8 @@ declare global {
       selectFolder: () => Promise<string | null>;
       parseRekordboxLibrary: (xmlPath: string) => Promise<any>;
       findDuplicates: (options: any) => Promise<any>;
+      detectRekordboxDb: () => Promise<{ found: boolean; dbPath: string | null; variant: string | null }>;
+      parseRekordboxDb: (args: { dbPath: string; key: string }) => Promise<{ success: boolean; data?: any; error?: string }>;
       cancelDuplicateScan: (operationId: string) => Promise<{ success: boolean; error?: string }>;
       onDuplicateScanProgress: (callback: (progress: any) => void) => () => void;
       onDuplicateScanSet: (callback: (payload: any) => void) => () => void;
