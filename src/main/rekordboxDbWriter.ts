@@ -63,24 +63,54 @@ export function mergeDuplicateEntries(
   }
 }
 
-/** The database work itself, separated so it can be tested without encryption. */
+/**
+ * Tables that reference a track. Every one must lose its rows, or rekordbox is
+ * left with cues, mixer settings and history pointing at a track that is gone.
+ */
+const CONTENT_TABLES = [
+  'contentActiveCensor', 'contentCue', 'contentFile', 'djmdActiveCensor',
+  'djmdCue', 'djmdMixerParam', 'djmdSongHistory', 'djmdSongHotCueBanklist',
+  'djmdSongMyTag', 'djmdSongPlaylist', 'djmdSongRelatedTracks',
+  'djmdSongSampler', 'djmdSongTagList',
+];
+
+/** Rekordbox counts every change; sync and its own bookkeeping rely on it. */
+function bumpUpdateCount(db: Db, by: number): void {
+  if (by <= 0) { return; }
+  try {
+    db.prepare(
+      "UPDATE agentRegistry SET int_1 = COALESCE(int_1, 0) + ? WHERE registry_id = 'localUpdateCount'"
+    ).run(by);
+  } catch {
+    // An older schema may not have the counter; the delete itself still stands.
+  }
+}
+
+/**
+ * The database work itself, separated so it can be tested without encryption.
+ *
+ * Rows are really deleted, not flagged: marking `rb_local_deleted` left the
+ * tracks visible in rekordbox, which is the whole point of the exercise.
+ * pyrekordbox deletes for the same reason and keeps the update counter in step.
+ */
 export function applyMerges(db: Db, plans: MergePlan[]): MergeOutcome {
   const movePlaylistLink = db.prepare(`
     UPDATE djmdSongPlaylist SET ContentID = ?
-    WHERE ContentID = ? AND rb_local_deleted = 0
+    WHERE ContentID = ?
       AND PlaylistID NOT IN (
-        SELECT PlaylistID FROM djmdSongPlaylist
-        WHERE ContentID = ? AND rb_local_deleted = 0
+        SELECT PlaylistID FROM djmdSongPlaylist WHERE ContentID = ?
       )
   `);
-  // The kept entry is already in that playlist, so the link is redundant.
-  const dropRedundantLink = db.prepare(`
-    UPDATE djmdSongPlaylist SET rb_local_deleted = 1
-    WHERE ContentID = ? AND rb_local_deleted = 0
-  `);
-  const retireContent = db.prepare(`
-    UPDATE djmdContent SET rb_local_deleted = 1 WHERE ID = ? AND rb_local_deleted = 0
-  `);
+  const dropRemainingLinks = db.prepare('DELETE FROM djmdSongPlaylist WHERE ContentID = ?');
+  const deleteContent = db.prepare('DELETE FROM djmdContent WHERE ID = ?');
+
+  const dependentDeletes = CONTENT_TABLES
+    .filter((table) => table !== 'djmdSongPlaylist')
+    .map((table) => {
+      try { return db.prepare(`DELETE FROM ${table} WHERE ContentID = ?`); }
+      catch { return null; }
+    })
+    .filter((stmt): stmt is ReturnType<Db['prepare']> => stmt !== null);
 
   let entriesRemoved = 0;
   let playlistLinksMoved = 0;
@@ -89,11 +119,15 @@ export function applyMerges(db: Db, plans: MergePlan[]): MergeOutcome {
     for (const plan of allPlans) {
       for (const removeId of plan.removeIds) {
         if (removeId === plan.keepId) { continue; }
+        // Playlists holding only this copy follow the kept entry; the rest
+        // would duplicate an existing link, so they go.
         playlistLinksMoved += movePlaylistLink.run(plan.keepId, removeId, plan.keepId).changes;
-        dropRedundantLink.run(removeId);
-        entriesRemoved += retireContent.run(removeId).changes;
+        dropRemainingLinks.run(removeId);
+        for (const stmt of dependentDeletes) { stmt.run(removeId); }
+        entriesRemoved += deleteContent.run(removeId).changes;
       }
     }
+    bumpUpdateCount(db, entriesRemoved + playlistLinksMoved);
   });
   run(plans);
 

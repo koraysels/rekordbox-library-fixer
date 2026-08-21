@@ -23,6 +23,10 @@ beforeEach(() => {
     INSERT INTO djmdSongPlaylist VALUES ('l2','B','keep',0);
     INSERT INTO djmdSongPlaylist VALUES ('l3','B','dup1',0);
     INSERT INTO djmdSongPlaylist VALUES ('l4','A','dup2',0);
+    CREATE TABLE djmdCue (ID TEXT PRIMARY KEY, ContentID TEXT);
+    INSERT INTO djmdCue VALUES ('c1','dup1'), ('c2','keep');
+    CREATE TABLE agentRegistry (registry_id TEXT PRIMARY KEY, int_1 INTEGER);
+    INSERT INTO agentRegistry VALUES ('localUpdateCount', 100);
   `);
 });
 
@@ -37,6 +41,27 @@ const alive = () =>
   db.prepare('SELECT ID FROM djmdContent WHERE rb_local_deleted = 0').all().map((r: any) => r.ID);
 
 describe('applyMerges', () => {
+  it('really removes the duplicate rows rather than flagging them', () => {
+    applyMerges(db, [{ keepId: 'keep', removeIds: ['dup1'] }]);
+    // Flagging left the tracks visible in rekordbox, so the row must be gone.
+    const row = db.prepare('SELECT ID FROM djmdContent WHERE ID = ?').get('dup1');
+    expect(row).toBeUndefined();
+  });
+
+  it('clears rows in tables that referenced the removed track', () => {
+    applyMerges(db, [{ keepId: 'keep', removeIds: ['dup1'] }]);
+    expect(db.prepare('SELECT ID FROM djmdCue WHERE ContentID = ?').get('dup1')).toBeUndefined();
+    // The kept track's own cues stay.
+    expect(db.prepare('SELECT ID FROM djmdCue WHERE ContentID = ?').get('keep')).toBeTruthy();
+  });
+
+  it('advances rekordbox\'s local update counter', () => {
+    const before = (db.prepare("SELECT int_1 AS n FROM agentRegistry WHERE registry_id='localUpdateCount'").get() as any).n;
+    applyMerges(db, [{ keepId: 'keep', removeIds: ['dup1', 'dup2'] }]);
+    const after = (db.prepare("SELECT int_1 AS n FROM agentRegistry WHERE registry_id='localUpdateCount'").get() as any).n;
+    expect(after).toBeGreaterThan(before);
+  });
+
   it('retires the duplicate entries and keeps the chosen one', () => {
     const result = applyMerges(db, [{ keepId: 'keep', removeIds: ['dup1', 'dup2'] }]);
     expect(alive()).toEqual(['keep']);

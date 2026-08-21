@@ -48,7 +48,6 @@ const DuplicateDetector: React.FC = () => {
     currentLibraryPath,
     setCurrentLibraryPath,
     toggleDuplicateSelection,
-    selectAll,
     clearAll,
     setSelections,
     isResolveDisabled,
@@ -84,7 +83,7 @@ const DuplicateDetector: React.FC = () => {
   // tool must not spring on anyone.
   useEffect(() => {
     const visible = new Set(visibleDuplicates.map((d: any) => d.id));
-    const stillValid = Array.from(selectedDuplicates).filter((id) => visible.has(id));
+    const stillValid = Array.from(selectedDuplicates).filter((id: string) => visible.has(id));
     if (stillValid.length !== selectedDuplicates.size) {
       setSelections(stillValid);
     }
@@ -322,7 +321,7 @@ const DuplicateDetector: React.FC = () => {
           type: 'duplicate-merge',
           summary: `Merged ${plans.length} sets directly in the rekordbox database`,
           backupPath: result.backupPath,
-          details: plans.flatMap((p) => p.removeIds.map((id) => ({ action: 'merged' as const, from: id, to: p.keepId }))),
+          details: plans.flatMap((p) => p.removeIds.map((id: string) => ({ action: 'merged' as const, from: id, to: p.keepId }))),
         });
         setDuplicates((prev: any[]) => prev.filter((d) => !selectedDuplicates.has(d.id)));
         clearAll();
@@ -359,11 +358,12 @@ const DuplicateDetector: React.FC = () => {
         // copy you keep and playlists follow it. "Removed from XML" read like
         // music had been lost.
         const sets = selectedDuplicates.size;
-        const merged = result.tracksRemoved;
+        const merged = result.tracksRemoved ?? 0;
         let msg = `✅ Merged ${sets} duplicate set${sets !== 1 ? 's' : ''} — ${merged} extra entr${merged !== 1 ? 'ies' : 'y'} folded into the track you kept. Playlists now point at it.`;
         if (withDelete) {
-          msg += result.filesDeleted > 0
-            ? `\n🗑️ ${result.filesDeleted} duplicate file${result.filesDeleted !== 1 ? 's' : ''} moved to the trash`
+          const trashed = result.filesDeleted ?? 0;
+          msg += trashed > 0
+            ? `\n🗑️ ${trashed} duplicate file${trashed !== 1 ? 's' : ''} moved to the trash`
             : '\n🗑️ No files needed removing — every copy pointed at the same file';
           if ((result.deleteErrors?.length ?? 0) > 0) {
             msg += ` (${result.deleteErrors!.length} could not be trashed — check paths)`;

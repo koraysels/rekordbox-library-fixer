@@ -108,12 +108,12 @@ export const HistoryPage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {!libraryPath ? (
-          <p className="te-label text-center mt-10 normal-case">Load a library to see its history.</p>
-        ) : visible.length === 0 ? (
+        {visible.length === 0 ? (
           <p className="te-label text-center mt-10 normal-case">
             {entries.length === 0
-              ? 'Nothing recorded yet. Operations that change your library will appear here.'
+              ? (libraryPath
+                  ? 'Nothing recorded yet. Operations that change your library will appear here.'
+                  : 'Load a library to see what the app changed in it.')
               : 'No operations match this filter.'}
           </p>
         ) : (

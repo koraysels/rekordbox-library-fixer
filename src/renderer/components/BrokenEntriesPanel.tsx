@@ -24,7 +24,7 @@ const REASON_LABEL: Record<string, string> = {
  * the relocator, and removing them would throw away cues and playlist slots.
  */
 export const BrokenEntriesPanel: React.FC = () => {
-  const { libraryData, libraryPath, showNotification, setLibraryData, onLoadLibrary } = useAppContext();
+  const { libraryData, libraryPath, showNotification, onLoadLibrary } = useAppContext();
   const [broken, setBroken] = useState<Broken[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
