@@ -35,3 +35,7 @@ yarn-error.log*
 /.claude/
 /docs/superpowers/plans/
 /implement/
+
+# transient test fixtures
+.reloc-tmp-*
+.dbg-*

@@ -687,6 +687,10 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       });
     }
 
+    // Build the filesystem index ONCE up front so 5000 tracks reuse it
+    // instead of re-globbing the whole tree per track (was the crash cause).
+    await trackRelocator.beginRelocationRun(data.options);
+
     // Process tracks sequentially using the SAME logic as manual relocation
     for (let i = 0; i < data.tracks.length; i++) {
       // Check if cancelled
@@ -836,7 +840,8 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       error?: string;
     } | null = null;
 
-    if (successfulRelocations.length > 0 && data.libraryPath) {
+    // Do NOT commit partial work to the XML if the user cancelled mid-run
+    if (!cancelToken.cancelled && successfulRelocations.length > 0 && data.libraryPath) {
       safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
 
       try {
@@ -910,8 +915,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       }
     }
 
-    // Clean up cancel token
+    // Clean up cancel token and free the cached file index
     activeOperations.delete(operationId);
+    trackRelocator.endRelocationRun();
 
     // Send completion
     if (mainWindow) {
@@ -940,8 +946,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       }
     };
   } catch (error) {
-    // Clean up active operation
+    // Clean up active operation and free the cached file index
     activeOperations.delete(operationId);
+    trackRelocator.endRelocationRun();
 
     appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {

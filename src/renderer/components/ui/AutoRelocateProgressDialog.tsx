@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Loader2, StopCircle } from 'lucide-react';
+import { capLogs } from '../../utils/capLogs';
 
 interface ProgressInfo {
   operationId?: string;
@@ -47,20 +48,20 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
 
       // Add to logs for certain events
       if (progressData.type === 'found') {
-        setLogs(prev => [...prev, `✅ Found: ${progressData.trackName} (${Math.round((progressData.confidence || 0) * 100)}%)`]);
+        setLogs(prev => capLogs(prev, `✅ Found: ${progressData.trackName} (${Math.round((progressData.confidence || 0) * 100)}%)`));
       } else if (progressData.type === 'not-found') {
-        setLogs(prev => [...prev, `❌ Not found: ${progressData.trackName}`]);
+        setLogs(prev => capLogs(prev, `❌ Not found: ${progressData.trackName}`));
       } else if (progressData.type === 'low-confidence') {
-        setLogs(prev => [...prev, `⚠️ Low confidence: ${progressData.trackName} (${Math.round((progressData.confidence || 0) * 100)}%)`]);
+        setLogs(prev => capLogs(prev, `⚠️ Low confidence: ${progressData.trackName} (${Math.round((progressData.confidence || 0) * 100)}%)`));
       } else if (progressData.type === 'complete') {
         setIsComplete(true);
-        setLogs(prev => [...prev, `✅ ${progressData.message}`]);
+        setLogs(prev => capLogs(prev, `✅ ${progressData.message}`));
       } else if (progressData.type === 'cancelled') {
         setIsComplete(true);
-        setLogs(prev => [...prev, '⚠️ Operation cancelled']);
+        setLogs(prev => capLogs(prev, '⚠️ Operation cancelled'));
       } else if (progressData.type === 'error') {
         setIsComplete(true);
-        setLogs(prev => [...prev, `❌ Error: ${progressData.error}`]);
+        setLogs(prev => capLogs(prev, `❌ Error: ${progressData.error}`));
       }
     });
 
