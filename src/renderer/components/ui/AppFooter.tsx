@@ -153,7 +153,7 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
         </div>
 
         <div className="font-te-mono text-xs text-te-grey-500 uppercase tracking-wider">
-          V{version} • (C) Koray Sels 2025
+          V{version} • (C) Koray Sels {new Date().getFullYear()}
         </div>
       </div>
     </div>

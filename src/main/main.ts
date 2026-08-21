@@ -1,5 +1,7 @@
 import * as path from 'path';
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net } from 'electron';
+import { pathToFileURL } from 'url';
+import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
 import { DuplicateDetector } from './duplicateDetector';
 import { Logger } from './logger';
@@ -9,6 +11,13 @@ import { LibraryConsolidator } from './libraryConsolidator';
 import { CloudSyncFixer } from './cloudSyncFixer';
 import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
+
+// Must run before app ready — grants media:// streaming + fetch privileges.
+// corsEnabled is required for renderer fetch() (the AIFF rewrap path); without
+// it Chromium refuses cross-origin fetches to the custom scheme entirely.
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'media', privileges: { stream: true, supportFetchAPI: true, corsEnabled: true } }
+]);
 
 const libraryConsolidator = new LibraryConsolidator();
 
@@ -243,6 +252,22 @@ function createMenu() {
 }
 
 app.whenReady().then(async () => {
+  protocol.handle('media', async (request) => {
+    try {
+      const filePath = mediaUrlToFilePath(request.url);
+      if (!isAllowedMediaPath(filePath)) {
+        return new Response('Forbidden', { status: 403 });
+      }
+      const res = await net.fetch(pathToFileURL(filePath).toString(), { headers: request.headers });
+      // CORS-enabled scheme: renderer fetch() needs an explicit allow header
+      const headers = new Headers(res.headers);
+      headers.set('Access-Control-Allow-Origin', '*');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    } catch {
+      return new Response('Bad media URL', { status: 400 });
+    }
+  });
+
   // Enable context menu with copy/paste support using eval to bypass TypeScript compilation
   try {
     // electron-context-menu is ESM-only; TypeScript compiles import() to require()
@@ -662,6 +687,10 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       });
     }
 
+    // Build the filesystem index ONCE up front so 5000 tracks reuse it
+    // instead of re-globbing the whole tree per track (was the crash cause).
+    await trackRelocator.beginRelocationRun(data.options);
+
     // Process tracks sequentially using the SAME logic as manual relocation
     for (let i = 0; i < data.tracks.length; i++) {
       // Check if cancelled
@@ -811,7 +840,8 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       error?: string;
     } | null = null;
 
-    if (successfulRelocations.length > 0 && data.libraryPath) {
+    // Do NOT commit partial work to the XML if the user cancelled mid-run
+    if (!cancelToken.cancelled && successfulRelocations.length > 0 && data.libraryPath) {
       safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
 
       try {
@@ -885,8 +915,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       }
     }
 
-    // Clean up cancel token
+    // Clean up cancel token and free the cached file index
     activeOperations.delete(operationId);
+    trackRelocator.endRelocationRun();
 
     // Send completion
     if (mainWindow) {
@@ -915,8 +946,9 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       }
     };
   } catch (error) {
-    // Clean up active operation
+    // Clean up active operation and free the cached file index
     activeOperations.delete(operationId);
+    trackRelocator.endRelocationRun();
 
     appLogger.error('❌ Auto-relocate tracks failed:', error);
     logger.error('AUTO_RELOCATE_TRACKS_FAILED', {
