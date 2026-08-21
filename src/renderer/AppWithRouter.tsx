@@ -133,6 +133,14 @@ const AppWithRouter: React.FC = () => {
           }}>
             {/* No mode="wait": the outgoing page's exit would otherwise have to
                 finish before the new one starts, doubling the perceived delay. */}
+            {libraryPath.toLowerCase().endsWith('.db') && (
+              <div className="flex-shrink-0 mx-4 mb-2 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
+                <p className="text-xs font-te-mono text-te-amber-600 normal-case">
+                  Reading the rekordbox database read-only. Duplicate resolution and
+                  relocation need an XML library to write back to.
+                </p>
+              </div>
+            )}
             <AnimatePresence initial={false}>
               <motion.div
                 key={location.pathname}
