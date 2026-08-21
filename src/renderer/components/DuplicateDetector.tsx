@@ -90,10 +90,10 @@ const DuplicateDetector: React.FC = () => {
             setDuplicates(stored.duplicates || []);
             setSelections(stored.selectedDuplicates || []);
             setHasScanned(stored.hasScanned || false);
-            // Merge stored scan options with current preferences
-            if (stored.scanOptions) {
-              setScanOptions({...scanOptions, ...stored.scanOptions});
-            }
+            // NOTE: scan options and the resolution strategy are NOT restored
+            // from this per-library cache. The persisted settings store is the
+            // single source of truth; restoring a stale snapshot here used to
+            // reset the user's chosen strategy back to the default.
           } else {
             // No stored results for this library, reset to default state
             setHasScanned(false);
