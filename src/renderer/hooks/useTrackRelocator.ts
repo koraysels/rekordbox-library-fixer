@@ -107,12 +107,15 @@ export function useTrackRelocator(
         // Load relocation results
         const relocationResult = await relocationStorage.getRelocationResult(libraryData.libraryPath);
         if (relocationResult) {
+          // NOTE: searchOptions is intentionally NOT restored from this cache.
+          // The persisted Zustand settings store is the single source of truth
+          // for search paths/depth/threshold; restoring the stale per-library
+          // snapshot here used to wipe the user's configured search paths.
           setState(prev => ({
             ...prev,
             missingTracks: relocationResult.missingTracks || [],
             relocations: relocationResult.relocations || new Map(),
             relocationResults: relocationResult.relocationResults || [],
-            searchOptions: relocationResult.searchOptions || { ...defaultSearchOptions },
             hasScanCompleted: relocationResult.hasScanCompleted || false
           }));
           setRelocationCandidatesCache(relocationResult.relocationCandidates || new Map());

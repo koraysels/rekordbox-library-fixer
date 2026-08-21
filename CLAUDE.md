@@ -38,6 +38,12 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 - `useDuplicates`: Custom hook managing duplicate detection state and operations
 - `useTrackRelocator`: State management for track relocation operations
 - `SettingsPanel`: Configuration UI with Zustand store integration
+- `MiniPlayer` / `PlayButton`: In-app track preview (play/pause/seek/volume) via a single
+  `<audio>` element + media-chrome transport UI. Audio streams over the custom `media://`
+  protocol (`src/main/mediaProtocol.ts`); AIFF is rewrapped to WAV in the renderer
+  (`src/renderer/audio/aiffToWav.ts`). Player state in `src/renderer/stores/playerStore.ts`
+  (volume persisted, key `rekordbox-player`); element commands via
+  `src/renderer/audio/audioController.ts`.
 - **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, and other UI elements
 - **Utility Functions**: Centralized formatters for file size, duration, dates, and other data
 - **Custom Hooks**: File operations and other reusable business logic
