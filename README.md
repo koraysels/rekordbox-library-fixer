@@ -5,7 +5,7 @@
 <img src="assets/icons/256x256.png" alt="Rekordbox Library Fixer" width="128" height="128" style="border-radius: 20px; background-color: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 
 ![Rekordbox Library Fixer](https://img.shields.io/badge/DJ%20Tool-Rekordbox-FF6B35?style=for-the-badge&logo=music&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.3.0-brightgreen?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-0.4.0-brightgreen?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Non--Commercial-orange?style=for-the-badge)
 
@@ -88,6 +88,16 @@ Quality priority order when lossless preference is enabled:
 - **Persistent mini-player** bar that survives page switches
 - **AIFF supported** (rewrapped to WAV on the fly — Chromium can't play AIFF natively); mp3/m4a/flac/wav/ogg play directly
 - Volume is remembered across sessions; space bar toggles play/pause
+
+### Activity History
+- Every library-changing operation is recorded: duplicate merges and relocations
+- Expand an entry to see exactly which tracks were merged, which files went to the trash, and what failed
+- Backup path for each operation, revealable in Finder/Explorer
+
+### Duplicate files vs duplicate entries
+Two different situations wear the word "duplicate". The app labels each set and lets you filter on it:
+- **Duplicate files** — separate files on disk; resolving can move the extra files to the trash
+- **Same-file entries** — several Rekordbox entries pointing at one file; resolving removes the extra entries and no file is touched
 
 ### Statistics
 - Genre distribution (top 10 with track list on hover)
@@ -340,7 +350,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.3.0** *(current)*
+**v0.4.0** *(current)*
+- History tab: an audit trail of everything the app changed, with per-item detail
+- Duplicate files and duplicate Rekordbox entries are told apart and can be cleaned up separately
+- Faster tab navigation, and settings that stay put
+
+**v0.3.0**
 - Duplicate scan: live progress, results stream in as they're found, and the scan can be cancelled without losing what it found
 - Duplicate resolution keeps playlists intact — removed copies are re-pointed at the kept track instead of dropped
 - Files are moved to the system trash instead of being deleted permanently, and a file a kept track still uses is never touched
