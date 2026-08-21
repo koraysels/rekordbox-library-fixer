@@ -12,7 +12,7 @@ import { useDuplicates } from '../hooks';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
-import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal } from './ui';
+import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal, DuplicateHelp } from './ui';
 import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
@@ -524,6 +524,8 @@ const DuplicateDetector: React.FC = () => {
             </div>
           )}
         </div>
+
+        {duplicates.length > 0 && <DuplicateHelp />}
 
         {/* Results List */}
         {duplicates.length > 0 ? (
