@@ -7,6 +7,7 @@ import { DuplicateDetector } from './duplicateDetector';
 import { substitutePlaylistTrackIds } from './playlistSubstitution';
 import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
+import { scanForLibraries } from './libraryScanner';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
 import { assertWritableLibraryPath } from './librarySource';
@@ -453,6 +454,8 @@ ipcMain.handle('find-duplicates', async (_, options: {
 });
 
 ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
+
+ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
 
 ipcMain.handle('parse-rekordbox-db', async (_e, args: { dbPath: string; key: string }) =>
   handleParseRekordboxDb(args, parseDb));
