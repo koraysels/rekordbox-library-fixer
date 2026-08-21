@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FolderOpen, FileText, Database } from 'lucide-react';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 interface EmptyLibraryStateProps {
   onSelectLibrary: () => void;
@@ -12,6 +13,9 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   onLoadFromDb,
   onLoadLibrary
 }) => {
+  const dbKey = useSettingsStore((state) => state.rekordboxDbKey);
+  const setRekordboxDbKey = useSettingsStore((state) => state.setRekordboxDbKey);
+  const [askingForKey, setAskingForKey] = useState(false);
   const [found, setFound] = useState<Array<{
     kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string;
   }>>([]);
@@ -86,7 +90,10 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
                 <button
                   key={lib.path}
                   type="button"
-                  onClick={() => (lib.kind === 'database' ? onLoadFromDb?.() : onLoadLibrary(lib.path))}
+                  onClick={() => {
+                    if (lib.kind !== 'database') { onLoadLibrary(lib.path); return; }
+                    if (dbKey.trim()) { onLoadFromDb?.(); } else { setAskingForKey(true); }
+                  }}
                   title={lib.path}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-te border border-te-grey-300
                              bg-te-grey-100 hover:bg-te-grey-200 hover:border-te-orange
@@ -111,6 +118,41 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
                 </button>
               ))}
             </div>
+
+            {askingForKey && (
+              <div className="mt-2 rounded-te border border-te-orange bg-te-grey-100 p-3">
+                <p className="text-[11px] font-te-mono text-te-grey-700 normal-case leading-relaxed mb-2">
+                  Rekordbox encrypts its database. Opening it needs the SQLCipher key, which is
+                  the same on every rekordbox 6/7 install and is published by the open-source
+                  <span className="te-value"> pyrekordbox </span> project: see its documentation
+                  under &ldquo;Rekordbox 6 database key&rdquo;. This app does not ship the key.
+                  Paste it once and it stays on this machine.
+                </p>
+                <input
+                  type="text"
+                  value={dbKey}
+                  onChange={(e) => setRekordboxDbKey(e.target.value.trim())}
+                  placeholder="Paste the master.db key (starts with 402fd…)"
+                  spellCheck={false}
+                  autoComplete="off"
+                  autoFocus
+                  className="input w-full te-path text-xs mb-2"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onLoadFromDb?.()}
+                    disabled={!dbKey.trim()}
+                    className="btn-secondary text-xs disabled:opacity-40"
+                  >
+                    Open database
+                  </button>
+                  <button type="button" onClick={() => setAskingForKey(false)} className="btn-ghost text-xs">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
