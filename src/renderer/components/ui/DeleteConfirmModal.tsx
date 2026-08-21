@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
 
 interface DeleteConfirmModalProps {
+  libraryPath?: string;
   filePaths: string[];
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePaths, onConfirm, onCancel }) => {
+export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePaths, libraryPath, onConfirm, onCancel }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [typed, setTyped] = useState('');
   const [copied, setCopied] = useState(false);
@@ -84,6 +85,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePath
           {step === 3 && (
             <>
               <p className="text-sm text-te-grey-700 font-te-mono mb-3">
+                {libraryPath && (
+                  <span className="block te-label text-[10px] normal-case mb-2">
+                    Library: <span className="te-path text-te-grey-700">{libraryPath}</span>
+                  </span>
+                )}
                 Type{' '}
                 <button
                   type="button"
