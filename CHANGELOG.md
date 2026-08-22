@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.0] - 2026-08-22
+
+### 🎉 New Features
+- **Clean duplicates in rekordbox itself**: The XML format cannot remove tracks — Lexicon documents the same limitation and ships a direct-sync path for exactly this reason — so an export can never clean the collection. With a database-backed library, resolving now edits rekordbox's own catalogue: playlist links move to the kept entry, the extra entries are deleted along with their rows in the thirteen tables that reference a track, and rekordbox's update counter is advanced. Guarded by two refusals: rekordbox must be closed, and a backup of the database and its WAL is taken before it opens for writing. No audio file is touched.
+
+### 🐛 Bug Fixes
+- **Duplicate entries are really removed**: marking them `rb_local_deleted` left them visible in rekordbox, so the merge achieved nothing.
+- **Re-tagged copies of a missing file are grouped**: when a file is gone the fingerprint falls back to metadata, and that key included the exact file size — the same song re-tagged differs by a few kilobytes, so two entries for one track could never be resolved together.
+- **A guess is no longer presented as a match**: sets built from metadata were labelled "Fingerprint Match" at 100% confidence, claiming the files had been compared byte for byte when they could not even be opened. They now read as a metadata match at 75%.
+- **The app no longer detects itself as rekordbox**: the running-check matched the string anywhere in the process list, and this app runs from a directory called rekordbox-library-manager, so every database write was refused with "Close rekordbox first".
+- **Resolving on a database did nothing**: the code path read the settings store without importing it, so the renderer threw before reaching the main process and the button appeared dead.
+- **The renderer is typechecked**: `pnpm build` never typechecked it — `build:main` covers only `src/main` and Vite's esbuild ignores types — which is how a missing import shipped as a dead button. A typecheck now runs as part of the build; it found eight problems, including a result field missing from a type that had been silently undefined.
+- **One window only**: two instances could run at once, each holding its own library, which is how a change landed on a file the user did not think was open.
+- **Paths keep their filename when truncated**: they were cut off at the end, hiding the one part that tells similarly named libraries apart. The open library is now named in the sidebar, above the duplicate list, and in the delete confirmation, and reopening the last library announces itself.
+- **History and Backups stay reachable without a library**, which is when they are most needed.
+- **Filtering clears hidden selections**, so Resolve cannot act on sets scrolled out of view.
+
 ## [0.5.0] - 2026-08-21
 
 ### 🎉 New Features
