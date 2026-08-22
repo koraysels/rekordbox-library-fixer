@@ -109,3 +109,34 @@ describe('DuplicateDetector scan progress + cancel', () => {
     expect(result.cancelled).toBe(false);
   });
 });
+
+describe('missing files fall back to metadata', () => {
+  it('groups the same song whose copies differ only in tag size', async () => {
+    // Real case: two entries for one song, files gone from disk, sizes
+    // 13,336,237 and 13,353,762 — re-tagged, same audio. Including exact size
+    // in the fallback key split them into separate sets.
+    vi.spyOn(fs.promises, 'access').mockRejectedValue(new Error('ENOENT'));
+    const detector = new DuplicateDetector();
+    const tracks = [
+      { id: '1', name: 'Detain (Original Mix)', artist: 'Weval', location: '/gone/a.mp3', duration: 325, size: 13336237 },
+      { id: '2', name: 'Detain (Original Mix)', artist: 'Weval', location: '/gone/b.mp3', duration: 325, size: 13353762 },
+    ] as any[];
+
+    const { duplicates } = await detector.findDuplicates(tracks, OPTIONS);
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0].tracks).toHaveLength(2);
+  });
+
+  it('does not claim a content match when the files could not be read', async () => {
+    vi.spyOn(fs.promises, 'access').mockRejectedValue(new Error('ENOENT'));
+    const detector = new DuplicateDetector();
+    const tracks = [
+      { id: '1', name: 'Song', artist: 'A', location: '/gone/a.mp3', duration: 100 },
+      { id: '2', name: 'Song', artist: 'A', location: '/gone/b.mp3', duration: 100 },
+    ] as any[];
+
+    const { duplicates } = await detector.findDuplicates(tracks, OPTIONS);
+    expect(duplicates[0].matchType).toBe('metadata');
+    expect(duplicates[0].confidence).toBeLessThan(100);
+  });
+});

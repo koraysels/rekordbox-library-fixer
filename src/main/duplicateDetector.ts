@@ -50,6 +50,8 @@ const PROGRESS_INTERVAL = 10;
 
 export class DuplicateDetector {
   private fingerprintCache: Map<string, string> = new Map();
+  /** Fingerprints that came from metadata because the file was unreadable. */
+  private metadataFallbacks: Set<string> = new Set();
   private logger: Logger;
 
   constructor() {
@@ -77,11 +79,12 @@ export class DuplicateDetector {
           id = crypto.createHash('md5').update(fingerprint).digest('hex').slice(0, 16);
           setIdByFingerprint.set(fingerprint, id);
         }
+        const guessed = this.metadataFallbacks.has(fingerprint);
         onDuplicateSet?.({
           id,
           tracks: [...group],
-          matchType: 'fingerprint',
-          confidence: 100,
+          matchType: guessed ? 'metadata' : 'fingerprint',
+          confidence: guessed ? 75 : 100,
         });
       };
 
@@ -117,12 +120,15 @@ export class DuplicateDetector {
       // Add fingerprint-based duplicates
       for (const [fingerprint, duplicateTracks] of fingerprintMap) {
         if (duplicateTracks.length > 1) {
+          const guessed = this.metadataFallbacks.has(fingerprint);
           duplicateSets.push({
             id: setIdByFingerprint.get(fingerprint)
               ?? crypto.createHash('md5').update(fingerprint).digest('hex').slice(0, 16),
             tracks: duplicateTracks,
-            matchType: 'fingerprint',
-            confidence: 100,
+            // A set built from metadata is a strong hint, not proof the files
+            // are identical: say so rather than claiming a content match.
+            matchType: guessed ? 'metadata' : 'fingerprint',
+            confidence: guessed ? 75 : 100,
           });
           duplicateTracks.forEach(t => processedTracks.add(t.id));
         }
@@ -208,9 +214,19 @@ export class DuplicateDetector {
 
       return hash;
     } catch {
-      // If file doesn't exist or can't be read, use metadata fallback
-      const fallbackFingerprint = `${track.artist}_${track.name}_${track.duration}_${track.size}`;
-      return crypto.createHash('md5').update(fallbackFingerprint).digest('hex');
+      // The file is gone, so fall back to metadata. Exact file size is left out
+      // on purpose: the same song re-tagged differs by a few kilobytes, which
+      // split genuine duplicates into separate sets. Duration is rounded for
+      // the same reason.
+      const fallbackFingerprint = [
+        (track.artist ?? '').trim().toLowerCase(),
+        (track.name ?? '').trim().toLowerCase(),
+        Math.round(track.duration ?? 0),
+      ].join('_');
+      const hash = crypto.createHash('md5').update(fallbackFingerprint).digest('hex');
+      // Mark it so a guess is never presented as a content match.
+      this.metadataFallbacks.add(hash);
+      return hash;
     }
   }
 
