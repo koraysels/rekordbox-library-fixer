@@ -68,6 +68,27 @@ export const DuplicateHelp: React.FC = () => {
           </div>
 
           <div>
+            <p className="te-value mb-1">When the files are gone</p>
+            <p>
+              If the files of a set can't be read, the match is made on artist, title and length
+              instead of on the audio itself. Such a set says{' '}
+              <span className="te-value">metadata</span> rather than a fingerprint, and its badge
+              reads <span className="te-value">files missing</span> instead of a file count.
+              Resolving it is still worth it: two missing tracks become one, which is one
+              relocation instead of two.
+            </p>
+          </div>
+
+          <div>
+            <p className="te-value mb-1">Streaming tracks</p>
+            <p>
+              Tracks from TIDAL, Spotify and the like have no file on your disk by design. They
+              are labelled with their service and are never treated as damage; use the filter if
+              you want them out of the way.
+            </p>
+          </div>
+
+          <div>
             <p className="te-value mb-1">Filtering</p>
             <p>
               The filter above narrows the list to sets with real duplicate files, or to sets

@@ -53,7 +53,12 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 
 ### Two ways to load your library
 - **XML export** — the classic route: export from Rekordbox, load the file
-- **Rekordbox's own database** — read `master.db` directly, no export needed. Opened strictly read-only from a copy (including its WAL), so Rekordbox can stay open and the database is never written to. It is encrypted, so paste its key once on the load screen. Applying changes still goes through an XML library.
+- **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
+
+Resolving duplicates writes back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory, playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
+
+### Library tab
+The first tab in the sidebar. With nothing loaded it holds the picker, including the libraries found on your system. With a library open it shows what is loaded — file name, full path, track count, playlists, missing files and duplicate entries — and lets you close it or switch to another one. Backups and History stay reachable at all times, even with no library loaded.
 
 ### Duplicate Detection
 - **Audio fingerprinting**: Finds identical tracks even with different filenames
@@ -66,6 +71,7 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 - **Similarity matching**: Matches tracks even when filenames differ
 - **Bulk operations**: Fix hundreds of missing tracks at once
 - **Unlocatable tracking**: Marks tracks that couldn't be auto-relocated for manual review
+- **Damaged paths**: when the stored path is unusable (a folder, a truncated path), the search falls back to the track title instead of giving up
 
 ### Resolution Options
 - **Quality-based**: Keeps the highest bitrate version; optionally prefer lossless formats (FLAC, WAV, AIFF) over lossy regardless of bitrate
@@ -104,6 +110,21 @@ Two different situations wear the word "duplicate", and the difference decides w
 - **Own file · trashed if enabled** — a second copy in another folder. The only kind that frees disk space, and only when you tick the trash option.
 
 Resolving **merges** the other entries into the kept one: every playlist that referenced any of them now points at the kept entry, so no playlist loses the song. Files move to the system trash, never straight to deletion, and a file the kept entry still uses is never touched. A filter narrows the list to one kind, and Select All follows it. An in-app help section explains all of this next to the results.
+
+### Streaming tracks
+Tracks from TIDAL, Spotify, Beatport, SoundCloud and Apple Music have no file on your disk by design. They used to look like damage. They are now labelled with their service, kept out of the broken-entry list, and can be filtered in or out so they never end up in a cleanup by accident.
+
+### When the files are gone
+If a duplicate set's files can't be read, the app says so instead of inventing certainty. It falls back to matching on artist, title and length, reports the match as **metadata** rather than a fingerprint, and the badge reads `2 entries · files missing` instead of claiming a file count. Such a set is still worth resolving: it collapses two missing tracks into one, which is one relocation instead of two.
+
+### Broken entries
+Finds library entries whose path is damaged rather than merely moved — a path pointing at a folder, a truncated path, an empty location. Streaming tracks and ordinary missing files are excluded, because those belong to relocation, not to cleanup.
+
+### Backups
+A backup manager reachable at any time, with or without a library loaded. Lists every backup the app has taken, restores one (writing a safety copy of the current state first), and asks whether you want to load the restored library straight away.
+
+### Notifications
+Toasts stack instead of replacing each other, stay long enough to read, and can be dismissed. Important results — a finished scan, a completed resolve, a failure — also raise a system notification, so a long scan can run while you do something else.
 
 ### Statistics
 - Genre distribution (top 10 with track list on hover)
@@ -328,7 +349,6 @@ src/
 4. Submit a pull request
 
 ### Areas needing help:
-- master.db parsing (direct Rekordbox database, no XML export needed)
 - FLAC conversion pipeline for CDJ compatibility
 - Performance profiling on very large libraries (50k+ tracks)
 - Windows / Linux testing and bug reports
@@ -338,7 +358,10 @@ src/
 ## FAQ
 
 **Is this safe to use with my library?**
-Yes. The tool creates backups before making changes. Your original files are never modified directly.
+A backup is taken before any change, and it is mandatory — writing is refused if one cannot be made. Files go to the system trash rather than being deleted, and a file the kept track still uses is never touched. Writing to `master.db` additionally requires Rekordbox to be closed.
+
+**Why does resolving duplicates need to write to master.db?**
+Because a Rekordbox XML import can add and update tracks but cannot remove one. Importing a cleaned XML leaves every duplicate sitting in your collection. Changing the database is the only way to actually clean it.
 
 **Does it work with large libraries?**
 Yes. Tested with libraries containing 50,000+ tracks. Uses IndexedDB (via Dexie.js) for performance and persistent storage.
@@ -356,8 +379,20 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.5.0** *(current)*
-- Read the library straight from Rekordbox's `master.db`, no XML export needed (read-only)
+**v0.6.1** *(current)*
+- Library tab holding the picker, the statistics of what is loaded, and unload/switch
+- Streaming tracks (TIDAL, Spotify, Beatport, SoundCloud, Apple Music) labelled and filterable, never treated as damage
+- Relocation falls back to the track title when the stored path is damaged
+- Notifications stack, persist and can be dismissed; important events also raise a system notification
+- Honest reporting when files are missing: metadata match instead of a claimed fingerprint, and no invented file count
+
+**v0.6.0**
+- Duplicate resolving writes into `master.db` itself, so the collection is really cleaned — Rekordbox must be closed and a backup is mandatory
+- Backup manager reachable at any time, with an offer to load a library straight after restoring it
+- Broken entries: damaged paths found and separated from tracks that are merely missing
+
+**v0.5.0**
+- Read the library straight from Rekordbox's `master.db`, no XML export needed
 - Duplicate sets state how many entries and how many real files they involve, with in-app help
 - Never writes over the database, and paths differing only in Unicode form are recognised as one file
 
@@ -373,9 +408,8 @@ Free for personal use. No ads, no subscriptions, no limits.
 - In-app track preview — play/pause/seek/volume from any track row, with AIFF support
 - Relocator: handles libraries with thousands of missing tracks without crashing; safe cancellation; search settings now persist
 
-**Next — master.db support**
-- Read directly from Rekordbox's `master.db` SQLite database — no XML export step needed
-- Works alongside the existing XML workflow (read-only first)
+**Next — relocation into master.db**
+- Relocation currently rewrites an XML library; writing the new paths into `master.db` is the remaining gap
 
 **FLAC conversion**
 - Convert FLAC files to WAV or AIFF for compatibility with older CDJs (CDJ-2000NXS and earlier) that don't support FLAC playback
