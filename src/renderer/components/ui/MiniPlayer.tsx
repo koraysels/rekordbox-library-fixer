@@ -10,10 +10,10 @@ import {
 import { X } from 'lucide-react';
 import { usePlayerStore } from '../../stores/playerStore';
 import { audioController } from '../../audio/audioController';
-import type { NotificationType } from '../../types';
+import type { ShowNotification } from '../../types';
 
 interface MiniPlayerProps {
-  showNotification: (type: NotificationType, message: string) => void;
+  showNotification: ShowNotification;
 }
 
 export const MiniPlayer: React.FC<MiniPlayerProps> = ({ showNotification }) => {

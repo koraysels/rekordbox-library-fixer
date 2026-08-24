@@ -17,7 +17,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { deletableFileCount, distinctFileCount } from '../utils/classifyDuplicateSet';
 import { normalizePathForCompare } from '../utils/normalizePath';
-import { streamingServiceOf } from '../utils/streamingSource';
+import { streamingServiceOf, isStreamingTrack } from '../utils/streamingSource';
 
 
 interface DuplicateItemProps {
@@ -71,13 +71,21 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   // really are; "5 entries · 2 files" answers it outright.
   const fileCount = useMemo(() => distinctFileCount(duplicate.tracks), [duplicate.tracks]);
   const entryCount = duplicate.tracks.length;
+  // Streaming entries have no file by design, so "0 files" reads as damage
+  // rather than as the normal state of a TIDAL or Spotify track.
+  const allStreaming = useMemo(
+    () => duplicate.tracks.every((t: any) => isStreamingTrack(t.location)),
+    [duplicate.tracks]
+  );
   // With no file on disk there is no file count worth stating; saying "1 file"
   // implied something was there when the whole folder was gone.
   const kindBadge = {
-    label: duplicate.filesMissing
+    label: allStreaming
+      ? `${entryCount} entries · streaming`
+      : duplicate.filesMissing
       ? `${entryCount} entries · files missing`
       : `${entryCount} entries · ${fileCount} file${fileCount !== 1 ? 's' : ''}`,
-    className: duplicate.filesMissing
+    className: allStreaming || duplicate.filesMissing
       ? 'bg-te-grey-200 text-te-grey-600 border-te-grey-300'
       : fileCount > 1
       ? 'bg-te-amber-100 text-te-amber-600 border-te-amber-200'
@@ -215,6 +223,13 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-green-100 text-te-green-600 border border-te-green-200 font-te-mono whitespace-nowrap">
                             <CheckCircle className="w-3 h-3" /> Will be kept
                           </span>
+                        ) : isStreamingTrack(track.location) ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
+                            title="A streaming track has no file on disk. Only the extra rekordbox entry disappears; nothing can be trashed."
+                          >
+                            Extra listing · nothing on disk
+                          </span>
                         ) : sharesKeptFile(track) ? (
                           <span
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
@@ -274,6 +289,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="te-value font-medium font-te-mono">Path:</span>
+                          {!isStreamingTrack(track.location) && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -288,6 +304,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             <ExternalLink className="w-3 h-3" />
                             <span className="font-medium">Go to File</span>
                           </button>
+                          )}
                         </div>
                         <div
                           className="te-code-block select-all whitespace-pre-wrap word-break-all"

@@ -157,10 +157,12 @@ describe('Library Path Validation Tests', () => {
       // Verify the API was called with the correct libraryPath.
       // oldLocation is '' because missingTracks is empty (no scan was performed);
       // the hook derives oldLocation from state.missingTracks[].originalLocation.
-      expect(window.electronAPI.batchRelocateTracks).toHaveBeenCalledWith({
-        libraryPath: expectedLibraryPath, // Should use libraryData.libraryPath
-        relocations: [{ trackId: 'track1', oldLocation: '', newLocation: '/new/location.mp3' }]
-      });
+      expect(window.electronAPI.batchRelocateTracks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          libraryPath: expectedLibraryPath, // Should use libraryData.libraryPath
+          relocations: [{ trackId: 'track1', oldLocation: '', newLocation: '/new/location.mp3' }]
+        })
+      );
     });
 
     it('should use fallback libraryPath when libraryData.libraryPath is missing', async () => {
@@ -197,10 +199,12 @@ describe('Library Path Validation Tests', () => {
 
       // Verify the API was called with the fallback libraryPath.
       // oldLocation is '' because missingTracks is empty (no scan was performed).
-      expect(window.electronAPI.batchRelocateTracks).toHaveBeenCalledWith({
-        libraryPath: fallbackLibraryPath, // Should use the fallback parameter
-        relocations: [{ trackId: 'track1', oldLocation: '', newLocation: '/new/location.mp3' }]
-      });
+      expect(window.electronAPI.batchRelocateTracks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          libraryPath: fallbackLibraryPath, // Should use the fallback parameter
+          relocations: [{ trackId: 'track1', oldLocation: '', newLocation: '/new/location.mp3' }]
+        })
+      );
     });
   });
 

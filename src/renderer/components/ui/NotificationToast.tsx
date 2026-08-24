@@ -23,7 +23,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ notificati
 
   return (
     <div className="absolute top-3 right-3 z-50 flex flex-col gap-2 w-[min(30rem,calc(100%-1.5rem))] pointer-events-none">
-      {notifications.map(({ id, type, message }) => {
+      {notifications.map(({ id, type, message, repeats }) => {
         const { Icon, className } = STYLES[type] ?? STYLES.info;
         return (
           <div
@@ -36,6 +36,9 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ notificati
                 rather than being clipped to one. */}
             <p className="flex-1 min-w-0 text-xs font-te-mono normal-case leading-relaxed whitespace-pre-line break-words">
               {message}
+              {repeats > 1 && (
+                <span className="ml-1.5 opacity-60">×{repeats}</span>
+              )}
             </p>
             <button
               onClick={() => onDismiss(id)}

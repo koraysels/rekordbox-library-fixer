@@ -55,7 +55,7 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 - **XML export** — the classic route: export from Rekordbox, load the file
 - **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
 
-Resolving duplicates writes back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory, playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
+Resolving duplicates and relocating tracks write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory, playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
 
 ### Library tab
 The first tab in the sidebar. With nothing loaded it holds the picker, including the libraries found on your system. With a library open it shows what is loaded — file name, full path, track count, playlists, missing files and duplicate entries — and lets you close it or switch to another one. Backups and History stay reachable at all times, even with no library loaded.
@@ -72,6 +72,7 @@ The first tab in the sidebar. With nothing loaded it holds the picker, including
 - **Bulk operations**: Fix hundreds of missing tracks at once
 - **Unlocatable tracking**: Marks tracks that couldn't be auto-relocated for manual review
 - **Damaged paths**: when the stored path is unusable (a folder, a truncated path), the search falls back to the track title instead of giving up
+- **Writes where your library actually lives**: an XML library is rewritten; a database-backed one has the new paths written into `master.db`, so the tracks stop being missing in Rekordbox itself. Cues, beatgrids and playlists stay attached to the track — only its path and filename change.
 
 ### Resolution Options
 - **Quality-based**: Keeps the highest bitrate version; optionally prefer lossless formats (FLAC, WAV, AIFF) over lossy regardless of bitrate
@@ -112,7 +113,7 @@ Two different situations wear the word "duplicate", and the difference decides w
 Resolving **merges** the other entries into the kept one: every playlist that referenced any of them now points at the kept entry, so no playlist loses the song. Files move to the system trash, never straight to deletion, and a file the kept entry still uses is never touched. A filter narrows the list to one kind, and Select All follows it. An in-app help section explains all of this next to the results.
 
 ### Streaming tracks
-Tracks from TIDAL, Spotify, Beatport, SoundCloud and Apple Music have no file on your disk by design. They used to look like damage. They are now labelled with their service, kept out of the broken-entry list, and can be filtered in or out so they never end up in a cleanup by accident.
+Tracks from TIDAL, Spotify, Beatport, SoundCloud and Apple Music have no file on your disk by design. They used to look like damage. They are now labelled with their service, kept out of the broken-entry list, and can be filtered in or out so they never end up in a cleanup by accident. A duplicated streaming track says so — `2 entries · streaming`, and the extra entry is marked "nothing on disk" rather than a file that could be trashed.
 
 ### When the files are gone
 If a duplicate set's files can't be read, the app says so instead of inventing certainty. It falls back to matching on artist, title and length, reports the match as **metadata** rather than a fingerprint, and the badge reads `2 entries · files missing` instead of claiming a file count. Such a set is still worth resolving: it collapses two missing tracks into one, which is one relocation instead of two.
@@ -407,9 +408,6 @@ Free for personal use. No ads, no subscriptions, no limits.
 - Files are moved to the system trash instead of being deleted permanently, and a file a kept track still uses is never touched
 - In-app track preview — play/pause/seek/volume from any track row, with AIFF support
 - Relocator: handles libraries with thousands of missing tracks without crashing; safe cancellation; search settings now persist
-
-**Next — relocation into master.db**
-- Relocation currently rewrites an XML library; writing the new paths into `master.db` is the remaining gap
 
 **FLAC conversion**
 - Convert FLAC files to WAV or AIFF for compatibility with older CDJs (CDJ-2000NXS and earlier) that don't support FLAC playback
