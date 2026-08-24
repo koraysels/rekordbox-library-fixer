@@ -51,7 +51,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('find-missing-tracks', tracks),
   resetTrackLocations: (trackIds: string[]) =>
     ipcRenderer.invoke('reset-track-locations', trackIds),
-  autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) =>
+  autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string, dbKey?: string }) =>
     ipcRenderer.invoke('auto-relocate-tracks', data),
   cancelAutoRelocate: (operationId: string) =>
     ipcRenderer.invoke('cancel-auto-relocate', operationId),
@@ -66,8 +66,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('find-relocation-candidates', track, options),
   relocateTrack: (trackId: string, oldLocation: string, newLocation: string) =>
     ipcRenderer.invoke('relocate-track', trackId, oldLocation, newLocation),
-  batchRelocateTracks: (relocations: any[]) =>
-    ipcRenderer.invoke('batch-relocate-tracks', relocations),
+  batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) =>
+    ipcRenderer.invoke('batch-relocate-tracks', data),
 
   // Cloud Sync APIs
   detectCloudSyncIssues: (tracks: any) =>

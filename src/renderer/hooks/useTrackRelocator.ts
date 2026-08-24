@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useSettingsStore } from '../stores/settingsStore';
 import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
 import { historyStorage, historyEvents } from '../db/historyDb';
 import { duplicationHistoryStorage } from '../db/duplicationHistoryDb';
@@ -12,7 +13,7 @@ import type {
   OwnershipIssue,
   OwnershipFix,
   LibraryData,
-  NotificationType
+  ShowNotification
 } from '../types';
 
 // Import the modular logger
@@ -71,7 +72,7 @@ const defaultSearchOptions: RelocationOptions = {
 export function useTrackRelocator(
   libraryData: LibraryData | null,
   libraryPath: string,
-  showNotification: (type: NotificationType, message: string) => void,
+  showNotification: ShowNotification,
   setLibraryData: (data: LibraryData) => void,
   initialSearchOptions?: RelocationOptions
 ) {
@@ -314,7 +315,9 @@ export function useTrackRelocator(
 
       const result = await window.electronAPI.batchRelocateTracks({
         libraryPath: effectiveLibraryPath,
-        relocations: relocationsArray
+        relocations: relocationsArray,
+        // A database-backed library is written directly; that needs its key.
+        dbKey: useSettingsStore.getState().rekordboxDbKey,
       });
 
       if (result.success) {
@@ -429,13 +432,19 @@ export function useTrackRelocator(
           logger.warn(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
         }
 
-        // Show success notification with XML update info
-        const xmlUpdateMessage = result.xmlUpdated
-          ? `\n📄 XML updated with ${result.tracksUpdated} track${result.tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${result.backupPath?.split('/').pop()}`
+        // Name the library that changed. "XML updated" was wrong for a
+        // database-backed collection, which is now written directly.
+        const wroteDatabase = /\.db$/i.test(effectiveLibraryPath);
+        const writeMessage = result.tracksUpdated
+          ? `\n${wroteDatabase ? 'Written into the rekordbox database' : 'XML updated'}`
+            + ` for ${result.tracksUpdated} track${result.tracksUpdated > 1 ? 's' : ''}.`
+            + `\nBacked up first: ${result.backupPath?.split('/').pop()}`
+            + (wroteDatabase ? '\nReopen rekordbox to see it.' : '')
           : '';
 
         showNotification('success',
-          `✅ Successfully relocated ${successCount}/${relocationsArray.length} tracks${xmlUpdateMessage}`
+          `Relocated ${successCount} of ${relocationsArray.length} tracks.${writeMessage}`,
+          { important: true }
         );
       } else {
         setState(prev => ({ ...prev, isRelocating: false }));
@@ -465,6 +474,7 @@ export function useTrackRelocator(
       const effectiveLibraryPath = getEffectiveLibraryPath(libraryData, libraryPath);
 
       const result = await window.electronAPI.autoRelocateTracks({
+        dbKey: useSettingsStore.getState().rekordboxDbKey,
         tracks,
         options: state.searchOptions,
         libraryPath: effectiveLibraryPath
@@ -585,19 +595,24 @@ export function useTrackRelocator(
         }
 
         // Show notification with detailed results
-        const xmlUpdateMessage = xmlUpdated
-          ? `\n📄 XML updated with ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}\n💾 Backup created: ${backupPath?.split('/').pop()}`
+        const wroteDatabase = /\.db$/i.test(effectiveLibraryPath);
+        const writeMessage = tracksUpdated
+          ? `\n${wroteDatabase ? 'Written into the rekordbox database' : 'XML updated'}`
+            + ` for ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}.`
+            + `\nBacked up first: ${backupPath?.split('/').pop()}`
+            + (wroteDatabase ? '\nReopen rekordbox to see it.' : '')
           : '';
 
         const failureMessage = failureCount > 0
-          ? `\n⚠️ ${failureCount} track${failureCount > 1 ? 's' : ''} marked as unlocatable`
+          ? `\n${failureCount} track${failureCount > 1 ? 's' : ''} marked as unlocatable.`
           : '';
 
         const notificationType = failureCount > 0 && successCount === 0 ? 'error' :
                                failureCount > 0 ? 'info' : 'success';
 
         showNotification(notificationType,
-          `✅ Auto-relocated ${successCount}/${tracks.length} tracks${failureMessage}${xmlUpdateMessage}`
+          `Auto-relocated ${successCount} of ${tracks.length} tracks.${failureMessage}${writeMessage}`,
+          { important: true }
         );
       } else {
         setState(prev => ({ ...prev, isRelocating: false }));

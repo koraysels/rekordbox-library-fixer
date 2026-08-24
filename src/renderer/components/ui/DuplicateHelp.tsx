@@ -83,8 +83,10 @@ export const DuplicateHelp: React.FC = () => {
             <p className="te-value mb-1">Streaming tracks</p>
             <p>
               Tracks from TIDAL, Spotify and the like have no file on your disk by design. They
-              are labelled with their service and are never treated as damage; use the filter if
-              you want them out of the way.
+              are labelled with their service and are never treated as damage: a duplicated one
+              reads <span className="te-value">2 entries · streaming</span>, and the extra entry
+              says "nothing on disk" rather than offering a file to trash. Use the filter if you
+              want them out of the way.
             </p>
           </div>
 

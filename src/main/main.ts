@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net, Notification } from 'electron';
 import { pathToFileURL } from 'url';
@@ -14,7 +15,8 @@ import { mergeDuplicateEntries, type MergePlan } from './rekordboxDbWriter';
 import { isRekordboxRunning } from './rekordboxRunning';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
-import { assertWritableLibraryPath } from './librarySource';
+import { assertWritableLibraryPath, isRekordboxDatabasePath } from './librarySource';
+import { relocateTracksInDb } from './rekordboxDbRelocator';
 import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
@@ -851,6 +853,7 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
   tracks: any[];
   options: any;
   libraryPath: string;
+  dbKey?: string;
 }) => {
   appLogger.info(`🤖 IPC: Auto-relocating ${data.tracks.length} tracks using manual logic`);
 
@@ -859,8 +862,19 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
   activeOperations.set(operationId, cancelToken);
 
   try {
-    // Relocation rewrites the XML; never aim that at master.db.
-    assertWritableLibraryPath(data.libraryPath);
+    // A database-backed library is written through the database writer; an XML
+    // one through the XML writer. Fail before the search rather than after it
+    // when the database cannot be written at all.
+    if (isRekordboxDatabasePath(data.libraryPath)) {
+      if (!data.dbKey) {
+        throw new Error('The rekordbox database needs its key before it can be changed — paste it on the Library screen.');
+      }
+      if (isRekordboxRunning()) {
+        throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
+      }
+    } else {
+      assertWritableLibraryPath(data.libraryPath);
+    }
 
     let successCount = 0;
     const results: any[] = [];
@@ -1029,6 +1043,7 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
       success: boolean;
       data?: any;
       xmlUpdated?: boolean;
+      libraryUpdated?: boolean;
       tracksUpdated?: number;
       backupPath?: string;
       error?: string;
@@ -1047,38 +1062,11 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
           safeConsole.log('⚠️ No successful relocations to apply to XML');
           batchResult = { success: true, data: verificationResults, xmlUpdated: false, tracksUpdated: 0 };
         } else {
-          // Step 2b: Create backup of original XML
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          assertWritableLibraryPath(data.libraryPath);
-
-    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
-
-          const fs = require('fs');
-          fs.copyFileSync(data.libraryPath, backupPath);
-          safeConsole.log(`💾 Backup created: ${backupPath}`);
-
-          // Step 2c: Parse current library
-          const library = await rekordboxParser.parseLibrary(data.libraryPath);
-          safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
-
-          // Step 2d: Update track locations in the library
-          let tracksUpdated = 0;
-          for (const relocation of verifiedSuccessful) {
-            const track = library.tracks.get(relocation.trackId);
-            if (track && relocation.newLocation) {
-              // Update the track location
-              track.location = relocation.newLocation;
-              library.tracks.set(relocation.trackId, track);
-              tracksUpdated++;
-              safeConsole.log(`🎵 Auto-updated track "${track.name}": ${relocation.oldLocation} -> ${relocation.newLocation}`);
-            }
-          }
-
-          // Step 2e: Save updated library back to XML
-          if (tracksUpdated > 0) {
-            await rekordboxParser.saveLibrary(library, data.libraryPath);
-            safeConsole.log(`✅ XML updated with ${tracksUpdated} auto-relocated tracks`);
-            logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+          // Step 2b: Write the found files into whichever library is open.
+          const { tracksUpdated, backupPath, skipped } =
+            await applyRelocationsToLibrary(data.libraryPath, data.dbKey, verifiedSuccessful);
+          for (const skip of skipped) {
+            safeConsole.warn(`⚠️ Track ${skip.trackId} not relocated: ${skip.reason}`);
           }
 
           batchResult = {
@@ -1086,6 +1074,7 @@ ipcMain.handle('auto-relocate-tracks', async (_event, data: {
             data: verificationResults,
             backupPath,
             xmlUpdated: tracksUpdated > 0,
+            libraryUpdated: tracksUpdated > 0,
             tracksUpdated
           };
         }
@@ -1253,9 +1242,67 @@ ipcMain.handle('relocate-track', async (_, trackId: string, oldLocation: string,
   }
 });
 
+/**
+ * Write found files back into whichever library is open.
+ *
+ * A database-backed collection never reads an XML export, so relocating used to
+ * change nothing at all for it: the tracks stayed missing however many files the
+ * search found. Such a library is now edited directly, under the same two
+ * refusals as merging duplicates — rekordbox closed, and a backup taken first.
+ */
+async function applyRelocationsToLibrary(
+  libraryPath: string,
+  dbKey: string | undefined,
+  relocations: Array<{ trackId: string; newLocation?: string; oldLocation?: string }>
+): Promise<{ tracksUpdated: number; backupPath: string; skipped: Array<{ trackId: string; reason: string }> }> {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = `${libraryPath}.backup.${timestamp}`;
+
+  if (isRekordboxDatabasePath(libraryPath)) {
+    if (!dbKey) {
+      throw new Error('The rekordbox database needs its key before it can be changed — paste it on the Library screen.');
+    }
+    const outcome = relocateTracksInDb(
+      libraryPath,
+      dbKey,
+      relocations
+        .filter((r) => r.newLocation)
+        .map((r) => ({ trackId: r.trackId, newLocation: r.newLocation as string })),
+      { backupPath }
+    );
+    safeConsole.log(`✅ Database updated with ${outcome.tracksRelocated} relocated tracks`);
+    return { tracksUpdated: outcome.tracksRelocated, backupPath, skipped: outcome.skipped };
+  }
+
+  assertWritableLibraryPath(libraryPath);
+  fs.copyFileSync(libraryPath, backupPath);
+  safeConsole.log(`💾 Backup created: ${backupPath}`);
+
+  const library = await rekordboxParser.parseLibrary(libraryPath);
+  const skipped: Array<{ trackId: string; reason: string }> = [];
+  let tracksUpdated = 0;
+  for (const relocation of relocations) {
+    const track = library.tracks.get(relocation.trackId);
+    if (track && relocation.newLocation) {
+      track.location = relocation.newLocation;
+      library.tracks.set(relocation.trackId, track);
+      tracksUpdated++;
+    } else {
+      skipped.push({ trackId: relocation.trackId, reason: track ? 'no new location' : 'not in the library' });
+    }
+  }
+  if (tracksUpdated > 0) {
+    await rekordboxParser.saveLibrary(library, libraryPath);
+    safeConsole.log(`✅ XML updated with ${tracksUpdated} track location changes`);
+    logger.logLibrarySaving(libraryPath, library.tracks.size);
+  }
+  return { tracksUpdated, backupPath, skipped };
+}
+
 ipcMain.handle('batch-relocate-tracks', async (_, data: {
   libraryPath: string;
   relocations: any[];
+  dbKey?: string;
 }) => {
   safeConsole.log(`📁 IPC: Batch relocating ${data.relocations.length} tracks`);
   try {
@@ -1268,53 +1315,23 @@ ipcMain.handle('batch-relocate-tracks', async (_, data: {
       return { success: true, data: verificationResults };
     }
 
-    // Step 2: Create backup of original XML
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = `${data.libraryPath}.backup.${timestamp}`;
-
-    const fs = require('fs');
-    fs.copyFileSync(data.libraryPath, backupPath);
-    safeConsole.log(`📄 Backup created: ${backupPath}`);
-
-    // Step 3: Parse current library
-    const library = await rekordboxParser.parseLibrary(data.libraryPath);
-    safeConsole.log(`📚 Parsed library with ${library.tracks.size} tracks`);
-
-    // Step 4: Update track locations in the library (keep tracks in playlists)
-    let tracksUpdated = 0;
-    for (const relocation of successfulRelocations) {
-      const track = library.tracks.get(relocation.trackId);
-      if (track && relocation.newLocation) {
-        // Update the track location
-        track.location = relocation.newLocation;
-        library.tracks.set(relocation.trackId, track);
-        tracksUpdated++;
-        safeConsole.log(`🎵 Updated track "${track.name}" location: ${relocation.oldLocation} -> ${relocation.newLocation}`);
-      } else {
-        if (!track) {
-          safeConsole.warn(`⚠️ Track ${relocation.trackId} not found in library`);
-        }
-        if (!relocation.newLocation) {
-          safeConsole.warn(`⚠️ No new location provided for track ${relocation.trackId}`);
-        }
-      }
-    }
-
-    // Step 5: Save updated library back to XML
-    if (tracksUpdated > 0) {
-      await rekordboxParser.saveLibrary(library, data.libraryPath);
-      safeConsole.log(`✅ Updated XML saved with ${tracksUpdated} track location changes`);
-      logger.logLibrarySaving(data.libraryPath, library.tracks.size);
+    // Step 2: Write the new locations into whichever library is open — the
+    // XML, or rekordbox's database when that is what was loaded.
+    const { tracksUpdated, backupPath, skipped } =
+      await applyRelocationsToLibrary(data.libraryPath, data.dbKey, successfulRelocations);
+    for (const skip of skipped) {
+      safeConsole.warn(`⚠️ Track ${skip.trackId} not relocated: ${skip.reason}`);
     }
 
     const successCount = verificationResults.filter(r => r.success).length;
-    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${data.relocations.length} successful, XML updated with ${tracksUpdated} changes`);
+    safeConsole.log(`✅ Batch relocation complete: ${successCount}/${data.relocations.length} successful, library updated with ${tracksUpdated} changes`);
 
     return {
       success: true,
       data: verificationResults,
       backupPath,
       xmlUpdated: tracksUpdated > 0,
+      libraryUpdated: tracksUpdated > 0,
       tracksUpdated
     };
   } catch (error) {

@@ -4,6 +4,16 @@ export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'st
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
+/**
+ * `important` also raises an operating-system notification, for results worth
+ * knowing about when the window is not in front.
+ */
+export type ShowNotification = (
+  type: NotificationType,
+  message: string,
+  options?: { important?: boolean }
+) => void;
+
 export interface Notification {
   type: NotificationType;
   message: string;
@@ -211,12 +221,12 @@ declare global {
       // Track Relocation APIs
       findMissingTracks: (tracks: any) => Promise<any>;
       resetTrackLocations: (trackIds: string[]) => Promise<any>;
-      autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string }) => Promise<any>;
+      autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string, dbKey?: string }) => Promise<any>;
       cancelAutoRelocate: (operationId: string) => Promise<any>;
       onAutoRelocateProgress: (callback: (progress: any) => void) => () => void;
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
-      batchRelocateTracks: (data: { libraryPath: string; relocations: any[] }) => Promise<any>;
+      batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) => Promise<any>;
       // Cloud Sync APIs
       detectCloudSyncIssues: (tracks: any) => Promise<any>;
       fixCloudSyncIssue: (issue: CloudSyncIssue) => Promise<any>;

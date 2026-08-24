@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { LibraryData, NotificationType } from '../types';
+import type { LibraryData, ShowNotification } from '../types';
 import { useSettingsStore } from '../stores/settingsStore';
 
-export const useLibrary = (showNotification: (type: NotificationType, message: string) => void) => {
+export const useLibrary = (showNotification: ShowNotification) => {
   const [libraryPath, setLibraryPath] = useState<string>('');
   const [libraryData, setLibraryData] = useState<LibraryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
