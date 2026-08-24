@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.1] - 2026-08-24
+
+### 🎉 New Features
+- **Library tab**: Opening, inspecting and switching libraries now live in one place at the top of the sidebar, instead of the load screen appearing inside Duplicate Detection. With nothing loaded it holds the picker and the libraries found on this machine; with a library open it shows what is loaded — path, tracks, playlists, missing files, duplicate entries — and lets you close it or switch. The separate Statistics tab it duplicated is gone.
+- **Streaming tracks are recognised**: TIDAL, Spotify, Beatport, SoundCloud and Apple Music tracks have no file on disk by design. They are labelled with their service and can be filtered in or out. Previously they looked like damage — one library had 142 of them queued for removal.
+- **Relocation searches by title**: when the stored path is unusable — a folder, a path cut short by a bad import — the search falls back to the track title instead of giving up. Those entries were previously unfindable.
+- **System notifications**: finishing a scan or a resolve, and any failure, also raises a desktop notification, so long operations can run while you do something else.
+
+### 🐛 Bug Fixes
+- **Notifications stack and stay**: each new message replaced the previous one, so the result of an operation was routinely lost behind the next status update. Up to four are now shown, they last long enough to read (errors longest), they wrap instead of truncating, and they can be dismissed.
+- **Missing files are reported honestly**: a duplicate set whose files could not be read still showed a file count, implying something was on disk when the whole folder was gone. It now reads `2 entries · files missing`, and the set is labelled a metadata match rather than a fingerprint.
+- **"Go to File" says what is wrong**: for a path that no longer exists it silently did nothing, which reads as a dead button. It now reports that the file is not on disk.
+- **The load screen is centred**, and no tab is marked active behind it.
+- **Reopening the last library works for a database**: a `.db` path was sent through the XML parser, which failed while the message still claimed the library had been reopened.
+- **The mini-player is legible**: a dark bar wedged between the content and the footer in an otherwise light app, with overlapping controls. It now matches the theme and has room for its controls.
+- **The redundant read-only database banner is gone**, since the database is no longer read-only.
+
+### 📖 Documentation
+- The manual said `master.db` was read-only and that changes went through XML — untrue since direct database writing landed. It now also explains why an XML round-trip can never remove a track, and documents the Library tab, streaming tracks, broken entries, the backup manager and the notification behaviour. The in-app duplicate help gained sections on metadata matches and streaming tracks.
+
 ## [0.6.0] - 2026-08-22
 
 ### 🎉 New Features
