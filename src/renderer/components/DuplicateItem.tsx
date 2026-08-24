@@ -17,6 +17,7 @@ import { useSettingsStore } from '../stores/settingsStore';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { deletableFileCount, distinctFileCount } from '../utils/classifyDuplicateSet';
 import { normalizePathForCompare } from '../utils/normalizePath';
+import { streamingServiceOf } from '../utils/streamingSource';
 
 
 interface DuplicateItemProps {
@@ -191,6 +192,14 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                       <div className="flex items-center gap-1 min-w-0">
                         <PlayButton track={{ id: track.id, name: track.name, artist: track.artist, location: track.location }} />
                         <h4 className="font-medium text-sm truncate te-value font-te-mono">{track.name}</h4>
+                        {streamingServiceOf(track.location) && (
+                          <span
+                            className="text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border bg-te-grey-200 text-te-grey-600 border-te-grey-300 normal-case whitespace-nowrap"
+                            title="A streaming track: it has no file on disk, so nothing can be deleted for it."
+                          >
+                            {streamingServiceOf(track.location)}
+                          </span>
+                        )}
                       </div>
                       {resolutionStrategy !== 'manual' && (
                         isRecommended ? (

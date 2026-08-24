@@ -20,6 +20,7 @@ import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
 import { normalizePathForCompare } from '../utils/normalizePath';
 import { classifyDuplicateSet, looksLikePlayableFile } from '../utils/classifyDuplicateSet';
+import { isStreamingTrack } from '../utils/streamingSource';
 import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
@@ -59,23 +60,30 @@ const DuplicateDetector: React.FC = () => {
 
   // "Duplicate" covers two unrelated jobs: real duplicate FILES on disk, and
   // several rekordbox ENTRIES for one file. They are cleaned up separately.
-  const [kindFilter, setKindFilter] = useState<'all' | 'files' | 'entries'>('all');
+  const [kindFilter, setKindFilter] = useState<'all' | 'files' | 'entries' | 'streaming'>('all');
 
   const kindCounts = useMemo(() => {
-    let entries = 0, files = 0;
+    let entries = 0, files = 0, streaming = 0;
     for (const d of duplicates as any[]) {
+      if (d.tracks.some((t: any) => isStreamingTrack(t.location))) { streaming++; continue; }
       if (classifyDuplicateSet(d.tracks) === 'entries') { entries++; } else { files++; }
     }
-    return { entries, files };
+    return { entries, files, streaming };
   }, [duplicates]);
 
   // The filter narrows the list; Select All follows it, so you can act on just
   // the real duplicate files or just the same-file entries.
   const visibleDuplicates = useMemo(() => {
-    if (kindFilter === 'all') { return filteredDuplicates as any[]; }
-    return (filteredDuplicates as any[]).filter(
-      (d) => (classifyDuplicateSet(d.tracks) === 'entries') === (kindFilter === 'entries')
-    );
+    const sets = filteredDuplicates as any[];
+    if (kindFilter === 'all') { return sets; }
+    if (kindFilter === 'streaming') {
+      return sets.filter((d) => d.tracks.some((t: any) => isStreamingTrack(t.location)));
+    }
+    // Streaming sets belong to neither file group: they have no file at all.
+    return sets.filter((d) => {
+      if (d.tracks.some((t: any) => isStreamingTrack(t.location))) { return false; }
+      return (classifyDuplicateSet(d.tracks) === 'entries') === (kindFilter === 'entries');
+    });
   }, [filteredDuplicates, kindFilter]);
 
   // A set that the filter hides must not stay selected: Resolve would act on
@@ -563,6 +571,8 @@ const DuplicateDetector: React.FC = () => {
                     'Separate files on disk — resolving can move the extra files to the trash'],
                   ['entries', 'Same-file entries', kindCounts.entries,
                     'Several rekordbox entries for one file — resolving removes the extra entries, no file is touched'],
+                  ['streaming', 'Streaming', kindCounts.streaming,
+                    'TIDAL, Spotify and the like — these have no file on disk, so nothing can be deleted for them'],
                 ] as const).map(([value, label, count, hint], i) => (
                   <button
                     key={value}
