@@ -1,4 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
+import {
+  startDuplicateScan, cancelDuplicateScan, subscribeScan, getScanSnapshot,
+  consumeScanResult, type ScanResult,
+} from '../scan/duplicateScanSession';
 import {
   Search,
   Settings,
@@ -17,7 +21,6 @@ import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal, Duplic
 import { SettingsPanel } from './SettingsPanel';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
-import { upsertDuplicateSet } from '../utils/upsertDuplicateSet';
 import { normalizePathForCompare } from '../utils/normalizePath';
 import { classifyDuplicateSet, looksLikePlayableFile } from '../utils/classifyDuplicateSet';
 import { isStreamingTrack } from '../utils/streamingSource';
@@ -107,9 +110,14 @@ const DuplicateDetector: React.FC = () => {
   const [isLoadingDuplicates, setIsLoadingDuplicates] = useState(false);
   const [deleteFromDisk, setDeleteFromDisk] = useState(false);
   const [pendingDeletePaths, setPendingDeletePaths] = useState<string[] | null>(null);
-  const [scanProgress, setScanProgress] = useState<{ current: number; total: number; trackName?: string; setsFound: number } | null>(null);
   const [wasCancelled, setWasCancelled] = useState(false);
-  const scanOperationIdRef = React.useRef<string | null>(null);
+
+  // The scan lives outside this component (see duplicateScanSession), because
+  // switching tabs unmounts the page while the main process scans on.
+  const session = useSyncExternalStore(subscribeScan, getScanSnapshot);
+  const scanProgress = session.scanning ? session.progress : null;
+  // Resolving also blocks the page, so the two reasons to look busy are merged.
+  const busy = isScanning || session.scanning;
 
   // Preferences are now loaded in the useDuplicates hook
 
@@ -208,80 +216,69 @@ const DuplicateDetector: React.FC = () => {
     }
   }, [duplicates, selectedDuplicates, hasScanned, libraryPath, currentLibraryPath]);
 
+  /**
+   * Apply a finished scan. Kept apart from starting one because a scan can
+   * finish while the page is on another tab, and its result must still land.
+   */
+  const applyScanResult = useCallback((result: ScanResult) => {
+    if (result.error) {
+      showNotification('error', result.error);
+      return;
+    }
+    setDuplicates(result.duplicates);
+    setHasScanned(true);
+    setWasCancelled(result.cancelled);
+    showNotification(
+      result.cancelled ? 'info' : (result.duplicates.length > 0 ? 'info' : 'success'),
+      result.cancelled
+        ? `Scan cancelled — keeping ${result.duplicates.length} sets found so far`
+        : result.duplicates.length > 0
+          ? `Found ${result.duplicates.length} duplicate sets`
+          : 'No duplicates found in your library!',
+      // A full scan takes minutes; say so even if the window is behind others.
+      { important: !result.cancelled }
+    );
+  }, [setDuplicates, setHasScanned, showNotification]);
+
+  // Coming back to this tab: show the sets found while away, and apply a scan
+  // that finished in the meantime. Without this the page looked as if the scan
+  // had been interrupted, when only its display had gone.
+  useEffect(() => {
+    if (session.scanning && session.libraryPath === libraryPath) {
+      setDuplicates(session.sets);
+      return;
+    }
+    const pending = consumeScanResult();
+    if (pending && session.libraryPath === libraryPath) {
+      applyScanResult(pending);
+    }
+    // Only on arrival and whenever the session changes state, not per set.
+  }, [session.scanning, session.sets, session.libraryPath, libraryPath, setDuplicates, applyScanResult]);
+
   const scanForDuplicates = async () => {
     if (!libraryData) { return; }
     setIsScanning(true);
-    setScanProgress({ current: 0, total: libraryData.tracks.size, setsFound: 0 });
     setWasCancelled(false);
     setDuplicates([]);
-
-    // Sets stream in while the main process scans; each one is upserted so a
-    // growing set replaces its earlier version instead of appearing twice.
-    const stopSets = window.electronAPI.onDuplicateScanSet(({ set }: any) => {
-      setDuplicates((prev: any[]) =>
-        upsertDuplicateSet(prev, { ...set, pathPreferences: scanOptions.pathPreferences })
-      );
-    });
-    const stopProgress = window.electronAPI.onDuplicateScanProgress((p: any) => {
-      if (p.operationId) { scanOperationIdRef.current = p.operationId; }
-      if (p.type === 'progress' || p.type === 'start') {
-        setScanProgress({ current: p.current, total: p.total, trackName: p.trackName, setsFound: p.setsFound });
-      }
-    });
 
     // Let the browser paint the scanning state before the heavy, synchronous
     // work (Array.from over thousands of tracks + IPC clone) blocks the thread.
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    try {
-      const tracks = Array.from(libraryData.tracks.values());
-      const result = await window.electronAPI.findDuplicates({
-        tracks,
-        ...scanOptions
-      });
 
-      if (result.success) {
-        const duplicatesFound = result.data;
-
-        // Enhance duplicates with path preferences for resolution strategy
-        const enhancedDuplicates = duplicatesFound.map((duplicate: any) => ({
-          ...duplicate,
-          pathPreferences: scanOptions.pathPreferences
-        }));
-
-        setDuplicates(enhancedDuplicates);
-        setHasScanned(true);
-        setWasCancelled(!!result.cancelled);
-
-        showNotification(
-          result.cancelled ? 'info' : (duplicatesFound.length > 0 ? 'info' : 'success'),
-          result.cancelled
-            ? `Scan cancelled — keeping ${duplicatesFound.length} sets found so far`
-            : duplicatesFound.length > 0
-              ? `Found ${duplicatesFound.length} duplicate sets`
-              : 'No duplicates found in your library!',
-          // A full scan takes minutes; say so even if the window is behind others.
-          { important: !result.cancelled }
-        );
-      } else {
-        showNotification('error', result.error || 'Scan failed');
-      }
-    } catch {
-      showNotification('error', 'Failed to scan for duplicates');
-    } finally {
-      stopSets();
-      stopProgress();
-      scanOperationIdRef.current = null;
-      setScanProgress(null);
-      setIsScanning(false);
-    }
+    // The scan runs in a module-level session, so leaving this tab no longer
+    // throws away the progress and the sets found so far.
+    const result = await startDuplicateScan({
+      libraryPath,
+      tracks: Array.from(libraryData.tracks.values()),
+      scanOptions,
+    });
+    consumeScanResult();
+    applyScanResult(result);
+    setIsScanning(false);
   };
 
   const cancelScan = useCallback(async () => {
-    const id = scanOperationIdRef.current;
-    if (!id) { return; }
-    try {
-      await window.electronAPI.cancelDuplicateScan(id);
-    } catch {
+    if (!await cancelDuplicateScan()) {
       showNotification('error', 'Failed to cancel scan');
     }
   }, [showNotification]);
@@ -517,7 +514,7 @@ const DuplicateDetector: React.FC = () => {
           {/* Row 1 — the one thing you came here to do, plus finding your way
               around the result. The search grows; nothing else competes. */}
           <div className="flex items-center gap-3 px-4 pt-4">
-            {isScanning ? (
+            {busy ? (
               /* While scanning, this spot carries the progress and the way out.
                  It used to live in the empty results area, which disappears as
                  soon as the first streamed set arrives — taking Cancel with it. */
@@ -643,13 +640,13 @@ const DuplicateDetector: React.FC = () => {
                 <PopoverButton
                   onClick={resolveDuplicates}
                   disabled={isResolveDisabled}
-                  loading={isScanning}
+                  loading={busy}
                   icon={Sparkles}
                   title="Resolve Selected Duplicates"
                   description="Apply resolution strategy to selected duplicate sets"
                   variant="success"
                 >
-                  {isScanning ? 'Resolving...' : 'Resolve Selected'}
+                  {busy ? 'Resolving...' : 'Resolve Selected'}
                 </PopoverButton>
               </div>
             </div>
@@ -689,7 +686,7 @@ const DuplicateDetector: React.FC = () => {
               <p>Your library appears to be clean! No duplicate tracks were detected.</p>
             </div>
           </div>
-        ) : isScanning ? (
+        ) : busy ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center te-value max-w-md w-full px-6">
               <Loader2 size={48} className="mx-auto mb-4 text-te-orange animate-spin spinner-loading" />
