@@ -46,6 +46,29 @@ interface FileIndex {
   fuzzy: FuzzySearch<{ path: string; name: string }>;
 }
 
+/** Is this location too damaged to name a file? */
+function isDamagedLocation(location: string): boolean {
+  const p = (location ?? '').trim();
+  if (!p) { return true; }
+  if (p.endsWith('/') || p.endsWith('\\')) { return true; }
+  return !/\.[a-z0-9]{2,5}$/i.test(p);
+}
+
+/**
+ * What to search for. Normally the filename the track used to have; when that
+ * location is damaged, the track's title (with artist, when the title alone is
+ * very short) taken from the library instead.
+ */
+export function searchTermFor(track: MissingTrack): string {
+  if (!isDamagedLocation(track.originalLocation)) {
+    return path.basename(track.originalLocation, path.extname(track.originalLocation));
+  }
+  const title = (track.name ?? '').trim();
+  const artist = (track.artist ?? '').trim();
+  if (!title) { return artist; }
+  return title.length < 6 && artist ? `${artist} ${title}` : title;
+}
+
 export class TrackRelocator {
   private logger: Logger;
   private audioExtensions = ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg'];
@@ -162,7 +185,10 @@ export class TrackRelocator {
     options: RelocationOptions
   ): Promise<RelocationCandidate[]> {
     const candidates: RelocationCandidate[] = [];
-    const originalFileName = path.basename(track.originalLocation, path.extname(track.originalLocation));
+    // A damaged location gives a useless search term: a folder path yields the
+    // folder name, a path cut short yields half a name. The track's own title
+    // survives in the library, so search on that instead.
+    const originalFileName = searchTermFor(track);
 
     this.logger.info('TRACK_RELOCATOR_SEARCH_START', {
       trackId: track.id,

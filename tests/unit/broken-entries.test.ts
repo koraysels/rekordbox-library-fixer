@@ -40,10 +40,10 @@ describe('findBrokenEntries', () => {
     { id: '4', name: 'Cut', artist: 'D', location: '/Music/Remix Medley ' },
   ];
 
-  it('returns only the entries that can never point at a file', () => {
+  it('returns damaged locations, leaving streaming tracks out', () => {
     const broken = findBrokenEntries(tracks, present);
-    expect(broken.map((b) => b.trackId)).toEqual(['2', '3', '4']);
-    expect(broken.map((b) => b.reason)).toEqual(['folder', 'streaming', 'truncated']);
+    expect(broken.map((b) => b.trackId)).toEqual(['2', '4']);
+    expect(broken.map((b) => b.reason)).toEqual(['folder', 'truncated']);
   });
 
   it('leaves merely missing files alone, because those are relocatable', () => {
@@ -61,5 +61,17 @@ describe('describeReason', () => {
   it('explains each reason in plain words', () => {
     expect(describeReason('folder')).toMatch(/folder/i);
     expect(describeReason('streaming')).toMatch(/streaming/i);
+  });
+});
+
+describe('streaming tracks are not damaged', () => {
+  it('never offers a streaming entry for removal', () => {
+    // A real library held 142 TIDAL tracks. They have no file by design, and
+    // removing them would delete the user's streaming collection.
+    const broken = findBrokenEntries([
+      { id: '1', name: 'My Skin My Logo', artist: 'Solange', location: '/app/tidal:tracks:105015500' },
+      { id: '2', name: 'Cut', artist: 'X', location: '/Music/Remix Medley ' },
+    ], present);
+    expect(broken.map((b) => b.trackId)).toEqual(['2']);
   });
 });

@@ -2,6 +2,14 @@ import * as fs from 'fs';
 
 export type BrokenReason = 'folder' | 'streaming' | 'truncated' | 'missing' | 'empty';
 
+/**
+ * A streaming track has no file by design — it is not damaged and must never be
+ * offered for removal. Doing so would delete a user's TIDAL collection.
+ */
+export function isStreamingEntry(reason: BrokenReason | null): boolean {
+  return reason === 'streaming';
+}
+
 export interface BrokenEntry {
   trackId: string;
   name: string;
@@ -45,9 +53,13 @@ export function diagnoseLocation(
 }
 
 /**
- * Find entries that can never resolve to a file. Tracks whose file is simply
- * missing are excluded: those are relocatable, and removing them would throw
- * away cues and playlist membership the user still wants.
+ * Find entries whose location is damaged: a folder, a path cut short, or no
+ * location at all.
+ *
+ * Two kinds are deliberately excluded. A merely missing file is relocatable, so
+ * removing it would throw away cues and playlist membership. Streaming tracks
+ * have no file by design and are not damaged at all — offering to remove them
+ * would delete the user's TIDAL collection.
  */
 export function findBrokenEntries(
   tracks: Iterable<{ id: string; name?: string; artist?: string; location?: string }>,
@@ -56,7 +68,7 @@ export function findBrokenEntries(
   const broken: BrokenEntry[] = [];
   for (const track of tracks) {
     const reason = diagnoseLocation(track.location, exists);
-    if (!reason || reason === 'missing') { continue; }
+    if (!reason || reason === 'missing' || reason === 'streaming') { continue; }
     broken.push({
       trackId: track.id,
       name: track.name ?? '',
