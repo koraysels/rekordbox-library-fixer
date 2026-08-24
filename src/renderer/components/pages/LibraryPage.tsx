@@ -80,22 +80,6 @@ export const LibraryPage: React.FC = () => {
           ))}
         </div>
 
-        {stats.genreDistribution.length > 0 && (
-          <div className="card p-4">
-            <p className="te-label text-xs normal-case mb-2">Most common genres</p>
-            <div className="flex flex-wrap gap-1.5">
-              {stats.genreDistribution.slice(0, 8).map((genre: any) => (
-                <span
-                  key={genre.name}
-                  className="text-[11px] font-te-mono px-2 py-0.5 rounded-te border border-te-grey-300 bg-te-grey-100 text-te-grey-700 normal-case"
-                >
-                  {genre.name} <span className="text-te-grey-500">{genre.count}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div>
           <p className="te-label text-xs normal-case mb-2">Switch to another library</p>
           <EmptyLibraryState

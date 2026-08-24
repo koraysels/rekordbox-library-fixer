@@ -143,7 +143,7 @@ const AppWithRouter: React.FC = () => {
         ) : !libraryData && !worksWithoutLibrary ? (
           // Every feature page needs a library; point at the one place that
           // opens one instead of repeating the picker behind each tab.
-          <div className="flex-1 flex items-center justify-center">
+          <div className="h-full flex items-center justify-center">
             <div className="text-center te-value max-w-sm px-6">
               <Library size={44} className="mx-auto mb-3 text-te-grey-400" />
               <h3 className="te-title mb-2">No library open</h3>
