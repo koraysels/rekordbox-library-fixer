@@ -43,11 +43,12 @@ const AppWithRouter: React.FC = () => {
   const location = useLocation();
 
   // Derive active tab from route
-  const activeTab = pathToTab[location.pathname] || 'duplicates';
+  const routeTab = pathToTab[location.pathname] || 'duplicates';
 
   // Backups are wanted exactly when something went wrong and nothing is
   // loaded, so this page must not sit behind the load screen.
   const worksWithoutLibrary = ['/backups', '/history'].includes(location.pathname);
+
 
   // Custom hooks
   const { notification, showNotification } = useNotifications();
@@ -62,6 +63,10 @@ const AppWithRouter: React.FC = () => {
     clearStoredData,
     setLibraryData
   } = useLibrary(showNotification);
+
+// Choosing a library is an app-level step, not part of duplicate detection.
+  // Highlighting that tab behind the load screen suggested otherwise.
+  const showingLoadScreen = !libraryData && !worksWithoutLibrary;
 
   // Fetch route-specific cached data from Dexie
   const {
@@ -108,7 +113,7 @@ const AppWithRouter: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Navigation */}
       <Sidebar
-        activeTab={activeTab}
+        activeTab={showingLoadScreen ? null : routeTab}
         libraryData={libraryData}
         libraryPath={libraryPath}
         isLoading={isLoading}

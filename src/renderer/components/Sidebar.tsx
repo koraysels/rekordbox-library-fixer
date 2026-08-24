@@ -68,7 +68,7 @@ const navItems = [
 ];
 
 interface SidebarProps {
-    activeTab: TabType;
+    activeTab: TabType | null;
     libraryData: LibraryData | null;
     libraryPath?: string;
     isLoading: boolean;
