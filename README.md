@@ -380,7 +380,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.1** *(current)*
+**v0.6.2** *(current)*
+- Relocation writes into `master.db` too, so a database-backed library really stops having missing tracks
+- Identical notifications no longer stack; a repeat counts up instead
+- A duplicated streaming track is never offered a file to delete
+
+**v0.6.1**
 - Library tab holding the picker, the statistics of what is loaded, and unload/switch
 - Streaming tracks (TIDAL, Spotify, Beatport, SoundCloud, Apple Music) labelled and filterable, never treated as damage
 - Relocation falls back to the track title when the stored path is damaged
