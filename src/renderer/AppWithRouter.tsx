@@ -12,7 +12,7 @@ import type { TabType, LibraryData, NotificationType } from './types';
 interface AppContextType {
   libraryData: LibraryData | null;
   libraryPath: string;
-  showNotification: (type: NotificationType, message: string) => void;
+  showNotification: (type: NotificationType, message: string, options?: { important?: boolean }) => void;
   setLibraryData: (data: LibraryData) => void;
   /** Open a library file by path, e.g. after restoring a backup. */
   onLoadLibrary?: (path: string) => void;
@@ -57,7 +57,7 @@ const AppWithRouter: React.FC = () => {
 
 
   // Custom hooks
-  const { notification, showNotification } = useNotifications();
+  const { notifications, showNotification, dismissNotification } = useNotifications();
   const {
     libraryPath,
     libraryData,
@@ -131,7 +131,7 @@ const AppWithRouter: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Notification */}
-        {notification && <NotificationToast notification={notification} />}
+        <NotificationToast notifications={notifications} onDismiss={dismissNotification} />
 
         {/* Content with route-based rendering */}
         <div className="flex-1 pt-3 pb-6 overflow-hidden">
@@ -168,15 +168,6 @@ const AppWithRouter: React.FC = () => {
           }}>
             {/* No mode="wait": the outgoing page's exit would otherwise have to
                 finish before the new one starts, doubling the perceived delay. */}
-            {libraryPath.toLowerCase().endsWith('.db') && (
-              <div className="flex-shrink-0 mx-4 mb-2 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
-                <p className="text-xs font-te-mono text-te-amber-600 normal-case">
-                  Working on rekordbox&apos;s own database. Resolving duplicates edits it
-                  directly, with rekordbox closed and a backup taken first. Track relocation
-                  cannot write here yet — load an XML library for that.
-                </p>
-              </div>
-            )}
             <AnimatePresence initial={false}>
               <motion.div
                 key={location.pathname}

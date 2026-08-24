@@ -258,7 +258,9 @@ const DuplicateDetector: React.FC = () => {
             ? `Scan cancelled — keeping ${duplicatesFound.length} sets found so far`
             : duplicatesFound.length > 0
               ? `Found ${duplicatesFound.length} duplicate sets`
-              : 'No duplicates found in your library!'
+              : 'No duplicates found in your library!',
+          // A full scan takes minutes; say so even if the window is behind others.
+          { important: !result.cancelled }
         );
       } else {
         showNotification('error', result.error || 'Scan failed');
@@ -321,7 +323,8 @@ const DuplicateDetector: React.FC = () => {
           `Merged ${plans.length} set${plans.length !== 1 ? 's' : ''} in rekordbox — `
           + `${result.entriesRemoved} extra entr${result.entriesRemoved === 1 ? 'y' : 'ies'} removed, `
           + `${result.playlistLinksMoved} playlist link${result.playlistLinksMoved === 1 ? '' : 's'} moved to the kept track. `
-          + 'Reopen rekordbox to see it. The database was backed up first — undo from the Backups tab.'
+          + 'Reopen rekordbox to see it. The database was backed up first — undo from the Backups tab.',
+          { important: true }
         );
         void duplicationHistoryStorage.record({
           libraryPath,
@@ -334,7 +337,7 @@ const DuplicateDetector: React.FC = () => {
         setDuplicates((prev: any[]) => prev.filter((d) => !selectedDuplicates.has(d.id)));
         clearAll();
       } else {
-        showNotification('error', result.error || 'Could not update the rekordbox database');
+        showNotification('error', result.error || 'Could not update the rekordbox database', { important: true });
       }
     } finally {
       setIsScanning(false);
@@ -378,7 +381,7 @@ const DuplicateDetector: React.FC = () => {
           }
         }
         msg += `\n📁 Library backup: ${result.backupPath}`;
-        showNotification('success', msg);
+        showNotification('success', msg, { important: true });
 
         // Record what happened so the History tab can be used to verify it.
         const details: ActivityDetail[] = [];
@@ -498,7 +501,9 @@ const DuplicateDetector: React.FC = () => {
           library on start made it easy to act on the wrong one. */}
       {libraryPath && (
         <div className="flex-shrink-0 flex items-center gap-2 px-4 py-1.5 bg-te-grey-100 border-b border-te-grey-300">
-          <span className="te-label text-[10px] normal-case">Working on</span>
+          <span className="te-label text-[10px] normal-case">
+            Working on{libraryPath.toLowerCase().endsWith('.db') ? ' rekordbox database' : ''}
+          </span>
           <span className="te-path-tail text-[11px] text-te-grey-700 flex-1" title={libraryPath}>
             {libraryPath}
           </span>

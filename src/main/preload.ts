@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   detectRekordboxDb: () => ipcRenderer.invoke('detect-rekordbox-db'),
   scanForLibraries: () => ipcRenderer.invoke('scan-for-libraries'),
   isRekordboxRunning: () => ipcRenderer.invoke('is-rekordbox-running'),
+  showSystemNotification: (data: { type: string; message: string }) =>
+    ipcRenderer.invoke('show-system-notification', data),
   mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: any[] }) =>
     ipcRenderer.invoke('merge-duplicates-in-db', data),
   findBrokenEntries: (tracks: any[]) => ipcRenderer.invoke('find-broken-entries', tracks),

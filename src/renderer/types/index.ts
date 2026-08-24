@@ -2,7 +2,7 @@
 
 export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics' | 'history' | 'backups' | 'library';
 
-export type NotificationType = 'success' | 'error' | 'info';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 export interface Notification {
   type: NotificationType;
@@ -183,6 +183,7 @@ declare global {
       detectRekordboxDb: () => Promise<{ found: boolean; dbPath: string | null; variant: string | null }>;
       scanForLibraries: () => Promise<Array<{ kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string }>>;
       isRekordboxRunning: () => Promise<{ running: boolean }>;
+      showSystemNotification?: (data: { type: string; message: string }) => Promise<{ success: boolean }>;
       mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: Array<{ keepId: string; removeIds: string[] }> }) => Promise<{ success: boolean; entriesRemoved?: number; playlistLinksMoved?: number; backupPath?: string; error?: string }>;
       findBrokenEntries: (tracks: any[]) => Promise<{ success: boolean; data?: Array<{ trackId: string; name: string; artist: string; location: string; reason: string }>; error?: string }>;
       removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) => Promise<{ success: boolean; removed?: number; backupPath?: string; error?: string }>;
