@@ -206,6 +206,17 @@ const TrackRelocator: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-te-grey-100">
+      {/* Relocation still writes XML, so it cannot help a database-backed
+          library. Said here, where it applies, rather than on every page. */}
+      {libraryPath.toLowerCase().endsWith('.db') && (
+        <div className="flex-shrink-0 mx-4 mt-3 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
+          <p className="text-xs font-te-mono text-te-amber-600 normal-case">
+            Relocation cannot write to the rekordbox database yet — load an XML library to fix
+            moved files.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <PageHeader
         title="Track Relocator"

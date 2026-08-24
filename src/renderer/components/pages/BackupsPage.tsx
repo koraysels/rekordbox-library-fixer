@@ -39,7 +39,8 @@ export const BackupsPage: React.FC = () => {
       if (result.success) {
         showNotification(
           'success',
-          'Library restored. Your previous state was kept as a new backup, so you can go forward again.'
+          'Library restored. Your previous state was kept as a new backup, so you can go forward again.',
+          { important: true }
         );
         await load();
         // The restored file is on disk but the app still holds the old one in

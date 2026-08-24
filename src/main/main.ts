@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, protocol, net, Notification } from 'electron';
 import { pathToFileURL } from 'url';
 import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { RekordboxParser } from './rekordboxParser';
@@ -476,6 +476,30 @@ ipcMain.handle('detect-rekordbox-db', async () => detectRekordboxDb());
 ipcMain.handle('scan-for-libraries', async () => scanForLibraries());
 
 ipcMain.handle('is-rekordbox-running', async () => ({ running: isRekordboxRunning() }));
+
+/**
+ * Raise an operating-system notification for results worth knowing about when
+ * the window is not in front: a finished scan, a failed write.
+ */
+ipcMain.handle('show-system-notification', async (_e, data: { type: string; message: string }) => {
+  try {
+    if (!Notification.isSupported()) { return { success: false }; }
+    const titles: Record<string, string> = {
+      success: 'Rekordbox Library Fixer',
+      error: 'Rekordbox Library Fixer — something went wrong',
+      warning: 'Rekordbox Library Fixer — check this',
+      info: 'Rekordbox Library Fixer',
+    };
+    new Notification({
+      title: titles[data.type] ?? titles.info,
+      body: data.message,
+      silent: data.type === 'success',
+    }).show();
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+});
 
 ipcMain.handle('merge-duplicates-in-db', async (_e, data: {
   dbPath: string; key: string; plans: MergePlan[];
