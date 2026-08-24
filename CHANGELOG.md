@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.2] - 2026-08-24
+
+### 🎉 New Features
+- **Relocation writes into `master.db`**: a database-backed collection never reads an XML export, so relocating changed nothing at all for it — the tracks stayed missing however many files the search found. Both the manual and the automatic path now write through whichever writer fits the open library. Only `FolderPath` and `FileNameL` change, so cues, beatgrids, playlists and the analysis files keyed by `rb_file_id` stay attached to the same track, and each changed row takes the next update number so rekordbox notices the change at all. Same two refusals as merging duplicates: rekordbox closed, and a backup before the database is opened for writing. A plan whose new path is not a file that exists is skipped rather than written — storing an unverified path would turn a findable track into an unfindable one. Verified against a copy of a real 12,630-track database.
+
+### 🐛 Bug Fixes
+- **Identical notifications no longer stack**: progress updates repeat themselves constantly, and four copies of one message say nothing the first said. A repeat restarts the message's clock and counts up (`×3`) instead of taking another slot.
+- **A duplicated streaming track is not offered a file to delete**: the extra entry was labelled "Own file · trashed if enabled" and carried a "Go to File" button, for a `tidal:tracks:…` id that is not a file at all. It now reads "Extra listing · nothing on disk", the set says `2 entries · streaming` instead of `0 files`, and the button is gone.
+- **The XML write guard explains itself**: it still refused a `.db` path, correctly, but said the database was read-only — which stopped being true when direct database writing landed.
+
 ## [0.6.1] - 2026-08-24
 
 ### 🎉 New Features
