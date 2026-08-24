@@ -8,6 +8,7 @@ import {
     Copy,
     History,
     Archive,
+    Library,
     FolderOpen,
     X,
     HelpCircle
@@ -16,6 +17,13 @@ import {motion} from 'framer-motion';
 import type {TabType, LibraryData} from '../types';
 
 const navItems = [
+    {
+        id: 'library' as TabType,
+        path: '/library',
+        label: 'Library',
+        icon: Library,
+        description: 'Choose a library, see what is in it, or switch to another'
+    },
     {
         id: 'duplicates' as TabType,
         path: '/',
@@ -111,7 +119,7 @@ export function Sidebar({
                         // History and Backups must stay reachable without a
                         // library: they are what you turn to when something
                         // went wrong and nothing is loaded.
-                        const worksWithoutLibrary = ['duplicates', 'history', 'backups'];
+                        const worksWithoutLibrary = ['library', 'duplicates', 'history', 'backups'];
                         const isDisabled = !libraryData && !worksWithoutLibrary.includes(item.id);
 
                         if (isDisabled) {

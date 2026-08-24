@@ -7,6 +7,7 @@ import { MaintenancePage } from './components/pages/MaintenancePage';
 import { StatisticsPage } from './components/pages/StatisticsPage';
 import { HistoryPage } from './components/pages/HistoryPage';
 import { BackupsPage } from './components/pages/BackupsPage';
+import { LibraryPage } from './components/pages/LibraryPage';
 
 // Root route - wraps entire app
 export const rootRoute = createRootRoute({
@@ -56,6 +57,12 @@ export const backupsRoute = createRoute({
   component: BackupsPage,
 });
 
+export const libraryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/library',
+  component: LibraryPage,
+});
+
 // Create the route tree
 const routeTree = rootRoute.addChildren([
   duplicatesRoute,
@@ -65,6 +72,7 @@ const routeTree = rootRoute.addChildren([
   statisticsRoute,
   historyRoute,
   backupsRoute,
+  libraryRoute,
 ]);
 
 // Use memory history so file:// protocol in packaged Electron doesn't break routing
