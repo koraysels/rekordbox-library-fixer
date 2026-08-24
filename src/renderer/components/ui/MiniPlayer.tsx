@@ -55,24 +55,38 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ showNotification }) => {
   return (
     <div
       data-testid="mini-player"
-      className={`flex-shrink-0 bg-te-grey-700 border-t border-te-grey-600 px-3 py-1.5 ${currentTrack ? '' : 'hidden'}`}
+      // Light like the rest of the app: a dark bar squeezed above the footer
+      // read as a rendering fault rather than a player.
+      className={`flex-shrink-0 bg-te-grey-200 border-t-2 border-te-grey-300 px-4 py-2 ${currentTrack ? '' : 'hidden'}`}
     >
-      <MediaController audio className="w-full" style={{ '--media-background-color': 'transparent' } as React.CSSProperties}>
+      <MediaController audio className="w-full" style={{
+          '--media-background-color': 'transparent',
+          '--media-control-background': 'transparent',
+          '--media-control-hover-background': 'transparent',
+          '--media-icon-color': '#3f3f46',
+          '--media-range-track-color': '#d4d4d8',
+          '--media-range-bar-color': '#f97316',
+          '--media-range-thumb-color': '#f97316',
+          '--media-text-color': '#52525b',
+        } as React.CSSProperties}>
         {/* eslint-disable-next-line jsx-a11y/media-has-caption -- music preview, captions not applicable */}
         <audio slot="media" ref={audioRef} />
         <div className="flex items-center gap-3">
-          <MediaPlayButton className="w-8 h-8 rounded bg-te-grey-600 hover:bg-te-orange transition-colors" />
-          <div className="min-w-0 w-48">
-            <p className="text-xs font-te-mono text-white truncate">{currentTrack?.name}</p>
-            <p className="text-[10px] font-te-mono text-te-grey-400 truncate">{currentTrack?.artist}</p>
+          <MediaPlayButton className="w-9 h-9 flex-shrink-0 rounded-te bg-te-orange hover:bg-te-orange/90 transition-colors" />
+          <div className="min-w-0 w-56 flex-shrink-0">
+            <p className="text-xs font-te-mono text-te-grey-800 truncate">{currentTrack?.name}</p>
+            <p className="text-[10px] font-te-mono text-te-grey-500 truncate normal-case">{currentTrack?.artist}</p>
           </div>
-          <MediaTimeRange className="flex-1 h-8" />
-          <MediaTimeDisplay showDuration className="text-[10px] font-te-mono text-te-grey-300" />
-          <MediaMuteButton className="w-7 h-7" />
-          <MediaVolumeRange className="w-20 h-8" />
+          <MediaTimeRange className="flex-1 min-w-0 h-9" />
+          <MediaTimeDisplay
+            showDuration
+            className="text-[10px] font-te-mono text-te-grey-600 flex-shrink-0 tabular-nums"
+          />
+          <MediaMuteButton className="w-8 h-8 flex-shrink-0" />
+          <MediaVolumeRange className="w-24 h-9 flex-shrink-0" />
           <button
             onClick={() => audioController.stop()}
-            className="p-1 text-te-grey-400 hover:text-te-orange transition-colors"
+            className="p-1.5 flex-shrink-0 text-te-grey-500 hover:text-te-orange transition-colors"
             title="Stop and close player"
           >
             <X size={14} />

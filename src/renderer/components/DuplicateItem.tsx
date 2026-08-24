@@ -37,6 +37,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [revealProblem, setRevealProblem] = useState<string | null>(null);
 
   const { openFileLocation } = useFileOperations();
   const preferLossless = useSettingsStore((state) => state.scanOptions.preferLossless);
@@ -70,9 +71,15 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   // really are; "5 entries · 2 files" answers it outright.
   const fileCount = useMemo(() => distinctFileCount(duplicate.tracks), [duplicate.tracks]);
   const entryCount = duplicate.tracks.length;
+  // With no file on disk there is no file count worth stating; saying "1 file"
+  // implied something was there when the whole folder was gone.
   const kindBadge = {
-    label: `${entryCount} entries · ${fileCount} file${fileCount !== 1 ? 's' : ''}`,
-    className: fileCount > 1
+    label: duplicate.filesMissing
+      ? `${entryCount} entries · files missing`
+      : `${entryCount} entries · ${fileCount} file${fileCount !== 1 ? 's' : ''}`,
+    className: duplicate.filesMissing
+      ? 'bg-te-grey-200 text-te-grey-600 border-te-grey-300'
+      : fileCount > 1
       ? 'bg-te-amber-100 text-te-amber-600 border-te-amber-200'
       : 'bg-te-grey-200 text-te-grey-700 border-te-grey-300',
   };
@@ -140,7 +147,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               <span className="text-xs text-zinc-400">•</span>
               <span
                 className={`text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border normal-case ${kindBadge.className}`}
-                title={fileCount === 1
+                title={duplicate.filesMissing
+                  ? 'These files are not on disk, so the set was matched on artist, title and length. Resolving removes the extra entries; relocation can look for the files.'
+                  : fileCount === 1
                   ? 'Every entry points at the same file on disk — resolving removes the extra entries and touches no file.'
                   : `${entryCount} rekordbox entries pointing at ${fileCount} files on disk. Resolving can move ${filesToRemove} file${filesToRemove !== 1 ? 's' : ''} to the trash.`}
               >
@@ -269,7 +278,9 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             onClick={(e) => {
                               e.stopPropagation();
                               console.log('🔵 Go to File button clicked!', track.location);
-                              openFileLocation(track.location);
+                              void openFileLocation(track.location).then((problem) => {
+                                if (problem) { setRevealProblem(problem); }
+                              });
                             }}
                             className="flex items-center space-x-1 px-2 py-1 text-xs bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border border-te-orange transition-all duration-200 font-te-mono"
                             title="Open file location in system file manager"
@@ -285,6 +296,11 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                         >
                           {track.location || 'No file path available'}
                         </div>
+                        {revealProblem && (
+                          <p className="te-label text-[10px] normal-case mt-1 text-te-amber-600">
+                            {revealProblem}
+                          </p>
+                        )}
                       </div>
                     </div>
 

@@ -802,6 +802,11 @@ ipcMain.handle('get-logs-info', async () => {
 // Show file in system file manager
 ipcMain.handle('show-file-in-folder', async (_, filePath: string) => {
   try {
+    // showItemInFolder does nothing at all for a path that is not there, which
+    // reads as a dead button. Say what happened instead.
+    if (!require('fs').existsSync(filePath)) {
+      return { success: false, error: 'That file is not on disk any more.' };
+    }
     shell.showItemInFolder(filePath);
     return { success: true };
   } catch (error) {
