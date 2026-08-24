@@ -10,6 +10,12 @@ export interface DuplicateSet {
   tracks: Track[];
   matchType: 'fingerprint' | 'metadata';
   confidence: number;
+  /**
+   * True when the files could not be read, so the set was matched on metadata
+   * alone. Saying "2 entries · 1 file" for tracks whose files are all gone
+   * implies something is on disk that is not.
+   */
+  filesMissing?: boolean;
 }
 
 export interface DuplicateOptions {
@@ -85,6 +91,7 @@ export class DuplicateDetector {
           tracks: [...group],
           matchType: guessed ? 'metadata' : 'fingerprint',
           confidence: guessed ? 75 : 100,
+          filesMissing: guessed,
         });
       };
 
@@ -129,6 +136,7 @@ export class DuplicateDetector {
             // are identical: say so rather than claiming a content match.
             matchType: guessed ? 'metadata' : 'fingerprint',
             confidence: guessed ? 75 : 100,
+            filesMissing: guessed,
           });
           duplicateTracks.forEach(t => processedTracks.add(t.id));
         }
