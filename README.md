@@ -380,7 +380,10 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.2** *(current)*
+**v0.6.3** *(current)*
+- Leaving the Duplicate Detection tab mid-scan no longer loses the scan's progress and results
+
+**v0.6.2**
 - Relocation writes into `master.db` too, so a database-backed library really stops having missing tracks
 - Identical notifications no longer stack; a repeat counts up instead
 - A duplicated streaming track is never offered a file to delete

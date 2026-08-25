@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.3] - 2026-08-25
+
+### 🐛 Bug Fixes
+- **Switching tabs no longer looks like it interrupts the scan**: the scan itself always ran on in the main process, but every streamed set, the live progress and the final result lived in the Duplicate Detection page — and the router unmounts that page on a tab switch. Coming back showed an empty page with no scan in sight, and the result landed nowhere. The scan now runs in a session that outlives navigation; the page subscribes on arrival and picks up the sets found so far, the progress, or a scan that finished while you were away.
+
 ## [0.6.2] - 2026-08-24
 
 ### 🎉 New Features
