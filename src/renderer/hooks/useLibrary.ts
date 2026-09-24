@@ -61,13 +61,19 @@ export const useLibrary = (showNotification: ShowNotification) => {
    * Load straight from Rekordbox's own database instead of an exported XML.
    * Read-only: the app copies master.db and never writes to it.
    */
-  const loadFromDb = useCallback(async (): Promise<boolean> => {
+  const loadFromDb = useCallback(async (dbPath?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const detected = await window.electronAPI.detectRekordboxDb();
-      if (!detected.found || !detected.dbPath) {
-        showNotification('error', 'No rekordbox database found on this machine — use XML import instead.');
-        return false;
+      // A machine can hold more than one (rekordbox 6 beside 7), so opening the
+      // one that was actually clicked matters; detection is only the fallback.
+      let target = dbPath;
+      if (!target) {
+        const detected = await window.electronAPI.detectRekordboxDb();
+        if (!detected.found || !detected.dbPath) {
+          showNotification('error', 'No rekordbox database found on this machine — use XML import instead.');
+          return false;
+        }
+        target = detected.dbPath;
       }
 
       const key = useSettingsStore.getState().rekordboxDbKey;
@@ -77,9 +83,9 @@ export const useLibrary = (showNotification: ShowNotification) => {
       }
 
       setLibraryData(null);
-      const result = await window.electronAPI.parseRekordboxDb({ dbPath: detected.dbPath, key });
+      const result = await window.electronAPI.parseRekordboxDb({ dbPath: target, key });
       if (result.success && result.data) {
-        setLibraryPath(detected.dbPath);
+        setLibraryPath(target);
         setLibraryData(result.data);
         showNotification('success', `Loaded ${result.data.tracks.size} tracks from the rekordbox database`);
         return true;
@@ -113,7 +119,7 @@ export const useLibrary = (showNotification: ShowNotification) => {
           // it through the XML parser failed while the message still claimed
           // the library had been reopened.
           const reopened = savedPath.toLowerCase().endsWith('.db')
-            ? await loadFromDb()
+            ? await loadFromDb(savedPath)
             : await loadLibrary(savedPath);
           if (reopened) {
             // Say so: restoring the last library silently made it easy to act

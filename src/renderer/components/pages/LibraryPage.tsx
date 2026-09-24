@@ -25,7 +25,7 @@ export const LibraryPage: React.FC = () => {
           <EmptyLibraryState
             onSelectLibrary={() => onSelectLibrary?.()}
             onLoadLibrary={(p) => onLoadLibrary?.(p)}
-            onLoadFromDb={() => onLoadFromDb?.()}
+            onLoadFromDb={(p) => onLoadFromDb?.(p)}
           />
         </div>
       </div>
@@ -85,7 +85,7 @@ export const LibraryPage: React.FC = () => {
           <EmptyLibraryState
             onSelectLibrary={() => onSelectLibrary?.()}
             onLoadLibrary={(p) => onLoadLibrary?.(p)}
-            onLoadFromDb={() => onLoadFromDb?.()}
+            onLoadFromDb={(p) => onLoadFromDb?.(p)}
           />
         </div>
       </div>

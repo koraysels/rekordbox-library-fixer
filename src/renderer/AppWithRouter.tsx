@@ -17,7 +17,7 @@ interface AppContextType {
   /** Open a library file by path, e.g. after restoring a backup. */
   onLoadLibrary?: (path: string) => void;
   onSelectLibrary?: () => void;
-  onLoadFromDb?: () => void;
+  onLoadFromDb?: (dbPath?: string) => void;
   onUnloadLibrary?: () => void;
 }
 
