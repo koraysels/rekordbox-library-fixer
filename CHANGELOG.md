@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.4] - 2026-09-24
+
+### 🎉 New Features
+- **Remove entries that can never be found**: the broken-entry cleanup now works on `master.db` as well as XML, so a database-backed collection can finally be cleared of entries pointing at nothing. Tracks whose file is merely gone are behind an opt-in tick box — the relocator is usually the better answer, and removing one throws away its cues and its place in every playlist, but a library can hold thousands that will never be found again and there was no way to clear those at all. Every id is re-checked against the library before it goes: an entry whose file turns out to be there, or a streaming track, is left alone and reported. Rekordbox must be closed and a backup is taken first.
+
+### 🐛 Bug Fixes
+- **Streaming tracks are not missing files**: every TIDAL or Spotify entry counted as missing, so the app's missing list and what rekordbox shows looked unrelated in any library with streamed tracks. They have no file by design, rekordbox does not mark them missing, and no relocation could ever find one.
+- **The auto-relocation dialog can always be closed**: it decided it was finished from the completion event alone, so a run that ended without emitting one left a Cancel button for work that had already finished and no way out of the dialog. The run being over decides it now.
+
 ## [0.6.3] - 2026-08-25
 
 ### 🐛 Bug Fixes

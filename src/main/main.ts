@@ -10,8 +10,8 @@ import { computeDeletablePaths } from './safeDeletePaths';
 import { detectRekordboxDb } from './rekordboxDbLocator';
 import { scanForLibraries } from './libraryScanner';
 import { listBackups, restoreBackup, deleteBackup, scanAllBackups } from './backupManager';
-import { findBrokenEntries } from './brokenEntries';
-import { mergeDuplicateEntries, type MergePlan } from './rekordboxDbWriter';
+import { findBrokenEntries, diagnoseLocation, isStreamingLocation } from './brokenEntries';
+import { mergeDuplicateEntries, removeEntriesFromDb, type MergePlan } from './rekordboxDbWriter';
 import { isRekordboxRunning } from './rekordboxRunning';
 import { parseDb } from './rekordboxDbParser';
 import { handleParseRekordboxDb } from './rekordboxDbIpc';
@@ -516,9 +516,12 @@ ipcMain.handle('merge-duplicates-in-db', async (_e, data: {
   }
 });
 
-ipcMain.handle('find-broken-entries', async (_e, tracks: any[]) => {
+ipcMain.handle('find-broken-entries', async (_e, args: any[] | { tracks: any[]; includeMissing?: boolean }) => {
   try {
-    return { success: true, data: findBrokenEntries(tracks) };
+    // Older callers passed the array straight in.
+    const tracks = Array.isArray(args) ? args : args.tracks;
+    const includeMissing = Array.isArray(args) ? false : !!args.includeMissing;
+    return { success: true, data: findBrokenEntries(tracks, undefined, { includeMissing }) };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
@@ -532,7 +535,26 @@ ipcMain.handle('remove-broken-entries', async (_e, data: { libraryPath: string; 
     require('fs').copyFileSync(data.libraryPath, backupPath);
 
     const library = await rekordboxParser.parseLibrary(data.libraryPath);
-    const removing = new Set(data.trackIds);
+
+    // Check every id against the library before it goes. A stale list from the
+    // renderer, or a drive that was unmounted during the scan and is back now,
+    // must not cost a real track its cues and its place in every playlist.
+    const removing = new Set<string>();
+    const kept: Array<{ trackId: string; reason: string }> = [];
+    for (const id of data.trackIds) {
+      const track = library.tracks.get(id);
+      if (!track) { kept.push({ trackId: id, reason: 'not in the library' }); continue; }
+      if (isStreamingLocation(track.location)) {
+        kept.push({ trackId: id, reason: 'a streaming track, which has no file by design' });
+        continue;
+      }
+      if (diagnoseLocation(track.location) === null) {
+        kept.push({ trackId: id, reason: 'its file is there after all' });
+        continue;
+      }
+      removing.add(id);
+    }
+
     let removed = 0;
     for (const id of removing) {
       if (library.tracks.delete(id)) { removed++; }
@@ -551,7 +573,20 @@ ipcMain.handle('remove-broken-entries', async (_e, data: { libraryPath: string; 
     prune(library.playlists);
 
     await rekordboxParser.saveLibrary(library, data.libraryPath);
-    return { success: true, removed, backupPath };
+    return { success: true, removed, kept, backupPath };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('remove-entries-in-db', async (_e, data: {
+  dbPath: string; key: string; trackIds: string[];
+}) => {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${data.dbPath}.backup.${stamp}`;
+    const outcome = removeEntriesFromDb(data.dbPath, data.key, data.trackIds, { backupPath });
+    return { success: true, ...outcome };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }

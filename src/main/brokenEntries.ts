@@ -62,23 +62,34 @@ export function diagnoseLocation(
   return null;
 }
 
+export interface FindBrokenOptions {
+  /**
+   * Also list tracks whose file is merely gone. Off by default and opt-in in
+   * the UI: those are relocatable, and removing one throws away its cues and
+   * its place in every playlist. Some libraries hold thousands that will never
+   * be found again, which is the case this exists for.
+   */
+  includeMissing?: boolean;
+}
+
 /**
  * Find entries whose location is damaged: a folder, a path cut short, or no
  * location at all.
  *
- * Two kinds are deliberately excluded. A merely missing file is relocatable, so
- * removing it would throw away cues and playlist membership. Streaming tracks
- * have no file by design and are not damaged at all — offering to remove them
- * would delete the user's TIDAL collection.
+ * Streaming tracks are never listed. They have no file by design and are not
+ * damaged at all — offering to remove them would delete the user's TIDAL
+ * collection. A merely missing file is listed only when asked for.
  */
 export function findBrokenEntries(
   tracks: Iterable<{ id: string; name?: string; artist?: string; location?: string }>,
-  exists: (p: string) => boolean = fs.existsSync
+  exists: (p: string) => boolean = fs.existsSync,
+  options: FindBrokenOptions = {}
 ): BrokenEntry[] {
   const broken: BrokenEntry[] = [];
   for (const track of tracks) {
     const reason = diagnoseLocation(track.location, exists);
-    if (!reason || reason === 'missing' || reason === 'streaming') { continue; }
+    if (!reason || reason === 'streaming') { continue; }
+    if (reason === 'missing' && !options.includeMissing) { continue; }
     broken.push({
       trackId: track.id,
       name: track.name ?? '',

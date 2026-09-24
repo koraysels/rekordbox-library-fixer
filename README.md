@@ -119,7 +119,11 @@ Tracks from TIDAL, Spotify, Beatport, SoundCloud and Apple Music have no file on
 If a duplicate set's files can't be read, the app says so instead of inventing certainty. It falls back to matching on artist, title and length, reports the match as **metadata** rather than a fingerprint, and the badge reads `2 entries · files missing` instead of claiming a file count. Such a set is still worth resolving: it collapses two missing tracks into one, which is one relocation instead of two.
 
 ### Broken entries
-Finds library entries whose path is damaged rather than merely moved — a path pointing at a folder, a truncated path, an empty location. Streaming tracks and ordinary missing files are excluded, because those belong to relocation, not to cleanup.
+Finds library entries whose path can never resolve to a file — a path pointing at a folder, a truncated path, an empty location — and removes them from the collection and from every playlist that lists them. Works on an XML library and, since v0.6.4, on `master.db` too (Rekordbox closed, backup taken first).
+
+Tracks whose file is merely **gone** are behind an opt-in tick box. The relocator is usually the better answer, and removing one throws away its cues and its playlist slots — but a library can hold thousands that will never be found again, and there was no way to clear those at all.
+
+Streaming tracks are never listed, whatever you tick. Every id is re-checked against the library before it goes, so an entry whose file turns out to be there — a drive that was unmounted during the scan and is back now — is left alone and reported.
 
 ### Backups
 A backup manager reachable at any time, with or without a library loaded. Lists every backup the app has taken, restores one (writing a safety copy of the current state first), and asks whether you want to load the restored library straight away.
@@ -380,7 +384,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.3** *(current)*
+**v0.6.4** *(current)*
+- Remove entries that can never be found, from `master.db` as well as XML, with missing files behind an opt-in
+- Streaming tracks are no longer counted as missing files, so the missing list matches what Rekordbox shows
+- The auto-relocation dialog can always be closed when the run is over
+
+**v0.6.3**
 - Leaving the Duplicate Detection tab mid-scan no longer loses the scan's progress and results
 
 **v0.6.2**
