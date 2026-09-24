@@ -20,20 +20,31 @@ interface ProgressInfo {
 
 interface AutoRelocateProgressDialogProps {
   isOpen: boolean;
+  /** True while the run is still going. False means it is over, however it ended. */
+  isRunning: boolean;
   onClose: () => void;
   onCancel: () => void;
 }
 
 export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProps> = ({
   isOpen,
+  isRunning,
   onClose,
   onCancel
 }) => {
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
   const [operationId, setOperationId] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [sawCompleteEvent, setSawCompleteEvent] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  /**
+   * The run being over is what decides this, not the completion event alone.
+   * A run that ended without emitting one — a failure on the way out, a write
+   * that threw — left the dialog showing a Cancel button for work that had
+   * already finished, with no way to close it.
+   */
+  const isComplete = sawCompleteEvent || !isRunning;
 
   useEffect(() => {
     if (!isOpen) {return;}
@@ -54,13 +65,13 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
       } else if (progressData.type === 'low-confidence') {
         setLogs(prev => capLogs(prev, `⚠️ Low confidence: ${progressData.trackName} (${Math.round((progressData.confidence || 0) * 100)}%)`));
       } else if (progressData.type === 'complete') {
-        setIsComplete(true);
+        setSawCompleteEvent(true);
         setLogs(prev => capLogs(prev, `✅ ${progressData.message}`));
       } else if (progressData.type === 'cancelled') {
-        setIsComplete(true);
+        setSawCompleteEvent(true);
         setLogs(prev => capLogs(prev, '⚠️ Operation cancelled'));
       } else if (progressData.type === 'error') {
-        setIsComplete(true);
+        setSawCompleteEvent(true);
         setLogs(prev => capLogs(prev, `❌ Error: ${progressData.error}`));
       }
     });
@@ -87,7 +98,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
     setProgress(null);
     setOperationId(null);
     setLogs([]);
-    setIsComplete(false);
+    setSawCompleteEvent(false);
     setIsCancelling(false);
     onClose();
   };

@@ -10,6 +10,16 @@ export function isStreamingEntry(reason: BrokenReason | null): boolean {
   return reason === 'streaming';
 }
 
+/**
+ * Rekordbox gives a streaming track a made-up location holding the service and
+ * track id, for example `tidal:tracks:105015500`. Shared so the relocator and
+ * the broken-entry scan agree on what has no file by design.
+ */
+export function isStreamingLocation(location: string | undefined): boolean {
+  const tail = (location ?? '').trim().split('/').pop() ?? '';
+  return /^[a-z]+:[a-z]+:/i.test(tail);
+}
+
 export interface BrokenEntry {
   trackId: string;
   name: string;
@@ -46,7 +56,7 @@ export function diagnoseLocation(
   const path = (location ?? '').trim();
   if (!path) { return 'empty'; }
   if (path.endsWith('/') || path.endsWith('\\')) { return 'folder'; }
-  if (/^[a-z]+:[a-z]+:/i.test(path.split('/').pop() ?? '')) { return 'streaming'; }
+  if (isStreamingLocation(path)) { return 'streaming'; }
   if (!/\.[a-z0-9]{2,5}$/i.test(path)) { return 'truncated'; }
   if (!exists(path)) { return 'missing'; }
   return null;

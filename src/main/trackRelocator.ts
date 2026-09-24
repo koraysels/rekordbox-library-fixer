@@ -3,6 +3,7 @@ import * as path from 'path';
 import { glob } from 'glob';
 import FuzzySearch from 'fuzzy-search';
 import { Logger } from './logger';
+import { isStreamingLocation } from './brokenEntries';
 
 export interface MissingTrack {
   id: string;
@@ -147,6 +148,12 @@ export class TrackRelocator {
 
     for (const [id, track] of tracks.entries()) {
       if (!track.location) {continue;}
+
+      // A streaming track has no file by design. Rekordbox does not mark it
+      // missing, so counting it here made the app's missing list disagree with
+      // what the DJ sees in rekordbox — and offered a relocation that can never
+      // succeed.
+      if (isStreamingLocation(track.location)) { continue; }
 
       try {
         // Check if file exists at original location
