@@ -332,10 +332,17 @@ npm run dist:all         # All platforms
 ```
 src/
 ├── main/           # Electron main process
+│   ├── main.ts     # window, menu, app lifecycle — and nothing else
+│   ├── runtime.ts  # the long-lived pieces, read per call via runtime()
+│   └── ipc/        # the IPC handlers, one module per domain
 ├── renderer/       # React frontend
 ├── shared/         # Shared types and utilities
 └── tests/          # Test suites
 ```
+
+Each `src/main/ipc/*.ts` exports a `register*Ipc()` that `main.ts` calls once the app is ready. A test
+checks every channel `preload.ts` invokes is registered exactly once — a missing one shows up only as a
+button that quietly does nothing.
 
 ---
 
@@ -384,7 +391,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.4** *(current)*
+**v0.6.5** *(current)*
+- The home screen leads with the rekordbox database, lists every one on this machine, and marks the last one opened
+- Clicking a database opens that one, not whichever was detected first
+- Dead cloud-sync and ownership code removed; the main process split by domain
+
+**v0.6.4**
 - Remove entries that can never be found, from `master.db` as well as XML, with missing files behind an opt-in
 - Streaming tracks are no longer counted as missing files, so the missing list matches what Rekordbox shows
 - The auto-relocation dialog can always be closed when the run is over

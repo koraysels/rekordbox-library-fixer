@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.5] - 2026-09-24
+
+### 🎉 New Features
+- **The home screen leads with the rekordbox database**: XML was the headline and the database an afterthought in a list below it, which is backwards — an export is a snapshot, and a rekordbox import never removes a track, so nothing fixed through XML reaches the collection. Every database found on this machine is now listed, the one opened last is marked, and XML keeps its place a step down.
+
+### 🐛 Bug Fixes
+- **Opening a database opens the one you clicked**: the click went through detection, which returned whichever database it found first, so on a machine with rekordbox 6 beside 7 picking the older one opened the newer one. Reopening the last library at startup had the same flaw.
+- **The app version is read from Electron** rather than from a `package.json` path relative to the source file.
+
+### 🧹 Housekeeping
+- **The cloud-sync and ownership features are gone**: neither had been reachable from the UI for a long time — no component called them and nothing rendered their results — but 173 lines of IPC handlers, two main-process modules, a third of the relocator hook and the API surface behind them still had to be read and reasoned about when changing anything nearby.
+- **The main process is split by domain**: `main.ts` was 1860 lines holding the window, the menu, the app lifecycle and all 40 IPC handlers. It is 336 now; the handlers live in `src/main/ipc/`, one module per domain, and the long-lived pieces moved behind a `runtime()` accessor that is read per call rather than captured at import time. A test checks every channel the renderer calls is registered exactly once, because a missing one shows up only as a button that quietly does nothing.
+- **The manual and the website say what the app actually does** — both still described a read-only database and a generic library helper.
+
 ## [0.6.4] - 2026-09-24
 
 ### 🎉 New Features
