@@ -71,28 +71,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('relocate-track', trackId, oldLocation, newLocation),
   batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) =>
     ipcRenderer.invoke('batch-relocate-tracks', data),
-
-  // Cloud Sync APIs
-  detectCloudSyncIssues: (tracks: any) =>
-    ipcRenderer.invoke('detect-cloud-sync-issues', tracks),
-  fixCloudSyncIssue: (issue: any) =>
-    ipcRenderer.invoke('fix-cloud-sync-issue', issue),
-  batchFixCloudSyncIssues: (issues: any[]) =>
-    ipcRenderer.invoke('batch-fix-cloud-sync-issues', issues),
-  initializeDropboxAPI: (config: any) =>
-    ipcRenderer.invoke('initialize-dropbox-api', config),
-
-  // Track Ownership APIs
-  detectOwnershipIssues: (tracks: any, computers: any) =>
-    ipcRenderer.invoke('detect-ownership-issues', tracks, computers),
-  fixTrackOwnership: (issue: any) =>
-    ipcRenderer.invoke('fix-track-ownership', issue),
-  batchFixOwnership: (issues: any[]) =>
-    ipcRenderer.invoke('batch-fix-ownership', issues),
-  updateLibraryOwnership: (library: any, fixes: any[]) =>
-    ipcRenderer.invoke('update-library-ownership', library, fixes),
-
-  // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
   // Open external URLs with validation

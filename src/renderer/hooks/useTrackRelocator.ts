@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
-import { relocationStorage, cloudSyncStorage, ownershipStorage } from '../db/relocationsDb';
+import { relocationStorage } from '../db/relocationsDb';
 import { historyStorage, historyEvents } from '../db/historyDb';
 import { duplicationHistoryStorage } from '../db/duplicationHistoryDb';
 import type {
@@ -8,10 +8,6 @@ import type {
   RelocationCandidate,
   RelocationOptions,
   RelocationResult,
-  CloudSyncIssue,
-  CloudSyncFix,
-  OwnershipIssue,
-  OwnershipFix,
   LibraryData,
   ShowNotification
 } from '../types';
@@ -45,16 +41,9 @@ interface UseTrackRelocatorState {
   relocationResults: RelocationResult[];
 
   // Cloud sync state
-  cloudSyncIssues: CloudSyncIssue[];
   isDetectingCloudIssues: boolean;
   isFixingCloudIssues: boolean;
-  cloudSyncResults: CloudSyncFix[];
 
-  // Ownership issues state
-  ownershipIssues: OwnershipIssue[];
-  isDetectingOwnershipIssues: boolean;
-  isFixingOwnershipIssues: boolean;
-  ownershipResults: OwnershipFix[];
 
   // Configuration
   searchOptions: RelocationOptions;
@@ -86,14 +75,8 @@ export function useTrackRelocator(
     relocations: new Map(),
     isRelocating: false,
     relocationResults: [],
-    cloudSyncIssues: [],
     isDetectingCloudIssues: false,
     isFixingCloudIssues: false,
-    cloudSyncResults: [],
-    ownershipIssues: [],
-    isDetectingOwnershipIssues: false,
-    isFixingOwnershipIssues: false,
-    ownershipResults: [],
     searchOptions: initialSearchOptions || { ...defaultSearchOptions },
     dropboxConnected: false
   });
@@ -121,26 +104,6 @@ export function useTrackRelocator(
             hasScanCompleted: relocationResult.hasScanCompleted || false
           }));
           setRelocationCandidatesCache(relocationResult.relocationCandidates || new Map());
-        }
-
-        // Load cloud sync results
-        const cloudResult = await cloudSyncStorage.getCloudSyncResult(libraryData.libraryPath);
-        if (cloudResult) {
-          setState(prev => ({
-            ...prev,
-            cloudSyncIssues: cloudResult.issues || [],
-            cloudSyncResults: cloudResult.fixes || []
-          }));
-        }
-
-        // Load ownership results
-        const ownershipResult = await ownershipStorage.getOwnershipResult(libraryData.libraryPath);
-        if (ownershipResult) {
-          setState(prev => ({
-            ...prev,
-            ownershipIssues: ownershipResult.issues || [],
-            ownershipResults: ownershipResult.fixes || []
-          }));
         }
       } catch (error) {
         console.error('Failed to load cached results:', error);
@@ -626,166 +589,6 @@ export function useTrackRelocator(
   }, [state.searchOptions, state.missingTracks, libraryData, libraryPath, showNotification, setLibraryData]);
 
   // Detect cloud sync issues
-  const detectCloudSyncIssues = useCallback(async () => {
-    if (!libraryData) {
-      showNotification('error', 'No library data available');
-      return;
-    }
-
-    setState(prev => ({ ...prev, isDetectingCloudIssues: true }));
-
-    try {
-      const tracks = Object.fromEntries(libraryData.tracks.entries());
-      const result = await window.electronAPI.detectCloudSyncIssues(tracks);
-
-      if (result.success) {
-        setState(prev => ({
-          ...prev,
-          cloudSyncIssues: result.data,
-          isDetectingCloudIssues: false
-        }));
-
-        // Save to cache
-        if (libraryData?.libraryPath) {
-          try {
-            await cloudSyncStorage.saveCloudSyncResult({
-              libraryPath: libraryData.libraryPath,
-              issues: result.data,
-              fixes: state.cloudSyncResults
-            });
-          } catch (cacheError) {
-            console.error('Failed to cache cloud sync issues:', cacheError);
-          }
-        }
-
-        showNotification('success', `Found ${result.data.length} cloud sync issues`);
-      } else {
-        setState(prev => ({ ...prev, isDetectingCloudIssues: false }));
-        showNotification('error', `Failed to detect cloud issues: ${result.error}`);
-      }
-    } catch (error) {
-      setState(prev => ({ ...prev, isDetectingCloudIssues: false }));
-      showNotification('error', 'Failed to detect cloud sync issues');
-    }
-  }, [libraryData, showNotification]);
-
-  // Fix cloud sync issues
-  const fixCloudSyncIssues = useCallback(async (issues: CloudSyncIssue[]) => {
-    setState(prev => ({ ...prev, isFixingCloudIssues: true }));
-
-    try {
-      const result = await window.electronAPI.batchFixCloudSyncIssues(issues);
-
-      if (result.success) {
-        setState(prev => ({
-          ...prev,
-          cloudSyncResults: result.data,
-          isFixingCloudIssues: false
-        }));
-
-        const successCount = result.data.filter((r: CloudSyncFix) => r.success).length;
-        showNotification('success', `Fixed ${successCount}/${issues.length} cloud sync issues`);
-      } else {
-        setState(prev => ({ ...prev, isFixingCloudIssues: false }));
-        showNotification('error', `Cloud sync fix failed: ${result.error}`);
-      }
-    } catch (error) {
-      setState(prev => ({ ...prev, isFixingCloudIssues: false }));
-      showNotification('error', 'Failed to fix cloud sync issues');
-    }
-  }, [showNotification]);
-
-  // Initialize Dropbox API
-  const initializeDropboxAPI = useCallback(async (config: { accessToken: string }) => {
-    try {
-      const result = await window.electronAPI.initializeDropboxAPI(config);
-
-      if (result.success && result.data.initialized) {
-        setState(prev => ({ ...prev, dropboxConnected: true }));
-        showNotification('success', 'Dropbox connected successfully');
-      } else {
-        showNotification('error', 'Failed to connect to Dropbox');
-      }
-    } catch (error) {
-      showNotification('error', 'Failed to initialize Dropbox API');
-    }
-  }, [showNotification]);
-
-  // Detect ownership issues
-  const detectOwnershipIssues = useCallback(async () => {
-    if (!libraryData) {
-      showNotification('error', 'No library data available');
-      return;
-    }
-
-    setState(prev => ({ ...prev, isDetectingOwnershipIssues: true }));
-
-    try {
-      const tracks = Object.fromEntries(libraryData.tracks.entries());
-      // STUB: ownership detection requires computer data from the library
-      // parser, which is not yet exposed via IPC. detectOwnershipIssues() will
-      // always return an empty result until this is implemented.
-      const computers = {};
-      const result = await window.electronAPI.detectOwnershipIssues(tracks, computers);
-
-      if (result.success) {
-        setState(prev => ({
-          ...prev,
-          ownershipIssues: result.data,
-          isDetectingOwnershipIssues: false
-        }));
-
-        // Save to cache
-        if (libraryData?.libraryPath) {
-          try {
-            await ownershipStorage.saveOwnershipResult({
-              libraryPath: libraryData.libraryPath,
-              issues: result.data,
-              fixes: state.ownershipResults
-            });
-          } catch (cacheError) {
-            console.error('Failed to cache ownership issues:', cacheError);
-          }
-        }
-
-        showNotification('success', `Found ${result.data.length} ownership issues`);
-      } else {
-        setState(prev => ({ ...prev, isDetectingOwnershipIssues: false }));
-        showNotification('error', `Failed to detect ownership issues: ${result.error}`);
-      }
-    } catch (error) {
-      setState(prev => ({ ...prev, isDetectingOwnershipIssues: false }));
-      showNotification('error', 'Failed to detect ownership issues');
-    }
-  }, [libraryData, showNotification]);
-
-  // Fix ownership issues
-  const fixOwnershipIssues = useCallback(async (issues: OwnershipIssue[]) => {
-    setState(prev => ({ ...prev, isFixingOwnershipIssues: true }));
-
-    try {
-      const result = await window.electronAPI.batchFixOwnership(issues);
-
-      if (result.success) {
-        setState(prev => ({
-          ...prev,
-          ownershipResults: result.data,
-          isFixingOwnershipIssues: false
-        }));
-
-        const successCount = result.data.filter((r: OwnershipFix) => r.success).length;
-        showNotification('success', `Fixed ${successCount}/${issues.length} ownership issues`);
-      } else {
-        setState(prev => ({ ...prev, isFixingOwnershipIssues: false }));
-        showNotification('error', `Ownership fix failed: ${result.error}`);
-      }
-    } catch (error) {
-      setState(prev => ({ ...prev, isFixingOwnershipIssues: false }));
-      showNotification('error', 'Failed to fix ownership issues');
-    }
-  }, [showNotification]);
-
-  // Update search options
   const updateSearchOptions = useCallback((options: Partial<RelocationOptions>) => {
     setState(prev => ({
       ...prev,
@@ -793,7 +596,6 @@ export function useTrackRelocator(
     }));
   }, []);
 
-  // Clear all results
   const clearResults = useCallback(async () => {
     setState(prev => ({
       ...prev,
@@ -803,11 +605,7 @@ export function useTrackRelocator(
       candidates: [],
       relocations: new Map(),
       relocationResults: [],
-      cloudSyncIssues: [],
-      cloudSyncResults: [],
-      ownershipIssues: [],
-      ownershipResults: []
-    }));
+          }));
 
     setRelocationCandidatesCache(new Map());
 
@@ -815,8 +613,6 @@ export function useTrackRelocator(
     if (libraryData?.libraryPath) {
       try {
         await relocationStorage.deleteRelocationResult(libraryData.libraryPath);
-        await cloudSyncStorage.deleteCloudSyncResult(libraryData.libraryPath);
-        await ownershipStorage.deleteOwnershipResult(libraryData.libraryPath);
       } catch (error) {
         console.error('Failed to clear cached results:', error);
       }
@@ -845,10 +641,8 @@ export function useTrackRelocator(
     unlocatableTracks: state.missingTracks.filter(track => track.isUnlocatable).length,
     configuredRelocations: state.relocations.size,
     successfulRelocations: state.relocationResults.filter(r => r.success).length,
-    cloudSyncIssues: state.cloudSyncIssues.length,
-    ownershipIssues: state.ownershipIssues.length,
     hasSearchPaths: state.searchOptions.searchPaths.length > 0
-  }), [state.missingTracks, state.relocations, state.relocationResults, state.cloudSyncIssues, state.ownershipIssues, state.searchOptions]);
+  }), [state.missingTracks, state.relocations, state.relocationResults, state.searchOptions]);
 
   return {
     // State
@@ -861,11 +655,6 @@ export function useTrackRelocator(
     removeRelocation,
     executeRelocations,
     autoRelocateTracks,
-    detectCloudSyncIssues,
-    fixCloudSyncIssues,
-    initializeDropboxAPI,
-    detectOwnershipIssues,
-    fixOwnershipIssues,
     updateSearchOptions,
     clearResults,
     clearUnlocatableStatus,

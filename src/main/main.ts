@@ -21,8 +21,6 @@ import { Logger } from './logger';
 import { TrackRelocator } from './trackRelocator';
 import { isLossless } from './audioQuality';
 import { LibraryConsolidator } from './libraryConsolidator';
-import { CloudSyncFixer } from './cloudSyncFixer';
-import { TrackOwnershipFixer } from './trackOwnershipFixer';
 import { mainLogger as appLogger } from './appLogger';
 
 // Must run before app ready — grants media:// streaming + fetch privileges.
@@ -78,8 +76,6 @@ let rekordboxParser: RekordboxParser;
 let duplicateDetector: DuplicateDetector;
 let logger: Logger;
 let trackRelocator: TrackRelocator;
-let cloudSyncFixer: CloudSyncFixer;
-let trackOwnershipFixer: TrackOwnershipFixer;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -323,8 +319,6 @@ app.whenReady().then(async () => {
   rekordboxParser = new RekordboxParser();
   duplicateDetector = new DuplicateDetector();
   trackRelocator = new TrackRelocator();
-  cloudSyncFixer = new CloudSyncFixer();
-  trackOwnershipFixer = new TrackOwnershipFixer();
 
   // Database storage is now handled via Dexie in the renderer process
   safeConsole.log('✅ Application initialized');
@@ -1382,179 +1376,6 @@ ipcMain.handle('batch-relocate-tracks', async (_, data: {
   }
 });
 
-// Cloud Sync IPC Handlers
-ipcMain.handle('detect-cloud-sync-issues', async (_, tracks: any) => {
-  safeConsole.log('☁️ IPC: Detecting cloud sync issues');
-  try {
-    const tracksMap = new Map(Object.entries(tracks));
-    const issues = await cloudSyncFixer.detectCloudSyncIssues(tracksMap);
-    safeConsole.log(`✅ Found ${issues.length} cloud sync issues`);
-    return { success: true, data: issues };
-  } catch (error) {
-    safeConsole.error('❌ Detect cloud sync issues failed:', error);
-    logger.error('DETECT_CLOUD_SYNC_ISSUES_FAILED', {
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('fix-cloud-sync-issue', async (_, issue: any) => {
-  safeConsole.log(`☁️ IPC: Fixing cloud sync issue for track ${issue.trackId}`);
-  try {
-    const result = await cloudSyncFixer.fixCloudSyncIssue(issue);
-    if (result.success) {
-      safeConsole.log('✅ Cloud sync fix successful');
-    } else {
-      safeConsole.log(`❌ Cloud sync fix failed: ${result.error}`);
-    }
-    return { success: true, data: result };
-  } catch (error) {
-    safeConsole.error('❌ Fix cloud sync issue failed:', error);
-    logger.error('FIX_CLOUD_SYNC_ISSUE_FAILED', {
-      trackId: issue.trackId,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('batch-fix-cloud-sync-issues', async (_, issues: any[]) => {
-  safeConsole.log(`☁️ IPC: Batch fixing ${issues.length} cloud sync issues`);
-  try {
-    const results = await cloudSyncFixer.batchFixCloudSyncIssues(issues);
-    const successCount = results.filter(r => r.success).length;
-    safeConsole.log(`✅ Batch cloud sync fix complete: ${successCount}/${issues.length} successful`);
-    return { success: true, data: results };
-  } catch (error) {
-    safeConsole.error('❌ Batch fix cloud sync issues failed:', error);
-    logger.error('BATCH_FIX_CLOUD_SYNC_ISSUES_FAILED', {
-      count: issues.length,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('initialize-dropbox-api', async (_, config: any) => {
-  safeConsole.log('☁️ IPC: Initializing Dropbox API');
-  try {
-    const success = await cloudSyncFixer.initializeDropboxAPI(config);
-    if (success) {
-      safeConsole.log('✅ Dropbox API initialized successfully');
-    } else {
-      safeConsole.log('❌ Dropbox API initialization failed');
-    }
-    return { success: true, data: { initialized: success } };
-  } catch (error) {
-    safeConsole.error('❌ Initialize Dropbox API failed:', error);
-    logger.error('INITIALIZE_DROPBOX_API_FAILED', {
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-// Track Ownership IPC Handlers
-ipcMain.handle('detect-ownership-issues', async (_, tracks: any, computers: any) => {
-  safeConsole.log('👤 IPC: Detecting ownership issues');
-  try {
-    const tracksMap = new Map(Object.entries(tracks));
-    const computersMap = new Map(Object.entries(computers)) as Map<string, any>;
-    const issues = await trackOwnershipFixer.detectOwnershipIssues(tracksMap, computersMap);
-    safeConsole.log(`✅ Found ${issues.length} ownership issues`);
-    return { success: true, data: issues };
-  } catch (error) {
-    safeConsole.error('❌ Detect ownership issues failed:', error);
-    logger.error('DETECT_OWNERSHIP_ISSUES_FAILED', {
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('fix-track-ownership', async (_, issue: any) => {
-  safeConsole.log(`👤 IPC: Fixing ownership for track ${issue.trackId}`);
-  try {
-    const result = await trackOwnershipFixer.fixTrackOwnership(issue);
-    if (result.success) {
-      safeConsole.log('✅ Ownership fix successful');
-    } else {
-      safeConsole.log(`❌ Ownership fix failed: ${result.error}`);
-    }
-    return { success: true, data: result };
-  } catch (error) {
-    safeConsole.error('❌ Fix track ownership failed:', error);
-    logger.error('FIX_TRACK_OWNERSHIP_FAILED', {
-      trackId: issue.trackId,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('batch-fix-ownership', async (_, issues: any[]) => {
-  safeConsole.log(`👤 IPC: Batch fixing ${issues.length} ownership issues`);
-  try {
-    const results = await trackOwnershipFixer.batchFixOwnership(issues);
-    const successCount = results.filter(r => r.success).length;
-    safeConsole.log(`✅ Batch ownership fix complete: ${successCount}/${issues.length} successful`);
-    return { success: true, data: results };
-  } catch (error) {
-    safeConsole.error('❌ Batch fix ownership failed:', error);
-    logger.error('BATCH_FIX_OWNERSHIP_FAILED', {
-      count: issues.length,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-ipcMain.handle('update-library-ownership', async (_, library: any, fixes: any[]) => {
-  safeConsole.log(`👤 IPC: Updating library ownership with ${fixes.length} fixes`);
-  try {
-    const result = await trackOwnershipFixer.updateLibraryOwnership(library, fixes);
-    if (result.success) {
-      safeConsole.log(`✅ Library ownership updated: ${result.updatedTracks} tracks`);
-    } else {
-      safeConsole.log(`❌ Library ownership update failed: ${result.error}`);
-    }
-    return { success: true, data: result };
-  } catch (error) {
-    safeConsole.error('❌ Update library ownership failed:', error);
-    logger.error('UPDATE_LIBRARY_OWNERSHIP_FAILED', {
-      fixCount: fixes.length,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
-  }
-});
-
-// Get app version from package.json
 ipcMain.handle('get-app-version', async () => {
   try {
     const packageJsonPath = path.join(__dirname, '../../package.json');

@@ -22,16 +22,6 @@ vi.mock('../../src/renderer/db/relocationsDb', () => ({
     saveRelocationResult: vi.fn(),
     deleteRelocationResult: vi.fn(),
   },
-  cloudSyncStorage: {
-    getCloudSyncResult: vi.fn(),
-    saveCloudSyncResult: vi.fn(),
-    deleteCloudSyncResult: vi.fn(),
-  },
-  ownershipStorage: {
-    getOwnershipResult: vi.fn(),
-    saveOwnershipResult: vi.fn(),
-    deleteOwnershipResult: vi.fn(),
-  },
   relocationHistoryStorage: {
     saveRelocationHistoryEntry: vi.fn(),
   },
