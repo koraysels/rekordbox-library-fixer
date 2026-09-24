@@ -2,6 +2,7 @@ import Database from 'better-sqlite3-multiple-ciphers';
 import * as fs from 'fs';
 import { unlockDatabase } from './rekordboxDbParser';
 import { isRekordboxRunning } from './rekordboxRunning';
+import { isStreamingLocation } from './brokenEntries';
 
 type Db = InstanceType<typeof Database>;
 
@@ -132,4 +133,109 @@ export function applyMerges(db: Db, plans: MergePlan[]): MergeOutcome {
   run(plans);
 
   return { entriesRemoved, playlistLinksMoved, backupPath: '' };
+}
+
+export interface RemovalOutcome {
+  entriesRemoved: number;
+  playlistLinksRemoved: number;
+  /** Entries left alone, with the reason — an id whose file turned out to be there. */
+  kept: Array<{ trackId: string; reason: string }>;
+  backupPath: string;
+}
+
+/**
+ * Remove collection entries from rekordbox's own database.
+ *
+ * This exists for entries that can never resolve to a file: folders, paths cut
+ * short by a bad import, locations that are empty, and files that are simply
+ * gone for good. No audio file is touched — there is none to touch.
+ *
+ * Every id is checked against the database before it goes: an entry whose file
+ * is actually there is kept, whatever the caller asked for. A stale list from
+ * the renderer, or a drive that was unmounted during the scan and is back now,
+ * must not cost the DJ a real track with its cues and playlist slots.
+ */
+export function removeEntriesFromDb(
+  dbPath: string,
+  key: string,
+  trackIds: string[],
+  options: { backupPath: string; checkRunning?: () => boolean; fileExists?: (p: string) => boolean }
+): RemovalOutcome {
+  const running = options.checkRunning ?? isRekordboxRunning;
+  if (running()) {
+    throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
+  }
+  if (!options.backupPath) {
+    throw new Error('A backup path is required; this never writes without one.');
+  }
+
+  fs.copyFileSync(dbPath, options.backupPath);
+  for (const suffix of ['-wal', '-shm']) {
+    try { fs.copyFileSync(dbPath + suffix, options.backupPath + suffix); } catch { /* absent is fine */ }
+  }
+
+  let db: Db | null = null;
+  try {
+    db = new Database(dbPath);
+    unlockDatabase(db, key);
+    const outcome = applyEntryRemoval(db, trackIds, options.fileExists ?? fs.existsSync);
+    return { ...outcome, backupPath: options.backupPath };
+  } finally {
+    if (db) { db.close(); }
+  }
+}
+
+/**
+ * The database work itself, separated so it can be tested without encryption.
+ *
+ * An entry survives when its file is there, and when it is a streaming track:
+ * a TIDAL or Spotify entry has no file by design and is not damaged at all.
+ */
+export function applyEntryRemoval(
+  db: Db,
+  trackIds: string[],
+  fileExists: (p: string) => boolean = fs.existsSync
+): { entriesRemoved: number; playlistLinksRemoved: number; kept: Array<{ trackId: string; reason: string }> } {
+  const readLocation = db.prepare('SELECT FolderPath AS path FROM djmdContent WHERE ID = ?');
+  const dropLinks = db.prepare('DELETE FROM djmdSongPlaylist WHERE ContentID = ?');
+  const deleteContent = db.prepare('DELETE FROM djmdContent WHERE ID = ?');
+
+  const dependentDeletes = CONTENT_TABLES
+    .filter((table) => table !== 'djmdSongPlaylist')
+    .map((table) => {
+      try { return db.prepare(`DELETE FROM ${table} WHERE ContentID = ?`); }
+      catch { return null; }
+    })
+    .filter((stmt): stmt is ReturnType<Db['prepare']> => stmt !== null);
+
+  let entriesRemoved = 0;
+  let playlistLinksRemoved = 0;
+  const kept: Array<{ trackId: string; reason: string }> = [];
+
+  const run = db.transaction((ids: string[]) => {
+    for (const trackId of ids) {
+      const row = readLocation.get(trackId) as { path?: string } | undefined;
+      if (!row) { kept.push({ trackId, reason: 'not in the collection' }); continue; }
+
+      const location = (row.path ?? '').trim();
+      if (isStreamingLocation(location)) {
+        kept.push({ trackId, reason: 'a streaming track, which has no file by design' });
+        continue;
+      }
+      if (location && fileExists(location)) {
+        kept.push({ trackId, reason: 'its file is there after all' });
+        continue;
+      }
+
+      // Nothing can inherit these playlist slots — the entry points at no file,
+      // so the links go rather than moving to another track.
+      playlistLinksRemoved += dropLinks.run(trackId).changes;
+      for (const stmt of dependentDeletes) { stmt.run(trackId); }
+      entriesRemoved += deleteContent.run(trackId).changes;
+    }
+    bumpUpdateCount(db, entriesRemoved + playlistLinksRemoved);
+  });
+  run(trackIds);
+
+  return { entriesRemoved, playlistLinksRemoved, kept };
 }

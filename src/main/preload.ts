@@ -17,7 +17,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('show-system-notification', data),
   mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: any[] }) =>
     ipcRenderer.invoke('merge-duplicates-in-db', data),
-  findBrokenEntries: (tracks: any[]) => ipcRenderer.invoke('find-broken-entries', tracks),
+  findBrokenEntries: (args: { tracks: any[]; includeMissing?: boolean }) =>
+    ipcRenderer.invoke('find-broken-entries', args),
+  removeEntriesInDb: (data: { dbPath: string; key: string; trackIds: string[] }) =>
+    ipcRenderer.invoke('remove-entries-in-db', data),
   removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) =>
     ipcRenderer.invoke('remove-broken-entries', data),
   listBackups: (libraryPath: string) => ipcRenderer.invoke('list-backups', libraryPath),

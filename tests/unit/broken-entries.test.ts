@@ -75,3 +75,33 @@ describe('streaming tracks are not damaged', () => {
     expect(broken.map((b) => b.trackId)).toEqual(['2']);
   });
 });
+
+describe('findBrokenEntries with missing files included', () => {
+  const tracks = [
+    { id: 'gone', name: 'Gone', artist: 'A', location: '/music/gone.mp3' },
+    { id: 'folder', name: 'Folder', artist: 'A', location: '/music/album/' },
+    { id: 'tidal', name: 'Streamed', artist: 'A', location: 'tidal:tracks:1' },
+    { id: 'fine', name: 'Fine', artist: 'A', location: '/music/fine.mp3' },
+  ];
+  const exists = (p: string) => p === '/music/fine.mp3';
+
+  it('leaves missing files out by default, because they are relocatable', () => {
+    const found = findBrokenEntries(tracks, exists);
+    expect(found.map((b) => b.trackId)).toEqual(['folder']);
+  });
+
+  it('lists them when asked, for the ones that will never be found', () => {
+    const found = findBrokenEntries(tracks, exists, { includeMissing: true });
+    expect(found.map((b) => b.trackId).sort()).toEqual(['folder', 'gone']);
+  });
+
+  it('never lists a streaming track, whatever the options', () => {
+    const found = findBrokenEntries(tracks, exists, { includeMissing: true });
+    expect(found.map((b) => b.trackId)).not.toContain('tidal');
+  });
+
+  it('never lists a track whose file is there', () => {
+    const found = findBrokenEntries(tracks, exists, { includeMissing: true });
+    expect(found.map((b) => b.trackId)).not.toContain('fine');
+  });
+});

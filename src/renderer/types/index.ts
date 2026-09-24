@@ -195,8 +195,9 @@ declare global {
       isRekordboxRunning: () => Promise<{ running: boolean }>;
       showSystemNotification?: (data: { type: string; message: string }) => Promise<{ success: boolean }>;
       mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: Array<{ keepId: string; removeIds: string[] }> }) => Promise<{ success: boolean; entriesRemoved?: number; playlistLinksMoved?: number; backupPath?: string; error?: string }>;
-      findBrokenEntries: (tracks: any[]) => Promise<{ success: boolean; data?: Array<{ trackId: string; name: string; artist: string; location: string; reason: string }>; error?: string }>;
-      removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) => Promise<{ success: boolean; removed?: number; backupPath?: string; error?: string }>;
+      findBrokenEntries: (args: { tracks: any[]; includeMissing?: boolean }) => Promise<{ success: boolean; data?: Array<{ trackId: string; name: string; artist: string; location: string; reason: string }>; error?: string }>;
+      removeBrokenEntries: (data: { libraryPath: string; trackIds: string[] }) => Promise<{ success: boolean; removed?: number; kept?: Array<{ trackId: string; reason: string }>; backupPath?: string; error?: string }>;
+      removeEntriesInDb: (data: { dbPath: string; key: string; trackIds: string[] }) => Promise<{ success: boolean; entriesRemoved?: number; playlistLinksRemoved?: number; kept?: Array<{ trackId: string; reason: string }>; backupPath?: string; error?: string }>;
       listBackups: (libraryPath: string) => Promise<{ success: boolean; data?: Array<{ path: string; originalPath: string; created: string; size: number; kind: 'xml' | 'database' }>; error?: string }>;
       restoreBackup: (args: { backupPath: string; libraryPath: string }) => Promise<{ success: boolean; safetyCopy?: string; error?: string }>;
       deleteBackup: (backupPath: string) => Promise<{ success: boolean; error?: string }>;
