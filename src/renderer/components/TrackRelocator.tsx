@@ -507,6 +507,7 @@ const TrackRelocator: React.FC = () => {
       {/* Progress Dialog */}
       <AutoRelocateProgressDialog
         isOpen={showProgressDialog}
+        isRunning={isAutoRelocating}
         onClose={handleProgressDialogClose}
         onCancel={handleProgressDialogCancel}
       />
