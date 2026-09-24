@@ -6,14 +6,26 @@ Update both this file and referenced files when making changes
 
 ## Project Overview
 
-This is an Electron-based desktop application for managing Rekordbox DJ library files. The app provides duplicate detection, library import/export, and maintenance functionality for Rekordbox XML databases.
+This is an Electron-based desktop application for managing Rekordbox DJ libraries. It finds and resolves
+duplicates, relocates tracks whose files have moved, and clears out entries that can never resolve to a
+file — writing the result into rekordbox's own `master.db`, or into an XML library when that is what is
+open. A rekordbox XML import can add and update tracks but never remove one, which is why cleaning a
+collection has to go through the database.
 
 > ! The processes this software offers, retains all essential DJ metadata, including cues, loops, beatgrids, and playlists.
 
 ## Architecture
 
 ### Core Structure
-- **Main Process** (`src/main/`): Electron main process handling file system operations, XML parsing, and IPC
+- **Main Process** (`src/main/`): file system operations, library parsing and IPC.
+  `main.ts` owns only the window, the menu and the app lifecycle. The IPC handlers live in
+  `src/main/ipc/`, one module per domain (`library`, `duplicates`, `relocation`,
+  `maintenance`, `backups`, `system`), each exporting a `register*Ipc()` that `main.ts` calls
+  once the app is ready. The long-lived pieces (parser, detector, relocator, logger, window)
+  live in `src/main/runtime.ts` behind `runtime()`, read per call rather than captured at
+  import time — the window is replaced when it is closed and reopened. `sendToWindow()` is
+  how a handler reports progress. A test checks every channel the preload invokes is
+  registered exactly once, because a missing one only shows up as a button that does nothing.
 - **Renderer Process** (`src/renderer/`): React-based UI with TypeScript
 - **Shared Types** (`src/shared/`): Common interfaces and utilities
 
@@ -38,18 +50,31 @@ This is an Electron-based desktop application for managing Rekordbox DJ library 
 - `useDuplicates`: Custom hook managing duplicate detection state and operations
 - `useTrackRelocator`: State management for track relocation operations
 - `SettingsPanel`: Configuration UI with Zustand store integration
-- **Rekordbox database import** (`src/main/rekordboxDbLocator.ts`, `rekordboxDbParser.ts`,
-  `rekordboxDbIpc.ts`): reads an encrypted `master.db` into the same `LibraryData` the XML
-  parser produces. Strictly read-only — the file is copied with its `-wal` and the copy is
-  opened `readonly`. Three facts the code depends on, each verified against a real database:
+- **Rekordbox database** (`src/main/rekordboxDbLocator.ts`, `rekordboxDbParser.ts`,
+  `rekordboxDbIpc.ts`, `rekordboxDbWriter.ts`, `rekordboxDbRelocator.ts`): reads an encrypted
+  `master.db` into the same `LibraryData` the XML parser produces, and writes changes back
+  into it. Reading is done on a copy taken with its `-wal` and opened `readonly`, so rekordbox
+  can stay open while you look. Writing — resolving duplicates, relocating tracks, removing
+  entries that point at nothing — edits the real file and is guarded three ways: rekordbox
+  must be closed, a backup is mandatory (the write is refused without one), and every id is
+  re-checked against the database before anything goes, so an entry whose file is actually
+  there survives a stale list. This exists because a rekordbox XML import can add and update
+  tracks but never remove one, so an XML round-trip can never clean a collection.
+
+  Three facts the code depends on, each verified against a real database:
   the driver defaults to chacha20 so `PRAGMA cipher='sqlcipher'` and `legacy=4` must precede
   the key; BPM is stored times 100; ordinary cues store `OutMsec = -1`, so only a positive
   value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
   Rekordbox 7. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
   it persists in the settings store.
-- **Write guard** (`src/main/librarySource.ts`): every write path refuses a `.db` path.
-  Resolve and relocate write XML to `libraryPath`, so a database-backed library would
-  otherwise have been overwritten with XML and destroyed.
+- **Write guard** (`src/main/librarySource.ts`): every *XML* write path refuses a `.db` path.
+  The XML writer writes to `libraryPath`, so a database-backed library would otherwise have
+  been overwritten with XML and destroyed. Database-backed libraries go through the
+  database-native writers instead.
+- **Streaming tracks** (`isStreamingLocation` in `src/main/brokenEntries.ts`): rekordbox gives
+  a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
+  design, so they are never missing, never broken and never removable. Counting them as
+  missing made the app's missing list disagree with rekordbox's.
 - **Path comparison** (`src/renderer/utils/normalizePath.ts`): macOS stores accents composed
   or decomposed and treats both as one file, and rekordbox libraries contain both spellings.
   Any path comparison — duplicate classification and the delete guard — normalises to NFC
@@ -172,7 +197,9 @@ Test framework uses:
 
 ## IPC Communication
 
-The app uses Electron's IPC for communication between main and renderer processes. Key APIs exposed through `window.electronAPI`:
+The app uses Electron's IPC for communication between main and renderer processes. The handlers live in
+`src/main/ipc/` by domain; `src/main/preload.ts` is the full list of what the renderer can call. Key APIs
+exposed through `window.electronAPI`:
 - `selectRekordboxXML()`: File picker for XML files
 - `parseRekordboxLibrary(xmlPath)`: Parse Rekordbox XML with complete metadata preservation
 - `findDuplicates(options)`: Detect duplicate tracks
@@ -183,7 +210,10 @@ The app uses Electron's IPC for communication between main and renderer processe
 - `deleteDuplicateResults()`: Clear duplicate results cache
 - `autoRelocateTracks(tracks, options, libraryPath)`: Sequential auto-relocation with progress tracking
 - `cancelAutoRelocate(operationId)`: Cancel active auto-relocation operation
-- `showFileInFolder(path)`: Open file location in system file manager
+- `showFileInFolder(path)`: Open file location in system file manager; reports back when the file is gone
+- `mergeDuplicatesInDb(data)` / `relocateTracksInDb` (via `batchRelocateTracks`/`autoRelocateTracks` with
+  `dbKey`) / `removeEntriesInDb(data)`: the database-native writes, each requiring rekordbox to be closed
+  and taking a backup first
 
 ## State Management Architecture
 
