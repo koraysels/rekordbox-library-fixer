@@ -228,16 +228,6 @@ declare global {
       findRelocationCandidates: (track: MissingTrack, options: RelocationOptions) => Promise<any>;
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
       batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) => Promise<any>;
-      // Cloud Sync APIs
-      detectCloudSyncIssues: (tracks: any) => Promise<any>;
-      fixCloudSyncIssue: (issue: CloudSyncIssue) => Promise<any>;
-      batchFixCloudSyncIssues: (issues: CloudSyncIssue[]) => Promise<any>;
-      initializeDropboxAPI: (config: any) => Promise<any>;
-      // Track Ownership APIs
-      detectOwnershipIssues: (tracks: any, computers: any) => Promise<any>;
-      fixTrackOwnership: (issue: OwnershipIssue) => Promise<any>;
-      batchFixOwnership: (issues: OwnershipIssue[]) => Promise<any>;
-      updateLibraryOwnership: (library: any, fixes: OwnershipFix[]) => Promise<any>;
       // App version
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
       // Filter & Move/Copy APIs

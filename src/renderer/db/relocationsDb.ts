@@ -49,6 +49,8 @@ export interface RelocationHistoryEntry {
 
 class RelocationsDatabase extends Dexie {
   relocationResults!: EntityTable<StoredRelocationResult, 'id'>;
+  // Kept in the schema although nothing writes them any more: dropping a store
+  // rewrites every install's database, and these hold nothing but cache.
   cloudSyncResults!: EntityTable<StoredCloudSyncResult, 'id'>;
   ownershipResults!: EntityTable<StoredOwnershipResult, 'id'>;
   relocationHistory!: EntityTable<RelocationHistoryEntry, 'id'>;
@@ -211,92 +213,6 @@ export const relocationStorage = {
 };
 
 // Helper functions for cloud sync results
-export const cloudSyncStorage = {
-  async saveCloudSyncResult(result: Omit<StoredCloudSyncResult, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
-    const now = new Date();
-
-    // Check if record exists
-    const existing = await relocationsDb.cloudSyncResults
-      .where('libraryPath')
-      .equals(result.libraryPath)
-      .first();
-
-    const recordToSave = existing
-      ? { ...existing, ...result, updatedAt: now }
-      : { ...result, createdAt: now, updatedAt: now };
-
-    // Use put for better performance (handles both insert and update)
-    await relocationsDb.cloudSyncResults.put(recordToSave);
-  },
-
-  async getCloudSyncResult(libraryPath: string): Promise<StoredCloudSyncResult | null> {
-    const result = await relocationsDb.cloudSyncResults
-      .where('libraryPath')
-      .equals(libraryPath)
-      .first();
-
-    return result || null;
-  },
-
-  async deleteCloudSyncResult(libraryPath: string): Promise<void> {
-    const result = await relocationsDb.cloudSyncResults
-      .where('libraryPath')
-      .equals(libraryPath)
-      .first();
-
-    if (result?.id) {
-      await relocationsDb.cloudSyncResults.delete(result.id);
-    }
-  },
-
-  async clearAllCloudSyncResults(): Promise<void> {
-    await relocationsDb.cloudSyncResults.clear();
-  }
-};
-
-// Helper functions for ownership results
-export const ownershipStorage = {
-  async saveOwnershipResult(result: Omit<StoredOwnershipResult, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
-    const now = new Date();
-
-    // Check if record exists
-    const existing = await relocationsDb.ownershipResults
-      .where('libraryPath')
-      .equals(result.libraryPath)
-      .first();
-
-    const recordToSave = existing
-      ? { ...existing, ...result, updatedAt: now }
-      : { ...result, createdAt: now, updatedAt: now };
-
-    // Use put for better performance (handles both insert and update)
-    await relocationsDb.ownershipResults.put(recordToSave);
-  },
-
-  async getOwnershipResult(libraryPath: string): Promise<StoredOwnershipResult | null> {
-    const result = await relocationsDb.ownershipResults
-      .where('libraryPath')
-      .equals(libraryPath)
-      .first();
-
-    return result || null;
-  },
-
-  async deleteOwnershipResult(libraryPath: string): Promise<void> {
-    const result = await relocationsDb.ownershipResults
-      .where('libraryPath')
-      .equals(libraryPath)
-      .first();
-
-    if (result?.id) {
-      await relocationsDb.ownershipResults.delete(result.id);
-    }
-  },
-
-  async clearAllOwnershipResults(): Promise<void> {
-    await relocationsDb.ownershipResults.clear();
-  }
-};
 // Helper functions for relocation history
 export const relocationHistoryStorage = {
   async saveRelocationHistoryEntry(entry: Omit<RelocationHistoryEntry, 'id'>): Promise<void> {
