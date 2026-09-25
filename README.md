@@ -55,7 +55,9 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 - **XML export** — the classic route: export from Rekordbox, load the file
 - **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
 
-Resolving duplicates and relocating tracks write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory, playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
+Resolving duplicates, relocating tracks and removing dead entries all write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory **and verified** (a truncated copy is refused rather than trusted), playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
+
+**The key.** The app ships no key and never has. The load screen shows the one-line command for your platform — PowerShell on Windows, a terminal on macOS and Linux — that prints it on your own machine by asking the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package. Copy, run, paste once; it stays on your machine.
 
 ### Library tab
 The first tab in the sidebar. With nothing loaded it holds the picker, including the libraries found on your system. With a library open it shows what is loaded — file name, full path, track count, playlists, missing files and duplicate entries — and lets you close it or switch to another one. Backups and History stay reachable at all times, even with no library loaded.
@@ -371,6 +373,9 @@ button that quietly does nothing.
 
 **Is this safe to use with my library?**
 A backup is taken before any change, and it is mandatory — writing is refused if one cannot be made. Files go to the system trash rather than being deleted, and a file the kept track still uses is never touched. Writing to `master.db` additionally requires Rekordbox to be closed.
+
+**Where do I get the database key?**
+The load screen shows a command for your platform that prints it. It installs `pyrekordbox` and asks it, so the key comes from a package you can read rather than from this app — which ships no key. It is the same on every Rekordbox 6/7 install.
 
 **Why does resolving duplicates need to write to master.db?**
 Because a Rekordbox XML import can add and update tracks but cannot remove one. Importing a cleaned XML leaves every duplicate sitting in your collection. Changing the database is the only way to actually clean it.
