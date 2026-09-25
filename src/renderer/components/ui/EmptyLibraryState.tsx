@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { FolderOpen, FileText, Database, Clock } from 'lucide-react';
+import { FolderOpen, FileText, Database, Clock, Copy, Check } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import {
+  keyCommandFor, platformFromUserAgent, looksLikeDbKey,
+} from '../../utils/keyExtractionCommand';
 
 interface FoundLibrary {
   kind: 'database' | 'xml';
@@ -33,6 +36,8 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
   const dbKey = useSettingsStore((state) => state.rekordboxDbKey);
   const setRekordboxDbKey = useSettingsStore((state) => state.setRekordboxDbKey);
   const [pendingDb, setPendingDb] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const keyCommand = keyCommandFor(platformFromUserAgent(navigator.userAgent));
   const [found, setFound] = useState<FoundLibrary[]>([]);
 
   // The library this app had open last, so the usual case is one obvious click.
@@ -143,11 +148,38 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
           {pendingDb && (
             <div className="mt-te-md rounded-te border border-te-orange bg-te-grey-100 p-3">
               <p className="text-[11px] font-te-mono text-te-grey-700 normal-case leading-relaxed mb-2">
-                Rekordbox encrypts its database. Opening it needs the SQLCipher key, which is
-                the same on every rekordbox 6/7 install and is published by the open-source
-                <span className="te-value"> pyrekordbox </span> project: see its documentation
-                under &ldquo;Rekordbox 6 database key&rdquo;. This app does not ship the key.
-                Paste it once and it stays on this machine.
+                Rekordbox encrypts its database. Opening it needs the SQLCipher key, which is the
+                same on every rekordbox 6/7 install. This app does not ship it — run this in{' '}
+                {keyCommand.shell} and it prints the key on your own machine, from the
+                open-source <span className="te-value">pyrekordbox</span> project:
+              </p>
+
+              {/* The command, ready to paste. Describing where to find the key
+                  sent people hunting through documentation for a value their
+                  own machine can produce in one line. */}
+              <div className="flex items-start gap-2 mb-2">
+                <code className="te-code-block flex-1 min-w-0 text-[10px] leading-relaxed break-all">
+                  {keyCommand.command}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(keyCommand.command)
+                      .then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      })
+                      .catch(() => undefined);
+                  }}
+                  title="Copy the command"
+                  className="flex-shrink-0 btn-ghost text-[10px] px-2 py-1"
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                </button>
+              </div>
+
+              <p className="text-[11px] font-te-mono text-te-grey-500 normal-case leading-relaxed mb-2">
+                Paste the 64-character result below. It stays on this machine.
               </p>
               <input
                 type="text"
@@ -157,13 +189,18 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
                 spellCheck={false}
                 autoComplete="off"
                 autoFocus
-                className="input w-full te-path text-xs mb-2"
+                className="input w-full te-path text-xs mb-1"
               />
+              {dbKey.trim() !== '' && !looksLikeDbKey(dbKey) && (
+                <p className="text-[10px] font-te-mono text-te-amber-600 normal-case mb-2">
+                  That is not 64 hexadecimal characters — check the whole line was copied.
+                </p>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => { onLoadFromDb?.(pendingDb); setPendingDb(null); }}
-                  disabled={!dbKey.trim()}
+                  disabled={!looksLikeDbKey(dbKey)}
                   className="btn-secondary text-xs disabled:opacity-40"
                 >
                   Open database

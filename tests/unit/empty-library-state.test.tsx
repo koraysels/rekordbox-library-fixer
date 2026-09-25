@@ -82,6 +82,25 @@ describe('EmptyLibraryState', () => {
     expect(screen.getByPlaceholderText(/Paste the master.db key/)).toBeTruthy();
   });
 
+  it('shows a command that prints the key, for this platform', async () => {
+    // Pointing at documentation sent people hunting for a value their own
+    // machine can produce in one line.
+    useSettingsStore.setState({ rekordboxDbKey: '' } as any);
+    show([DB]);
+    fireEvent.click(await screen.findByTitle(DB.path));
+    expect(screen.getByText(/pip install .*pyrekordbox/)).toBeTruthy();
+  });
+
+  it('will not open a database with a key that cannot be one', async () => {
+    useSettingsStore.setState({ rekordboxDbKey: '' } as any);
+    show([DB]);
+    fireEvent.click(await screen.findByTitle(DB.path));
+    const field = screen.getByPlaceholderText(/Paste the master.db key/);
+    fireEvent.change(field, { target: { value: 'nope' } });
+    expect(screen.getByText(/not 64 hexadecimal characters/)).toBeTruthy();
+    expect(screen.getByText('Open database').closest('button')!.disabled).toBe(true);
+  });
+
   it('opens an XML export directly', async () => {
     show([DB, XML]);
     fireEvent.click(await screen.findByTitle(XML.path));
