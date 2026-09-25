@@ -3,6 +3,7 @@ import { runtime, safeConsole } from '../runtime';
 import { findBrokenEntries, diagnoseLocation, isStreamingLocation } from '../brokenEntries';
 import { removeEntriesFromDb } from '../rekordboxDbWriter';
 import { assertWritableLibraryPath } from '../librarySource';
+import type { TrackPayload } from '../ipcContract';
 
 // ─── Consolidate Library ──────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ type FilterRule = {
   value: string;
 };
 
-function applyFilters(tracks: any[], rules: FilterRule[]): any[] {
+function applyFilters(tracks: TrackPayload[], rules: FilterRule[]): TrackPayload[] {
   return tracks.filter(t => rules.every(r => {
     const raw = (() => {
       switch (r.field) {
@@ -24,8 +25,8 @@ function applyFilters(tracks: any[], rules: FilterRule[]): any[] {
         case 'album':   return (t.album   || '').toLowerCase();
         case 'genre':   return (t.genre   || '').toLowerCase();
         case 'rating':  return t.rating  ?? 0;
-        case 'bpm':     return parseFloat(t.bpm) || 0;
-        case 'year':    return parseInt(t.year, 10) || 0;
+        case 'bpm':     return Number(t.bpm) || 0;
+        case 'year':    return parseInt(String(t.year ?? ''), 10) || 0;
         case 'format': {
           const ext = (t.location || '').split('.').pop()?.toLowerCase() ?? '';
           return ext;
@@ -53,7 +54,7 @@ const filterCancelTokens = new Map<string, { cancelled: boolean }>();
  * consolidate and filter tools.
  */
 export function registerMaintenanceIpc(): void {
-  ipcMain.handle('find-broken-entries', async (_e, args: any[] | { tracks: any[]; includeMissing?: boolean }) => {
+  ipcMain.handle('find-broken-entries', async (_e, args: TrackPayload[] | { tracks: TrackPayload[]; includeMissing?: boolean }) => {
     try {
       // Older callers passed the array straight in.
       const tracks = Array.isArray(args) ? args : args.tracks;
@@ -99,7 +100,8 @@ export function registerMaintenanceIpc(): void {
 
       // These entries point at nothing, so nothing can inherit their playlist
       // slots: drop the references rather than re-pointing them.
-      const prune = (playlists: any[]) => {
+      interface PlaylistNode { tracks?: string[]; children?: PlaylistNode[] }
+      const prune = (playlists: PlaylistNode[]) => {
         for (const playlist of playlists) {
           if (playlist.tracks) {
             playlist.tracks = playlist.tracks.filter((id: string) => !removing.has(id));
@@ -129,7 +131,7 @@ export function registerMaintenanceIpc(): void {
     }
   });
 
-  ipcMain.handle('consolidate-preview', async (_, { tracks, destination }: { tracks: any[]; destination: string }) => {
+  ipcMain.handle('consolidate-preview', async (_, { tracks, destination }: { tracks: TrackPayload[]; destination: string }) => {
     try {
       const preview = runtime().libraryConsolidator.preview(tracks, destination);
       return { success: true, data: preview };
@@ -142,7 +144,7 @@ export function registerMaintenanceIpc(): void {
     operationId, tracks, libraryPath, options
   }: {
     operationId: string;
-    tracks: any[];
+    tracks: TrackPayload[];
     libraryPath: string;
     options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
   }) => {
@@ -203,7 +205,7 @@ export function registerMaintenanceIpc(): void {
   });
 
   ipcMain.handle('filter-preview', async (_, { tracks, filters, destination }: {
-    tracks: any[];
+    tracks: TrackPayload[];
     filters: FilterRule[];
     destination: string;
   }) => {
@@ -220,7 +222,7 @@ export function registerMaintenanceIpc(): void {
     operationId, tracks, libraryPath, filters, options,
   }: {
     operationId: string;
-    tracks: any[];
+    tracks: TrackPayload[];
     libraryPath: string;
     filters: FilterRule[];
     options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };

@@ -10,8 +10,13 @@
  * @param playlists  the (possibly nested) playlist tree; `tracks` arrays are rewritten in place
  * @param replacement  removedTrackId -> keptTrackId
  */
+export interface PlaylistNode {
+  tracks?: string[];
+  children?: PlaylistNode[];
+}
+
 export function substitutePlaylistTrackIds(
-  playlists: Array<{ tracks?: string[]; children?: any[] }>,
+  playlists: PlaylistNode[],
   replacement: Map<string, string>
 ): void {
   for (const playlist of playlists) {

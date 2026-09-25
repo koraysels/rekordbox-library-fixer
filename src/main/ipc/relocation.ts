@@ -5,6 +5,8 @@ import { mainLogger as appLogger } from '../appLogger';
 import { assertWritableLibraryPath, isRekordboxDatabasePath } from '../librarySource';
 import { isRekordboxRunning } from '../rekordboxRunning';
 import { relocateTracksInDb } from '../rekordboxDbRelocator';
+import type { TrackPayload, RelocationPayload, RelocationResultPayload } from '../ipcContract';
+import type { RelocationOptions, MissingTrack } from '../trackRelocator';
 
 // Store active operations for cancellation
 const activeOperations = new Map<string, { cancelled: boolean }>();
@@ -92,8 +94,8 @@ export function registerRelocationIpc(): void {
   });
 
   ipcMain.handle('auto-relocate-tracks', async (_event, data: {
-    tracks: any[];
-    options: any;
+    tracks: MissingTrack[];
+    options: RelocationOptions;
     libraryPath: string;
     dbKey?: string;
   }) => {
@@ -119,7 +121,7 @@ export function registerRelocationIpc(): void {
       }
 
       let successCount = 0;
-      const results: any[] = [];
+      const results: RelocationResultPayload[] = [];
       const successfulRelocations: Array<{
         trackId: string;
         oldLocation: string;
@@ -219,6 +221,8 @@ export function registerRelocationIpc(): void {
                 trackName: track.name,
                 success: false,
                 error: 'No high-confidence candidate found',
+                oldLocation: track.originalLocation,
+                newLocation: '',
                 confidence: bestCandidate.confidence
               });
 
@@ -241,6 +245,8 @@ export function registerRelocationIpc(): void {
               trackId: track.id,
               trackName: track.name,
               success: false,
+              oldLocation: track.originalLocation,
+              newLocation: '',
               error: 'No candidates found'
             });
 
@@ -262,6 +268,8 @@ export function registerRelocationIpc(): void {
             trackId: track.id,
             trackName: track.name,
             success: false,
+            oldLocation: track.originalLocation,
+            newLocation: '',
             error: error instanceof Error ? error.message : 'Processing error'
           });
           appLogger.error(`   ❌ Error processing track "${track.name}":`, error);
@@ -271,7 +279,7 @@ export function registerRelocationIpc(): void {
       // Step 2: Apply the relocations using batch relocation logic
       let batchResult: {
         success: boolean;
-        data?: any;
+        data?: RelocationResultPayload[];
         xmlUpdated?: boolean;
         libraryUpdated?: boolean;
         tracksUpdated?: number;
@@ -400,7 +408,7 @@ export function registerRelocationIpc(): void {
     return { success: false, error: 'Operation not found' };
   });
 
-  ipcMain.handle('find-missing-tracks', async (_, tracks: any) => {
+  ipcMain.handle('find-missing-tracks', async (_, tracks: Record<string, TrackPayload>) => {
     appLogger.info('🔍 IPC: Finding missing tracks');
     try {
       const tracksMap = new Map(Object.entries(tracks));
@@ -419,7 +427,7 @@ export function registerRelocationIpc(): void {
     }
   });
 
-  ipcMain.handle('find-relocation-candidates', async (_, track: any, options: any) => {
+  ipcMain.handle('find-relocation-candidates', async (_, track: MissingTrack, options: RelocationOptions) => {
     safeConsole.log(`🔍 IPC: Finding relocation candidates for track ${track.id}`);
     try {
       const candidates = await runtime().trackRelocator.findRelocationCandidates(track, options);
@@ -465,7 +473,7 @@ export function registerRelocationIpc(): void {
 
   ipcMain.handle('batch-relocate-tracks', async (_, data: {
     libraryPath: string;
-    relocations: any[];
+    relocations: RelocationPayload[];
     dbKey?: string;
   }) => {
     safeConsole.log(`📁 IPC: Batch relocating ${data.relocations.length} tracks`);

@@ -15,16 +15,16 @@ export enum LogLevel {
 export interface LogEntry {
   level: LogLevel;
   message: string;
-  data?: any;
+  data?: unknown;
   timestamp: Date;
   process: 'main';
 }
 
 export interface AppLogger {
-  debug: (message: string, data?: any) => void;
-  info: (message: string, data?: any) => void;
-  warn: (message: string, data?: any) => void;
-  error: (message: string, data?: any) => void;
+  debug: (message: string, data?: unknown) => void;
+  info: (message: string, data?: unknown) => void;
+  warn: (message: string, data?: unknown) => void;
+  error: (message: string, data?: unknown) => void;
 }
 
 export interface LoggerProvider {
@@ -47,28 +47,28 @@ class ConsoleLoggerProvider implements LoggerProvider {
 
   // Safe console logging for main process to prevent EPIPE errors
   private safeConsole = {
-    debug: (...args: any[]) => {
+    debug: (...args: unknown[]) => {
       try {
         console.debug(...args);
       } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
-    info: (...args: any[]) => {
+    info: (...args: unknown[]) => {
       try {
         console.info(...args);
       } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
-    warn: (...args: any[]) => {
+    warn: (...args: unknown[]) => {
       try {
         console.warn(...args);
       } catch {
         // Silently ignore EPIPE errors during logging
       }
     },
-    error: (...args: any[]) => {
+    error: (...args: unknown[]) => {
       try {
         console.error(...args);
       } catch {
@@ -114,7 +114,7 @@ class MainAppLogger implements AppLogger {
     this.providers.push(provider);
   }
 
-  private log(level: LogLevel, message: string, data?: any): void {
+  private log(level: LogLevel, message: string, data?: unknown): void {
     const entry: LogEntry = {
       level,
       message,
@@ -126,19 +126,19 @@ class MainAppLogger implements AppLogger {
     this.providers.forEach(provider => provider.log(entry));
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     this.log(LogLevel.DEBUG, message, data);
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     this.log(LogLevel.INFO, message, data);
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     this.log(LogLevel.WARN, message, data);
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: unknown): void {
     this.log(LogLevel.ERROR, message, data);
   }
 }

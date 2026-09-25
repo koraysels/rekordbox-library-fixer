@@ -1,4 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type {
+  TrackPayload, ScanOptionsPayload, ScanProgressPayload, DuplicateSet, MergePlanPayload,
+  RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress,
+} from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
@@ -8,16 +12,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFolder: () => ipcRenderer.invoke('select-folder'),
   parseRekordboxLibrary: (xmlPath: string) =>
     ipcRenderer.invoke('parse-rekordbox-library', xmlPath),
-  findDuplicates: (options: any) =>
+  findDuplicates: (options: ScanOptionsPayload) =>
     ipcRenderer.invoke('find-duplicates', options),
   detectRekordboxDb: () => ipcRenderer.invoke('detect-rekordbox-db'),
   scanForLibraries: () => ipcRenderer.invoke('scan-for-libraries'),
   isRekordboxRunning: () => ipcRenderer.invoke('is-rekordbox-running'),
   showSystemNotification: (data: { type: string; message: string }) =>
     ipcRenderer.invoke('show-system-notification', data),
-  mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: any[] }) =>
+  mergeDuplicatesInDb: (data: { dbPath: string; key: string; plans: MergePlanPayload[] }) =>
     ipcRenderer.invoke('merge-duplicates-in-db', data),
-  findBrokenEntries: (args: { tracks: any[]; includeMissing?: boolean }) =>
+  findBrokenEntries: (args: { tracks: TrackPayload[]; includeMissing?: boolean }) =>
     ipcRenderer.invoke('find-broken-entries', args),
   removeEntriesInDb: (data: { dbPath: string; key: string; trackIds: string[] }) =>
     ipcRenderer.invoke('remove-entries-in-db', data),
@@ -31,45 +35,56 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('parse-rekordbox-db', args),
   cancelDuplicateScan: (operationId: string) =>
     ipcRenderer.invoke('cancel-duplicate-scan', operationId),
-  onDuplicateScanProgress: (callback: (progress: any) => void) => {
-    const handler = (_e: any, progress: any) => callback(progress);
+  onDuplicateScanProgress: (callback: (progress: ScanProgressPayload) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, progress: ScanProgressPayload) => callback(progress);
     ipcRenderer.on('duplicate-scan-progress', handler);
     return () => ipcRenderer.removeListener('duplicate-scan-progress', handler);
   },
-  onDuplicateScanSet: (callback: (payload: any) => void) => {
-    const handler = (_e: any, payload: any) => callback(payload);
+  onDuplicateScanSet: (callback: (payload: { set: DuplicateSet }) => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, payload: { set: DuplicateSet }) => callback(payload);
     ipcRenderer.on('duplicate-scan-set', handler);
     return () => ipcRenderer.removeListener('duplicate-scan-set', handler);
   },
-  resolveDuplicates: (resolution: any) =>
+  resolveDuplicates: (resolution: {
+    libraryPath: string;
+    duplicates: DuplicateSet[];
+    strategy: string;
+    pathPreferences?: string[];
+    preferLossless?: boolean;
+    deleteFromDisk?: boolean;
+  }) =>
     ipcRenderer.invoke('resolve-duplicates', resolution),
-  saveRekordboxXML: (data: any) =>
+  saveRekordboxXML: (data: { outputPath: string; libraryData: unknown }) =>
     ipcRenderer.invoke('save-rekordbox-xml', data),
   getLogsInfo: () => ipcRenderer.invoke('get-logs-info'),
   showFileInFolder: (filePath: string) =>
     ipcRenderer.invoke('show-file-in-folder', filePath),
 
   // Track Relocation APIs
-  findMissingTracks: (tracks: any) =>
+  findMissingTracks: (tracks: Record<string, TrackPayload>) =>
     ipcRenderer.invoke('find-missing-tracks', tracks),
   resetTrackLocations: (trackIds: string[]) =>
     ipcRenderer.invoke('reset-track-locations', trackIds),
-  autoRelocateTracks: (data: { tracks: any[], options: any, libraryPath: string, dbKey?: string }) =>
+  autoRelocateTracks: (data: {
+    tracks: TrackPayload[]; options: Record<string, unknown>; libraryPath: string; dbKey?: string;
+  }) =>
     ipcRenderer.invoke('auto-relocate-tracks', data),
   cancelAutoRelocate: (operationId: string) =>
     ipcRenderer.invoke('cancel-auto-relocate', operationId),
-  onAutoRelocateProgress: (callback: (progress: any) => void) => {
-    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+  onAutoRelocateProgress: (callback: (progress: RelocateProgressPayload) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: RelocateProgressPayload) => callback(progress);
     ipcRenderer.on('auto-relocate-progress', handler);
     return () => {
       ipcRenderer.removeListener('auto-relocate-progress', handler);
     };
   },
-  findRelocationCandidates: (track: any, options: any) =>
+  findRelocationCandidates: (track: TrackPayload, options: Record<string, unknown>) =>
     ipcRenderer.invoke('find-relocation-candidates', track, options),
   relocateTrack: (trackId: string, oldLocation: string, newLocation: string) =>
     ipcRenderer.invoke('relocate-track', trackId, oldLocation, newLocation),
-  batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) =>
+  batchRelocateTracks: (data: {
+    libraryPath: string; relocations: RelocationPayload[]; dbKey?: string;
+  }) =>
     ipcRenderer.invoke('batch-relocate-tracks', data),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
@@ -99,30 +114,39 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   saveDroppedFile: (data: { content: string, fileName: string }) =>
     ipcRenderer.invoke('save-dropped-file', data),
-  openFileDialog: (options?: any) => ipcRenderer.invoke('open-file-dialog', options),
+  openFileDialog: (options?: Electron.OpenDialogOptions) =>
+    ipcRenderer.invoke('open-file-dialog', options),
 
   // Consolidate Library
-  consolidatePreview: (data: { tracks: any[]; destination: string }) =>
+  consolidatePreview: (data: { tracks: TrackPayload[]; destination: string }) =>
     ipcRenderer.invoke('consolidate-preview', data),
-  consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) =>
+  consolidateLibrary: (data: {
+    operationId: string; tracks: TrackPayload[]; libraryPath: string;
+    options: Record<string, unknown>;
+  }) =>
     ipcRenderer.invoke('consolidate-library', data),
   cancelConsolidate: (operationId: string) =>
     ipcRenderer.invoke('cancel-consolidate', operationId),
-  onConsolidateProgress: (callback: (progress: any) => void) => {
-    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+  onConsolidateProgress: (callback: (progress: OperationProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: OperationProgress) => callback(progress);
     ipcRenderer.on('consolidate-progress', handler);
     return () => { ipcRenderer.removeListener('consolidate-progress', handler); };
   },
 
   // Filter & Move/Copy
-  filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) =>
+  filterPreview: (data: {
+    tracks: TrackPayload[]; filters: FilterRulePayload[]; destination: string;
+  }) =>
     ipcRenderer.invoke('filter-preview', data),
-  filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) =>
+  filterLibrary: (data: {
+    operationId: string; tracks: TrackPayload[]; libraryPath: string;
+    filters: FilterRulePayload[]; options: Record<string, unknown>;
+  }) =>
     ipcRenderer.invoke('filter-library', data),
   cancelFilter: (operationId: string) =>
     ipcRenderer.invoke('cancel-filter', operationId),
-  onFilterProgress: (callback: (progress: any) => void) => {
-    const handler = (_: Electron.IpcRendererEvent, progress: any) => callback(progress);
+  onFilterProgress: (callback: (progress: OperationProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: OperationProgress) => callback(progress);
     ipcRenderer.on('filter-progress', handler);
     return () => { ipcRenderer.removeListener('filter-progress', handler); };
   },
@@ -130,7 +154,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Native drag-and-drop
   handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
   onNativeFileDrop: (callback: (filePaths: string[]) => void) => {
-    const handler = (_: any, filePaths: string[]) => callback(filePaths);
+    const handler = (_: Electron.IpcRendererEvent, filePaths: string[]) => callback(filePaths);
     ipcRenderer.on('native-file-dropped', handler);
     return () => ipcRenderer.removeListener('native-file-dropped', handler);
   }

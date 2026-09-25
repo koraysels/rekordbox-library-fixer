@@ -6,7 +6,7 @@ export interface LogEntry {
   timestamp: string;
   level: 'info' | 'warning' | 'error';
   operation: string;
-  details: any;
+  details: Record<string, unknown>;
 }
 
 export class Logger {
@@ -43,7 +43,7 @@ export class Logger {
     }
   }
 
-  info(operation: string, details: any = {}): void {
+  info(operation: string, details: Record<string, unknown> = {}): void {
     this.writeLog({
       timestamp: this.getTimestamp(),
       level: 'info',
@@ -52,7 +52,7 @@ export class Logger {
     });
   }
 
-  warning(operation: string, details: any = {}): void {
+  warning(operation: string, details: Record<string, unknown> = {}): void {
     this.writeLog({
       timestamp: this.getTimestamp(),
       level: 'warning',
@@ -61,7 +61,7 @@ export class Logger {
     });
   }
 
-  error(operation: string, details: any = {}): void {
+  error(operation: string, details: Record<string, unknown> = {}): void {
     this.writeLog({
       timestamp: this.getTimestamp(),
       level: 'error',

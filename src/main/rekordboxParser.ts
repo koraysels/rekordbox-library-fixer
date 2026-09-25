@@ -2,6 +2,17 @@ import * as fs from 'fs';
 import * as xml2js from 'xml2js';
 import { fileURLToPath, pathToFileURL } from 'url';
 
+/**
+ * The date as rekordbox writes it. A track parsed from XML carries a Date, but
+ * one that came back through the bridge carries a string, and calling
+ * toISOString on that would have thrown.
+ */
+function asDateString(value: Date | string | undefined): string {
+  if (!value) { return ''; }
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+}
+
 export interface Track {
   id: string;
   name: string;
@@ -14,8 +25,11 @@ export interface Track {
   size?: number;
   bitrate?: number;
   duration?: number;
-  dateAdded?: Date;
-  dateModified?: Date;
+  // Dates survive the XML as Date objects, but arrive from the renderer as
+  // strings: everything crossing the bridge is serialised. Both are accepted
+  // rather than cast at each use, which is what the `any`s here were hiding.
+  dateAdded?: Date | string;
+  dateModified?: Date | string;
   playCount?: number;
   rating?: number;
   comments?: string;
@@ -328,7 +342,7 @@ export class RekordboxParser {
         TrackNumber: track.trackNumber?.toString() || '0',
         Year: track.year?.toString() || '0',
         AverageBpm: track.bpm?.toString() || '0.00',
-        DateAdded: track.dateAdded ? track.dateAdded.toISOString().split('T')[0] : '',
+        DateAdded: asDateString(track.dateAdded),
         BitRate: track.bitrate?.toString() || '',
         SampleRate: track.sampleRate?.toString() || '',
         Comments: track.comments || '',

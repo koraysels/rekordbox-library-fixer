@@ -4,6 +4,7 @@ import { substitutePlaylistTrackIds } from '../playlistSubstitution';
 import { computeDeletablePaths } from '../safeDeletePaths';
 import { mergeDuplicateEntries, type MergePlan } from '../rekordboxDbWriter';
 import { assertWritableLibraryPath } from '../librarySource';
+import type { TrackPayload, DuplicateSet } from '../ipcContract';
 import { isLossless } from '../audioQuality';
 import { shell } from 'electron';
 
@@ -16,7 +17,7 @@ const activeOperations = new Map<string, { cancelled: boolean }>();
  */
 export function registerDuplicateIpc(): void {
   ipcMain.handle('find-duplicates', async (_, options: {
-    tracks: any[];
+    tracks: TrackPayload[];
     useFingerprint: boolean;
     useMetadata: boolean;
     metadataFields: string[];
@@ -27,7 +28,7 @@ export function registerDuplicateIpc(): void {
     activeOperations.set(operationId, cancelToken);
 
     try {
-      const send = (channel: string, payload: any) => {
+      const send = (channel: string, payload: Record<string, unknown>) => {
         sendToWindow(channel, { operationId, ...payload });
       };
       send('duplicate-scan-progress', {
@@ -91,7 +92,7 @@ export function registerDuplicateIpc(): void {
 
   ipcMain.handle('resolve-duplicates', async (_, resolution: {
     libraryPath: string;
-    duplicates: any[];
+    duplicates: DuplicateSet[];
     strategy: 'keep-highest-quality' | 'keep-newest' | 'keep-oldest' | 'keep-preferred-path' | 'manual';
     pathPreferences: string[];
     preferLossless?: boolean;
@@ -125,8 +126,8 @@ export function registerDuplicateIpc(): void {
 
         // Apply resolution strategy
         if (resolution.strategy === 'keep-highest-quality') {
-          const qualityScore = (t: any) => (t.bitrate || 0) + (t.size || 0) / 1000000;
-          trackToKeep = tracksInSet.reduce((best: any, current: any) => {
+          const qualityScore = (t: TrackPayload) => (t.bitrate || 0) + (t.size || 0) / 1000000;
+          trackToKeep = tracksInSet.reduce((best: TrackPayload, current: TrackPayload) => {
             if (resolution.preferLossless) {
               const bestLossless = isLossless(best.location || '');
               const currentLossless = isLossless(current.location || '');
@@ -136,20 +137,20 @@ export function registerDuplicateIpc(): void {
             return qualityScore(current) > qualityScore(best) ? current : best;
           });
         } else if (resolution.strategy === 'keep-newest') {
-          trackToKeep = tracksInSet.reduce((newest: any, current: any) => {
+          trackToKeep = tracksInSet.reduce((newest: TrackPayload, current: TrackPayload) => {
             if (!newest.dateModified) {return current;}
             if (!current.dateModified) {return newest;}
             return new Date(current.dateModified) > new Date(newest.dateModified) ? current : newest;
           });
         } else if (resolution.strategy === 'keep-oldest') {
-          trackToKeep = tracksInSet.reduce((oldest: any, current: any) => {
+          trackToKeep = tracksInSet.reduce((oldest: TrackPayload, current: TrackPayload) => {
             if (!oldest.dateAdded) {return current;}
             if (!current.dateAdded) {return oldest;}
             return new Date(current.dateAdded) < new Date(oldest.dateAdded) ? current : oldest;
           });
         } else if (resolution.strategy === 'keep-preferred-path') {
           // Sort by path preference
-          const sortedTracks = [...tracksInSet].sort((a: any, b: any) => {
+          const sortedTracks = [...tracksInSet].sort((a: TrackPayload, b: TrackPayload) => {
             const aMatch = resolution.pathPreferences.findIndex((pref: string) =>
               a.location && a.location.toLowerCase().includes(pref.toLowerCase())
             );
@@ -170,10 +171,10 @@ export function registerDuplicateIpc(): void {
 
         // Add all other tracks to removal list
         const tracksToRemoveFromSet = tracksInSet
-          .filter((track: any) => track.id !== trackToKeep.id);
+          .filter((track: TrackPayload) => track.id !== trackToKeep.id);
 
-        tracksToRemove.push(...tracksToRemoveFromSet.map((t: any) => t.id));
-        tracksToRemoveFromSet.forEach((t: any) => replacement.set(t.id, trackToKeep.id));
+        tracksToRemove.push(...tracksToRemoveFromSet.map((t: TrackPayload) => t.id));
+        tracksToRemoveFromSet.forEach((t: TrackPayload) => replacement.set(t.id, trackToKeep.id));
 
         safeConsole.log(`🎵 Duplicate set: keeping "${trackToKeep.name}" (${trackToKeep.location}), removing ${tracksToRemoveFromSet.length} others`);
       }
@@ -210,8 +211,8 @@ export function registerDuplicateIpc(): void {
       // that no remaining track still references, or we would destroy the audio
       // belonging to a track the user chose to keep.
       const remainingLocations = Array.from(library.tracks.values())
-        .map((t: any) => t?.location)
-        .filter((loc: any): loc is string => typeof loc === 'string' && loc.length > 0);
+        .map((t) => (t as TrackPayload | undefined)?.location)
+        .filter((loc): loc is string => typeof loc === 'string' && loc.length > 0);
       const fsSync = require('fs');
       const isRegularFile = (p: string) => {
         try { return fsSync.statSync(p).isFile(); } catch { return false; }
