@@ -9,22 +9,18 @@ import {
   Trash2,
   Loader2,
   CheckCircle2,
-  Sparkles,
-  AlertTriangle
 } from 'lucide-react';
 import { useDuplicates } from '../hooks';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useDuplicateResolution } from '../hooks/useDuplicateResolution';
 import { duplicateStorage } from '../db/duplicatesDb';
 import { useAppContext } from '../AppWithRouter';
 import { VirtualizedDuplicateList } from './VirtualizedDuplicateList';
 import { SettingsSlideout, PopoverButton, PageHeader, DeleteConfirmModal, DuplicateHelp } from './ui';
 import { SettingsPanel } from './SettingsPanel';
+import { DuplicateToolbar } from './DuplicateToolbar';
 import { countPlaylistMembership } from '../utils/playlistMembership';
-import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
-import { normalizePathForCompare } from '../utils/normalizePath';
-import { classifyDuplicateSet, looksLikePlayableFile } from '../utils/classifyDuplicateSet';
+import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
 import { isStreamingTrack } from '../utils/streamingSource';
-import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -289,189 +285,22 @@ const DuplicateDetector: React.FC = () => {
    * collection. Playlist links move to the kept entry and the extra entries are
    * marked deleted; no audio file is touched.
    */
-  const resolveInDatabase = useCallback(async () => {
-    const selectedSets = duplicates.filter((d) => selectedDuplicates.has(d.id));
-    if (selectedSets.length === 0) { return; }
-
-    const { running } = await window.electronAPI.isRekordboxRunning();
-    if (running) {
-      showNotification('error', 'Close rekordbox first — it keeps its database open while it runs.');
-      return;
-    }
-
-    const plans = selectedSets.map((d: any) => {
-      const keeper = pickRecommendedTrack(d.tracks, resolutionStrategy, d.pathPreferences);
-      return {
-        keepId: keeper?.id ?? d.tracks[0].id,
-        removeIds: d.tracks.filter((t: any) => t.id !== (keeper?.id ?? d.tracks[0].id)).map((t: any) => t.id),
-      };
-    });
-
-    setIsScanning(true);
-    try {
-      const result = await window.electronAPI.mergeDuplicatesInDb({
-        dbPath: libraryPath,
-        key: useSettingsStore.getState().rekordboxDbKey,
-        plans,
-      });
-      if (result.success) {
-        showNotification(
-          'success',
-          `Merged ${plans.length} set${plans.length !== 1 ? 's' : ''} in rekordbox — `
-          + `${result.entriesRemoved} extra entr${result.entriesRemoved === 1 ? 'y' : 'ies'} removed, `
-          + `${result.playlistLinksMoved} playlist link${result.playlistLinksMoved === 1 ? '' : 's'} moved to the kept track. `
-          + 'Reopen rekordbox to see it. The database was backed up first — undo from the Backups tab.',
-          { important: true }
-        );
-        void duplicationHistoryStorage.record({
-          libraryPath,
-          timestamp: new Date(),
-          type: 'duplicate-merge',
-          summary: `Merged ${plans.length} sets directly in the rekordbox database`,
-          backupPath: result.backupPath,
-          details: plans.flatMap((p) => p.removeIds.map((id: string) => ({ action: 'merged' as const, from: id, to: p.keepId }))),
-        });
-        setDuplicates((prev: any[]) => prev.filter((d) => !selectedDuplicates.has(d.id)));
-        clearAll();
-      } else {
-        showNotification('error', result.error || 'Could not update the rekordbox database', { important: true });
-      }
-    } finally {
-      setIsScanning(false);
-    }
-  }, [duplicates, selectedDuplicates, resolutionStrategy, libraryPath, showNotification, setDuplicates, clearAll, setIsScanning]);
-
-  const executeResolve = useCallback(async (withDelete: boolean) => {
-    const selectedDuplicateSets = duplicates.filter(d => selectedDuplicates.has(d.id));
-
-    setIsScanning(true);
-    showNotification('info', 'Creating backup and resolving duplicates...');
-
-    try {
-      const result = await window.electronAPI.resolveDuplicates({
-        libraryPath,
-        duplicates: selectedDuplicateSets,
-        strategy: resolutionStrategy,
-        pathPreferences: scanOptions.pathPreferences,
-        preferLossless: scanOptions.preferLossless,
-        deleteFromDisk: withDelete,
-      });
-
-      if (result.success) {
-        const remainingDuplicates = duplicates.filter(d => !selectedDuplicates.has(d.id));
-        setDuplicates(remainingDuplicates);
-        setSelections([]);
-
-        // Say what actually happened: duplicate entries are merged into the
-        // copy you keep and playlists follow it. "Removed from XML" read like
-        // music had been lost.
-        const sets = selectedDuplicates.size;
-        const merged = result.tracksRemoved ?? 0;
-        let msg = `✅ Merged ${sets} duplicate set${sets !== 1 ? 's' : ''} — ${merged} extra entr${merged !== 1 ? 'ies' : 'y'} folded into the track you kept. Playlists now point at it.`;
-        if (withDelete) {
-          const trashed = result.filesDeleted ?? 0;
-          msg += trashed > 0
-            ? `\n🗑️ ${trashed} duplicate file${trashed !== 1 ? 's' : ''} moved to the trash`
-            : '\n🗑️ No files needed removing — every copy pointed at the same file';
-          if ((result.deleteErrors?.length ?? 0) > 0) {
-            msg += ` (${result.deleteErrors!.length} could not be trashed — check paths)`;
-          }
-        }
-        msg += `\n📁 Library backup: ${result.backupPath}`;
-        showNotification('success', msg, { important: true });
-
-        // Record what happened so the History tab can be used to verify it.
-        const details: ActivityDetail[] = [];
-        for (const set of selectedDuplicateSets as any[]) {
-          const keeper = pickRecommendedTrack(set.tracks, resolutionStrategy, set.pathPreferences);
-          for (const t of set.tracks) {
-            if (t.id === keeper?.id) { continue; }
-            details.push({
-              action: 'merged',
-              trackName: `${t.artist} - ${t.name}`,
-              from: t.location,
-              to: keeper?.location,
-            });
-          }
-        }
-        for (const trashed of (result.trashedPaths ?? [])) {
-          details.push({ action: 'trashed', from: trashed });
-        }
-        for (const failure of (result.deleteErrors ?? [])) {
-          details.push({ action: 'failed', from: failure.file, error: failure.error });
-        }
-        void duplicationHistoryStorage.record({
-          libraryPath,
-          timestamp: new Date(),
-          type: 'duplicate-merge',
-          summary: `Merged ${sets} duplicate set${sets !== 1 ? 's' : ''}`
-            + ` — ${merged} entr${merged !== 1 ? 'ies' : 'y'} folded in`
-            + (withDelete ? `, ${result.filesDeleted} file${result.filesDeleted !== 1 ? 's' : ''} to trash` : ''),
-          backupPath: result.backupPath,
-          details,
-        });
-
-        if (result.updatedLibrary && libraryData) {
-          setLibraryData({
-            ...libraryData,
-            tracks: result.updatedLibrary.tracks,
-            playlists: result.updatedLibrary.playlists || libraryData.playlists,
-          });
-        }
-      } else {
-        showNotification('error', `Failed to resolve duplicates: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Resolution failed:', error);
-      showNotification('error', 'Failed to resolve duplicates. Check console for details.');
-    } finally {
-      setIsScanning(false);
-    }
-  }, [duplicates, selectedDuplicates, libraryPath, resolutionStrategy, scanOptions, libraryData, setDuplicates, setSelections, setLibraryData, showNotification, setIsScanning]);
-
-  const resolveDuplicates = useCallback(async () => {
-    if (selectedDuplicates.size === 0) {
-      showNotification('error', 'Please select duplicates to resolve');
-      return;
-    }
-
-    if (libraryPath.toLowerCase().endsWith('.db')) {
-      await resolveInDatabase();
-      return;
-    }
-
-    if (deleteFromDisk) {
-      // Collect all file paths that will be removed so the modal can show them
-      const selectedSets = duplicates.filter(d => selectedDuplicates.has(d.id));
-      // Show only the paths that will actually be trashed: per set, drop the
-      // copy that is kept, and drop any path the kept copy still uses (several
-      // rekordbox entries can point at the same file — that file stays).
-      const losingPaths = selectedSets.flatMap((d: any) => {
-        const keeper = pickRecommendedTrack(d.tracks, resolutionStrategy, d.pathPreferences);
-        const keeperLocation = normalizePathForCompare(keeper?.location);
-        return d.tracks
-          .filter((t: any) => t.id !== keeper?.id)
-          .map((t: any) => t.location)
-          // Only real files can be trashed. Rekordbox also stores folders,
-          // truncated locations and streaming ids; proposing those was alarming
-          // and the backend refuses them anyway.
-          .filter((loc: string) => loc && looksLikePlayableFile(loc)
-            && normalizePathForCompare(loc) !== keeperLocation);
-      });
-      const uniquePaths = Array.from(new Set(losingPaths));
-      if (uniquePaths.length === 0) {
-        // Nothing to trash (e.g. every copy points at the same file) — don't
-        // make the user confirm a deletion that would delete nothing.
-        await executeResolve(false);
-        return;
-      }
-      setPendingDeletePaths(uniquePaths);
-      return;
-    }
-
-    await executeResolve(false);
-  }, [selectedDuplicates, duplicates, deleteFromDisk, executeResolve, showNotification, libraryPath, resolveInDatabase]);
-
+  const { resolveDuplicates, executeResolve } = useDuplicateResolution({
+    duplicates,
+    libraryData,
+    setLibraryData,
+    selectedDuplicates,
+    resolutionStrategy,
+    scanOptions,
+    libraryPath,
+    deleteFromDisk,
+    showNotification,
+    setDuplicates,
+    setSelections,
+    setIsScanning,
+    clearAll,
+    setPendingDeletePaths,
+  });
 
   // Memoize expensive calculations
 
@@ -509,149 +338,26 @@ const DuplicateDetector: React.FC = () => {
 
       {/* Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Actions Bar */}
-        <div className="flex-shrink-0 bg-te-grey-200 border-b-2 border-te-grey-300">
-          {/* Row 1 — the one thing you came here to do, plus finding your way
-              around the result. The search grows; nothing else competes. */}
-          <div className="flex items-center gap-3 px-4 pt-4">
-            {busy ? (
-              /* While scanning, this spot carries the progress and the way out.
-                 It used to live in the empty results area, which disappears as
-                 soon as the first streamed set arrives — taking Cancel with it. */
-              <div className="flex items-center gap-3 flex-1 min-w-0">
-                <button onClick={cancelScan} className="btn-secondary text-xs whitespace-nowrap">
-                  <Trash2 size={13} className="inline mr-1.5" />
-                  Cancel scan
-                </button>
-                <div className="flex-1 min-w-0">
-                  {scanProgress && scanProgress.total > 0 && (
-                    <>
-                      <div className="w-full bg-te-grey-300 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="bg-te-orange h-full transition-all duration-200"
-                          style={{ width: `${Math.round((scanProgress.current / scanProgress.total) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-[11px] font-te-mono text-te-grey-600 mt-1 truncate normal-case">
-                        {scanProgress.current} / {scanProgress.total} tracks · {scanProgress.setsFound} sets found
-                        {scanProgress.trackName ? ` · ${scanProgress.trackName}` : ''}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <PopoverButton
-                onClick={scanForDuplicates}
-                icon={Search}
-                title="Scan for Duplicates"
-                description="Analyze your library to find duplicate tracks using advanced algorithms"
-                variant="primary"
-              >
-                Scan for Duplicates
-              </PopoverButton>
-            )}
-
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder="Search duplicates..."
-              className="input flex-1 min-w-0"
-            />
-          </div>
-
-          {/* Row 2 — which kind of duplicate you are looking at, and what you
-              do with that subset. One segmented control, never wrapping. */}
-          {duplicates.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div className="inline-flex rounded-te border border-te-grey-300 overflow-hidden">
-                {([
-                  ['all', 'All', duplicates.length,
-                    'Every duplicate set found'],
-                  ['files', 'Duplicate files', kindCounts.files,
-                    'Separate files on disk — resolving can move the extra files to the trash'],
-                  ['entries', 'Same-file entries', kindCounts.entries,
-                    'Several rekordbox entries for one file — resolving removes the extra entries, no file is touched'],
-                  ['streaming', 'Streaming', kindCounts.streaming,
-                    'TIDAL, Spotify and the like — these have no file on disk, so nothing can be deleted for them'],
-                ] as const).map(([value, label, count, hint], i) => (
-                  <button
-                    key={value}
-                    onClick={() => setKindFilter(value)}
-                    title={hint}
-                    className={`px-3 py-1.5 text-xs font-te-mono whitespace-nowrap normal-case transition-colors ${
-                      i > 0 ? 'border-l border-te-grey-300' : ''
-                    } ${
-                      kindFilter === value
-                        ? 'bg-te-orange text-te-cream'
-                        : 'bg-te-grey-100 text-te-grey-700 hover:bg-te-grey-50'
-                    }`}
-                  >
-                    {label}
-                    <span className={`ml-1.5 tabular-nums ${kindFilter === value ? 'opacity-70' : 'text-te-grey-500'}`}>
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={selectAllInMode}
-                  disabled={visibleDuplicates.length === 0}
-                  className="btn-ghost text-xs disabled:opacity-40"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 inline mr-1.5" />
-                  Select all {visibleDuplicates.length}
-                </button>
-                <button
-                  onClick={clearAll}
-                  disabled={selectedDuplicates.size === 0}
-                  className="btn-ghost text-xs disabled:opacity-40"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Row 3 — the destructive step. Hidden until something is selected,
-              so the resting toolbar has no armed delete control in it. The
-              counts live in the page header; repeating them here was noise. */}
-          {selectedDuplicates.size > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-3 mx-4 pb-4">
-              <span className="te-label text-xs normal-case mr-auto">
-                {selectedDuplicates.size} set{selectedDuplicates.size !== 1 ? 's' : ''} selected
-              </span>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 cursor-pointer select-none" title="Move the duplicate files of the copies being merged to the system trash. A file the kept track still uses is never touched.">
-                  <input
-                    type="checkbox"
-                    checked={deleteFromDisk}
-                    onChange={e => setDeleteFromDisk(e.target.checked)}
-                    className="checkbox"
-                  />
-                  <span className="flex items-center gap-1 text-xs font-te-mono text-te-red-500 normal-case">
-                    <AlertTriangle className="w-3 h-3" />
-                    Also move duplicate files to trash
-                  </span>
-                </label>
-                <PopoverButton
-                  onClick={resolveDuplicates}
-                  disabled={isResolveDisabled}
-                  loading={busy}
-                  icon={Sparkles}
-                  title="Resolve Selected Duplicates"
-                  description="Apply resolution strategy to selected duplicate sets"
-                  variant="success"
-                >
-                  {busy ? 'Resolving...' : 'Resolve Selected'}
-                </PopoverButton>
-              </div>
-            </div>
-          )}
-        </div>
+        <DuplicateToolbar
+          duplicates={duplicates}
+          visibleDuplicates={visibleDuplicates}
+          selectedDuplicates={selectedDuplicates}
+          kindFilter={kindFilter}
+          kindCounts={kindCounts}
+          setKindFilter={setKindFilter}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
+          scanProgress={scanProgress}
+          busy={busy}
+          deleteFromDisk={deleteFromDisk}
+          setDeleteFromDisk={setDeleteFromDisk}
+          scanForDuplicates={scanForDuplicates}
+          cancelScan={cancelScan}
+          selectAllInMode={selectAllInMode}
+          clearAll={clearAll}
+          resolveDuplicates={resolveDuplicates}
+          isResolveDisabled={isResolveDisabled}
+        />
 
         {duplicates.length > 0 && <DuplicateHelp />}
 

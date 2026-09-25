@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 import { relocationStorage } from '../db/relocationsDb';
-import { historyStorage, historyEvents } from '../db/historyDb';
-import { duplicationHistoryStorage } from '../db/duplicationHistoryDb';
+import {
+  describeRelocationWrite, withRelocatedTracks, recordRelocationRun,
+} from '../relocation/relocationOutcome';
 import type {
   MissingTrack,
   RelocationCandidate,
@@ -289,42 +290,16 @@ export function useTrackRelocator(
           .filter((r: RelocationResult) => r.success)
           .map((r: RelocationResult) => r.trackId);
 
-        // Record in the activity history so the History tab shows relocations too.
-        void duplicationHistoryStorage.record({
+        void recordRelocationRun({
           libraryPath: effectiveLibraryPath,
-          timestamp: new Date(),
-          type: 'relocation',
-          summary: `Relocated ${successfulTrackIds.length} of ${result.data.length} track${result.data.length !== 1 ? 's' : ''}`,
+          results: result.data,
+          tracksUpdated: result.tracksUpdated,
           backupPath: result.backupPath,
-          details: result.data.map((r: RelocationResult) => ({
-            action: r.success ? ('relocated' as const) : ('failed' as const),
-            from: r.oldLocation,
-            to: r.newLocation,
-            error: r.error,
-          })),
-        });
+          method: 'manual',
+        }, state.missingTracks);
 
-        // Update the main library data with new track locations
         if (libraryData && result.xmlUpdated) {
-          const updatedLibraryData = { ...libraryData };
-          const updatedTracks = new Map(libraryData.tracks);
-
-          // Update track locations in the library data
-          result.data.forEach((relocation: RelocationResult) => {
-            if (relocation.success && relocation.newLocation) {
-              const track = updatedTracks.get(relocation.trackId);
-              if (track) {
-                updatedTracks.set(relocation.trackId, {
-                  ...track,
-                  location: relocation.newLocation
-                });
-              }
-            }
-          });
-
-          updatedLibraryData.tracks = updatedTracks;
-          setLibraryData(updatedLibraryData);
-
+          setLibraryData(withRelocatedTracks(libraryData, result.data)!);
           logger.info(`🔄 Updated ${result.tracksUpdated} track locations in library data`);
         }
 
@@ -362,51 +337,13 @@ export function useTrackRelocator(
 
         const successCount = result.data.filter((r: RelocationResult) => r.success).length;
 
-        // Save successful relocations to history
-        logger.debug(`🔍 History check: effectiveLibraryPath="${effectiveLibraryPath}", successCount=${successCount}`);
-
-        if (effectiveLibraryPath && successCount > 0) {
-          const successfulRelocations = result.data.filter((r: RelocationResult) => r.success);
-          logger.info(`📝 Saving ${successfulRelocations.length} relocations to history`);
-
-          try {
-            for (const relocation of successfulRelocations) {
-              const track = state.missingTracks.find(t => t.id === relocation.trackId);
-              if (track) {
-                await historyStorage.addRelocationEntry({
-                  libraryPath: effectiveLibraryPath,
-                  trackId: relocation.trackId,
-                  trackName: track.name,
-                  trackArtist: track.artist,
-                  originalLocation: relocation.oldLocation,
-                  newLocation: relocation.newLocation,
-                  relocationMethod: 'manual' as const,
-                  timestamp: new Date(),
-                  xmlUpdated: result.xmlUpdated,
-                  backupCreated: !!result.backupPath
-                });
-              }
-            }
-            logger.info(`✅ History saved: ${successfulRelocations.length} entries`);
-          } catch (historyError) {
-            console.error('❌ Failed to save relocation history:', historyError);
-          }
-        } else {
-          logger.warn(`❌ No history saved - libraryPath: ${effectiveLibraryPath}, successCount: ${successCount}`);
-        }
-
-        // Name the library that changed. "XML updated" was wrong for a
-        // database-backed collection, which is now written directly.
-        const wroteDatabase = /\.db$/i.test(effectiveLibraryPath);
-        const writeMessage = result.tracksUpdated
-          ? `\n${wroteDatabase ? 'Written into the rekordbox database' : 'XML updated'}`
-            + ` for ${result.tracksUpdated} track${result.tracksUpdated > 1 ? 's' : ''}.`
-            + `\nBacked up first: ${result.backupPath?.split('/').pop()}`
-            + (wroteDatabase ? '\nReopen rekordbox to see it.' : '')
-          : '';
-
         showNotification('success',
-          `Relocated ${successCount} of ${relocationsArray.length} tracks.${writeMessage}`,
+          `Relocated ${successCount} of ${relocationsArray.length} tracks.`
+          + describeRelocationWrite({
+            libraryPath: effectiveLibraryPath,
+            tracksUpdated: result.tracksUpdated,
+            backupPath: result.backupPath,
+          }),
           { important: true }
         );
       } else {
@@ -525,46 +462,17 @@ export function useTrackRelocator(
         const successCount = results.filter((r: any) => r.success).length;
         const failureCount = results.filter((r: any) => !r.success).length;
 
-        // Save successful relocations to history
-        if (effectiveLibraryPath && successCount > 0) {
-          const successfulRelocations = results.filter((r: any) => r.success);
-          logger.info(`📝 Saving ${successfulRelocations.length} auto-relocations to history`);
+        await recordRelocationRun({
+          libraryPath: effectiveLibraryPath,
+          results,
+          tracksUpdated,
+          backupPath,
+          method: 'auto',
+        }, tracks);
 
-          try {
-            for (const relocation of successfulRelocations) {
-              const track = tracks.find(t => t.id === relocation.trackId);
-              if (track) {
-                await historyStorage.addRelocationEntry({
-                  libraryPath: effectiveLibraryPath,
-                  trackId: relocation.trackId,
-                  trackName: relocation.trackName || track.name,
-                  trackArtist: track.artist,
-                  originalLocation: relocation.oldLocation,
-                  newLocation: relocation.newLocation,
-                  relocationMethod: 'auto' as const,
-                  confidence: relocation.confidence,
-                  timestamp: new Date(),
-                  xmlUpdated: xmlUpdated,
-                  backupCreated: !!backupPath
-                });
-              }
-            }
-            // Notify history panel to auto-refresh
-            historyEvents.notifyHistoryUpdate(effectiveLibraryPath);
-            logger.info(`✅ Auto-relocation history saved: ${successfulRelocations.length} entries`);
-          } catch (historyError) {
-            console.error('❌ Failed to save auto-relocation history:', historyError);
-          }
-        }
-
-        // Show notification with detailed results
-        const wroteDatabase = /\.db$/i.test(effectiveLibraryPath);
-        const writeMessage = tracksUpdated
-          ? `\n${wroteDatabase ? 'Written into the rekordbox database' : 'XML updated'}`
-            + ` for ${tracksUpdated} track${tracksUpdated > 1 ? 's' : ''}.`
-            + `\nBacked up first: ${backupPath?.split('/').pop()}`
-            + (wroteDatabase ? '\nReopen rekordbox to see it.' : '')
-          : '';
+        const writeMessage = describeRelocationWrite({
+          libraryPath: effectiveLibraryPath, tracksUpdated, backupPath,
+        });
 
         const failureMessage = failureCount > 0
           ? `\n${failureCount} track${failureCount > 1 ? 's' : ''} marked as unlocatable.`
