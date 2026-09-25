@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.6] - 2026-09-25
+
+### 🎉 New Features
+- **The key panel shows the command that prints the key**: it pointed at pyrekordbox's documentation and left people hunting through it for a value their own machine can produce in one line. That line is now on screen, ready to paste, in the shell for the platform the app is running on — PowerShell on Windows, a terminal elsewhere — with a copy button. The app still ships no key: the command installs pyrekordbox and asks it, so the value comes from an open-source package you can read rather than from us. A pasted key is checked for shape (64 hexadecimal characters) before the Open button will use it, so half a line copied says so immediately instead of failing as an unreadable database.
+
+### 🐛 Bug Fixes
+- **The backup is verified before the database is written**: every write already refused to run with rekordbox open and refused to run without a backup, but never checked the backup it had just made. A full disk or a drive that disconnected mid-copy leaves a truncated file, which is worse than no backup at all — it invites you to trust it and only fails when you need it. The copy is now checked against the source before the database is opened for writing.
+
+### 🧹 Housekeeping
+- **The relocator hook and the duplicates page are broken up**: the hook ran the same forty lines twice — record the run in two histories, update the library held in memory, word the result — once for manual relocation and once for automatic, with the wording already drifting apart. That work is now shared and tested, which it never was. The duplicates page carried its toolbar and all three resolve flows inline; the toolbar is a component and the flows a hook, both with tests. `useTrackRelocator` 665 → 573 lines, `DuplicateDetector` 771 → 477. No behaviour change.
+
 ## [0.6.5] - 2026-09-24
 
 ### 🎉 New Features

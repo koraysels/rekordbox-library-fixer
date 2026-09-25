@@ -53,7 +53,7 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 
 ### Two ways to load your library
 - **XML export** — the classic route: export from Rekordbox, load the file
-- **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
+- **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
 
 Resolving duplicates and relocating tracks write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory, playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
 
@@ -391,7 +391,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.5** *(current)*
+**v0.6.6** *(current)*
+- The key panel shows the command that prints your database key, for your platform, ready to paste
+- Backups are verified before the database is written, so a truncated copy can never be trusted
+- The relocator hook and the duplicates page broken up into tested pieces
+
+**v0.6.5**
 - The home screen leads with the rekordbox database, lists every one on this machine, and marks the last one opened
 - Clicking a database opens that one, not whichever was detected first
 - Dead cloud-sync and ownership code removed; the main process split by domain
