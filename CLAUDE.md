@@ -336,7 +336,7 @@ Always use this format for GitHub releases:
 | Apple Silicon (M1/M2/M3/M4) | `...-arm64.dmg` |
 | Intel (2019 and earlier) | `....dmg` (no arch suffix) |
 
-**Not sure which chip you have?** Click the Apple menu → About This Mac. It will say “Apple M1” (or M2/M3/M4) or “Intel Core”.
+**Not sure which chip you have?** Click the Apple menu → About Thisf Mac. It will say “Apple M1” (or M2/M3/M4) or “Intel Core”.
 
 ---
 
