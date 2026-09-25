@@ -67,6 +67,14 @@ collection has to go through the database.
   value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
   Rekordbox 7. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
   it persists in the settings store.
+- **Verified backups** (`src/main/backupDatabase.ts`): every database write copies the file aside
+  with its `-wal` and then checks the copy against the source size before opening the database for
+  writing. A truncated backup — a full disk, a drive that disconnected mid-copy — is worse than no
+  backup, because it invites the user to trust it and only fails when it is needed.
+- **The database key** (`src/renderer/utils/keyExtractionCommand.ts`): never hardcoded, never
+  shipped. The load screen shows the one-line command for the host platform that prints the key
+  locally via the open-source pyrekordbox package, and a pasted key is checked for shape (64 hex
+  characters) before it is used.
 - **Write guard** (`src/main/librarySource.ts`): every *XML* write path refuses a `.db` path.
   The XML writer writes to `libraryPath`, so a database-backed library would otherwise have
   been overwritten with XML and destroyed. Database-backed libraries go through the
@@ -274,22 +282,34 @@ await relocationStorage.saveRelocationResult(resultData);
 ```
 src/renderer/
 ├── components/
-│   ├── ui/                     # Reusable UI components
-│   │   ├── PopoverButton.tsx   # Shared tooltip button component
-│   │   ├── ConfidenceBadge.tsx # Confidence level indicator
-│   │   └── index.ts           # Barrel exports
-│   ├── DuplicateDetector.tsx   # Feature components using shared UI
-│   └── TrackRelocator.tsx     
-├── hooks/                      # Custom business logic hooks
-│   ├── useFileOperations.ts   # File system operations
-│   ├── useDuplicates.ts       # Duplicate detection logic
-│   └── index.ts              # Barrel exports
-├── utils/                     # Pure utility functions
-│   ├── formatters.ts          # Data formatting (fileSize, duration, etc.)
-│   └── index.ts              # Barrel exports
-└── stores/                    # State management
-    └── settingsStore.ts       # Zustand store with persistence
+│   ├── ui/                        # Reusable UI components
+│   │   ├── PopoverButton.tsx      # Shared tooltip button component
+│   │   ├── EmptyLibraryState.tsx  # The home screen: database first, XML below
+│   │   └── index.ts               # Barrel exports
+│   ├── DuplicateDetector.tsx      # The page: state, results, modals
+│   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
+│   └── TrackRelocator.tsx
+├── hooks/                         # Custom business logic hooks
+│   ├── useDuplicates.ts           # Duplicate detection state
+│   ├── useDuplicateResolution.ts  # The three resolve flows (XML, database, trash)
+│   ├── useTrackRelocator.ts       # Relocation state
+│   └── index.ts                   # Barrel exports
+├── relocation/                    # What a relocation run means, apart from React
+│   └── relocationOutcome.ts       # History, library update, wording — shared by
+│                                  # manual and automatic relocation
+├── scan/                          # The duplicate scan, outside the page
+│   └── duplicateScanSession.ts    # Survives a tab switch; the page subscribes
+├── utils/                         # Pure utility functions
+│   ├── keyExtractionCommand.ts    # The per-platform command that prints the key
+│   ├── classifyDuplicateSet.ts    # Entries-for-one-file vs duplicated files
+│   └── index.ts                   # Barrel exports
+└── stores/                        # State management
+    └── settingsStore.ts           # Zustand store with persistence
 ```
+
+Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/` or
+`scan/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
+is the signal that something in it wants to move out.
 
 ### Component Patterns
 - **Feature Components**: Compose UI components with business logic hooks
