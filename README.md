@@ -231,15 +231,33 @@ npm run dev
 
 #### Step 2: Load Your Library
 
-**Drag & Drop:**
-1. Launch Rekordbox Library Fixer
-2. Drag your XML file onto the app window
+**From Rekordbox's own database (recommended):**
+1. Launch Rekordbox Library Fixer — the databases on your machine are listed on the home screen
+2. Click the one you want
+3. The first time, it asks for the database key. Rekordbox encrypts `master.db`, and **this app ships no key**. The screen shows the command below for your platform; run it, and paste the 64-character result.
+
+<details>
+<summary><strong>The command that prints your key</strong></summary>
+
+It installs the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package and asks it for the key, so the value is produced on your own machine from a package you can read — not handed to you by this app. The key is the same on every Rekordbox 6/7 install, and you only paste it once.
+
+**macOS / Linux** — in Terminal:
+```bash
+python3 -m pip install --quiet --user pyrekordbox && python3 -c "from pyrekordbox.utils import deobfuscate; from pyrekordbox.db6.database import BLOB; print(deobfuscate(BLOB))"
+```
+
+**Windows** — in PowerShell:
+```powershell
+py -m pip install --quiet --user pyrekordbox; py -c "from pyrekordbox.utils import deobfuscate; from pyrekordbox.db6.database import BLOB; print(deobfuscate(BLOB))"
+```
+
+It prints one line of 64 hexadecimal characters, starting `402fd…`. Paste the whole line. If the app says it is not 64 hexadecimal characters, the line was copied short.
+
+</details>
+
+**Or from an XML export** — drag the file onto the window, or click **Browse for an XML file**. Remember an export is a snapshot: cleaning up has to go through the database.
 
 <img src="screenshots/06-drag-drop-library.png" alt="Drag and Drop" width="600" />
-
-**Browse:**
-1. Launch the app
-2. Click **Browse for XML File** and select your file
 
 #### Step 3: Find Duplicates
 

@@ -62,6 +62,46 @@ export function unlockDatabase(db: Db, key: string): void {
 const isLoop = (cue: { OutMsec?: number | null }) =>
   typeof cue.OutMsec === 'number' && cue.OutMsec > 0;
 
+/**
+ * The columns each query asks for. Naming them documents the bit of rekordbox's
+ * schema this depends on, and a column that disappears becomes a type error
+ * rather than a field that quietly reads undefined.
+ */
+interface ContentRow {
+  ID: string | number;
+  Title: string | null;
+  FolderPath: string | null;
+  Length: number | null;
+  BitRate: number | null;
+  FileSize: number | null;
+  BPM: number | null;
+  Rating: number | null;
+  created_at: string | null;
+  ArtistName: string | null;
+  AlbumName: string | null;
+  GenreName: string | null;
+}
+
+interface CueRow {
+  ContentID: string | number;
+  Kind: number | null;
+  InMsec: number | null;
+  OutMsec: number | null;
+  Comment: string | null;
+}
+
+interface PlaylistRow {
+  ID: string | number;
+  Name: string | null;
+  ParentID: string | number | null;
+  Attribute: number | null;
+}
+
+interface SongPlaylistRow {
+  PlaylistID: string | number;
+  ContentID: string | number;
+}
+
 export function mapRowsToLibrary(db: Db, dbPath: string): DbLibrary {
   const tracks = new Map<string, DbTrack>();
 
@@ -74,13 +114,13 @@ export function mapRowsToLibrary(db: Db, dbPath: string): DbLibrary {
     LEFT JOIN djmdAlbum  al ON al.ID = c.AlbumID  AND al.rb_local_deleted = 0
     LEFT JOIN djmdGenre  g  ON g.ID  = c.GenreID  AND g.rb_local_deleted  = 0
     WHERE c.rb_local_deleted = 0
-  `).all() as any[];
+  `).all() as ContentRow[];
 
-  const cuesByContent = new Map<string, any[]>();
+  const cuesByContent = new Map<string, CueRow[]>();
   for (const row of db.prepare(`
     SELECT ContentID, Kind, InMsec, OutMsec, Comment
     FROM djmdCue WHERE rb_local_deleted = 0
-  `).all() as any[]) {
+  `).all() as CueRow[]) {
     const id = String(row.ContentID);
     if (!cuesByContent.has(id)) { cuesByContent.set(id, []); }
     cuesByContent.get(id)!.push(row);
@@ -107,7 +147,7 @@ export function mapRowsToLibrary(db: Db, dbPath: string): DbLibrary {
           name: m.Comment ?? '',
           type: 'CUE' as const,
           start: (m.InMsec ?? 0) / 1000,
-          hotcue: m.Kind > 0 ? m.Kind : undefined,
+          hotcue: m.Kind && m.Kind > 0 ? m.Kind : undefined,
         })),
       loops: marks
         .filter(isLoop)
@@ -126,13 +166,13 @@ function buildPlaylists(db: Db): DbPlaylist[] {
   const rows = db.prepare(`
     SELECT ID, Name, ParentID, Attribute
     FROM djmdPlaylist WHERE rb_local_deleted = 0 ORDER BY Seq
-  `).all() as any[];
+  `).all() as PlaylistRow[];
 
   const trackIdsByPlaylist = new Map<string, string[]>();
   for (const song of db.prepare(`
     SELECT PlaylistID, ContentID FROM djmdSongPlaylist
     WHERE rb_local_deleted = 0 ORDER BY TrackNo
-  `).all() as any[]) {
+  `).all() as SongPlaylistRow[]) {
     const id = String(song.PlaylistID);
     if (!trackIdsByPlaylist.has(id)) { trackIdsByPlaylist.set(id, []); }
     trackIdsByPlaylist.get(id)!.push(String(song.ContentID));

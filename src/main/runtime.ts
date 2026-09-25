@@ -14,9 +14,9 @@ import { Logger } from './logger';
  * reference would send progress to a window that is gone.
  */
 export const safeConsole = {
-  log: (...args: any[]) => { try { console.log(...args); } catch { /* EPIPE */ } },
-  error: (...args: any[]) => { try { console.error(...args); } catch { /* EPIPE */ } },
-  warn: (...args: any[]) => { try { console.warn(...args); } catch { /* EPIPE */ } },
+  log: (...args: unknown[]) => { try { console.log(...args); } catch { /* EPIPE */ } },
+  error: (...args: unknown[]) => { try { console.error(...args); } catch { /* EPIPE */ } },
+  warn: (...args: unknown[]) => { try { console.warn(...args); } catch { /* EPIPE */ } },
 };
 
 let mainWindow: BrowserWindow | null = null;

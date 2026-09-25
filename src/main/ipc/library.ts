@@ -94,7 +94,7 @@ export function registerLibraryIpc(): void {
     handleParseRekordboxDb(args, parseDb));
 
   ipcMain.handle('save-rekordbox-xml', async (_, data: {
-    library: any;
+    library: Parameters<ReturnType<typeof runtime>['rekordboxParser']['saveLibrary']>[0];
     outputPath: string;
   }) => {
     try {
