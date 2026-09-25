@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.7] - 2026-09-25
+
+### 🐛 Bug Fixes
+- **A failed relocation records where it looked**: failures were filed in the history without their original location, because the result was pushed without that field while the history read it for every entry. Typing the boundary is what exposed it.
+- **The XML writer copes with a date that came back through the bridge**: it called `toISOString` on whatever it was handed, but anything crossing between the processes is serialised, so a track that had been through the renderer carried a string and would have thrown.
+- **Two labels in Maintenance are attached to their fields**, so a screen reader announces them.
+
+### 🧹 Housekeeping
+- **The process boundary has real types**: the bridge was typed `any` on both sides, and each side declared its own idea of the shapes — which is how a field the main process stopped sending stayed in the renderer's type. There is one contract now, imported by the preload, the handlers and the renderer. 116 `any`s in the main process down to 21; the rest are xml2js output, where there is nothing honest to claim.
+- **Maintenance is split into the three tools it actually is**: one 646-line page held clearing out dead entries, gathering the library onto one drive, and moving a filtered part of it — the last two keeping parallel copies of the same state, told apart only by an `f` prefix on every name. The page is 41 lines now.
+
 ## [0.6.6] - 2026-09-25
 
 ### 🎉 New Features

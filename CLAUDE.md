@@ -67,6 +67,12 @@ collection has to go through the database.
   value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
   Rekordbox 7. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
   it persists in the settings store.
+- **The IPC contract** (`src/main/ipcContract.ts`): one set of payload and result types,
+  imported by `preload.ts`, the handlers and the renderer's `window.electronAPI` declaration.
+  Both sides used to declare their own shapes, so a field the main process stopped sending
+  stayed in the renderer's type and the code reading it compiled and got `undefined`. Anything
+  crossing the bridge is serialised, so dates arrive as strings — types that cross say
+  `Date | string` rather than pretending otherwise.
 - **Verified backups** (`src/main/backupDatabase.ts`): every database write copies the file aside
   with its `-wal` and then checks the copy against the source size before opening the database for
   writing. A truncated backup — a full disk, a drive that disconnected mid-copy — is worse than no
@@ -286,6 +292,10 @@ src/renderer/
 │   │   ├── PopoverButton.tsx      # Shared tooltip button component
 │   │   ├── EmptyLibraryState.tsx  # The home screen: database first, XML below
 │   │   └── index.ts               # Barrel exports
+│   ├── maintenance/               # Three unrelated tools, one per file
+│   │   ├── ConsolidatePanel.tsx   # Gather the library onto one drive
+│   │   ├── FilterMovePanel.tsx    # Move the part that matches some rules
+│   │   └── shared.tsx             # What both genuinely share
 │   ├── DuplicateDetector.tsx      # The page: state, results, modals
 │   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
 │   └── TrackRelocator.tsx

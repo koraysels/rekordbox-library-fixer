@@ -414,7 +414,11 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.6** *(current)*
+**v0.6.7** *(current)*
+- The boundary between the two processes has real types, which turned up two latent bugs
+- Maintenance split into its three separate tools
+
+**v0.6.6**
 - The key panel shows the command that prints your database key, for your platform, ready to paste
 - Backups are verified before the database is written, so a truncated copy can never be trusted
 - The relocator hook and the duplicates page broken up into tested pieces
