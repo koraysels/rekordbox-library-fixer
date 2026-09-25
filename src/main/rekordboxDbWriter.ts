@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3-multiple-ciphers';
 import * as fs from 'fs';
 import { unlockDatabase } from './rekordboxDbParser';
+import { backupDatabaseFile } from './backupDatabase';
 import { isRekordboxRunning } from './rekordboxRunning';
 import { isStreamingLocation } from './brokenEntries';
 
@@ -48,11 +49,8 @@ export function mergeDuplicateEntries(
     throw new Error('A backup path is required; this never writes without one.');
   }
 
-  // Back up before opening for writing, WAL included: recent changes live there.
-  fs.copyFileSync(dbPath, options.backupPath);
-  for (const suffix of ['-wal', '-shm']) {
-    try { fs.copyFileSync(dbPath + suffix, options.backupPath + suffix); } catch { /* absent is fine */ }
-  }
+  // Back up before opening for writing, and verify the copy before going on.
+  backupDatabaseFile(dbPath, options.backupPath);
 
   let db: Db | null = null;
   try {
@@ -169,10 +167,8 @@ export function removeEntriesFromDb(
     throw new Error('A backup path is required; this never writes without one.');
   }
 
-  fs.copyFileSync(dbPath, options.backupPath);
-  for (const suffix of ['-wal', '-shm']) {
-    try { fs.copyFileSync(dbPath + suffix, options.backupPath + suffix); } catch { /* absent is fine */ }
-  }
+  // Back up before opening for writing, and verify the copy before going on.
+  backupDatabaseFile(dbPath, options.backupPath);
 
   let db: Db | null = null;
   try {
