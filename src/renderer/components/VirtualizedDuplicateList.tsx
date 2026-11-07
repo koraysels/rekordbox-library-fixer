@@ -8,6 +8,7 @@ interface VirtualizedDuplicateListProps {
   selectedDuplicates: Set<string>;
   onToggleSelection: (id: string) => void;
   resolutionStrategy: ResolutionStrategy;
+  deleteFromDisk?: boolean;
   playlistMembership: Map<string, { count: number; names: string[] }>;
 }
 
@@ -16,6 +17,7 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
   selectedDuplicates,
   onToggleSelection,
   resolutionStrategy,
+  deleteFromDisk = false,
   playlistMembership
 }) => {
   console.log('🎯 VirtualizedDuplicateList render:', {
@@ -34,6 +36,7 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
           isSelected={selectedDuplicates.has(duplicate.id)}
           onToggleSelection={() => onToggleSelection(duplicate.id)}
           resolutionStrategy={resolutionStrategy}
+          deleteFromDisk={deleteFromDisk}
           playlistMembership={playlistMembership}
         />
       )}

@@ -26,6 +26,8 @@ interface DuplicateItemProps {
   onToggleSelection: () => void;
   resolutionStrategy: string;
   playlistMembership?: Map<string, { count: number; names: string[] }>;
+  /** Whether resolving moves removed entries' own files to the trash. */
+  deleteFromDisk?: boolean;
 }
 
 const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
@@ -33,7 +35,8 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
   isSelected,
   onToggleSelection,
   resolutionStrategy,
-  playlistMembership
+  playlistMembership,
+  deleteFromDisk = false
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -170,7 +173,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
               >
                 in {playlistReach.count} playlist{playlistReach.count === 1 ? '' : 's'}
               </span>
-              <ConfidenceBadge confidence={duplicate.confidence} />
+              <ConfidenceBadge confidence={duplicate.confidence} matchType={duplicate.matchType} filesMissing={!!duplicate.filesMissing} />
             </div>
           </div>
         </div>
@@ -240,28 +243,34 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
                             title="A streaming track has no file on disk. Only the extra rekordbox entry disappears; nothing can be trashed."
                           >
-                            Extra listing · nothing on disk
+                            Removed from library · nothing on disk
                           </span>
                         ) : isMissing ? (
                           <span
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
                             title="The file is already gone, so only the extra rekordbox entry disappears; there is nothing to trash."
                           >
-                            Extra listing · file missing
+                            Removed from library · file already gone
                           </span>
                         ) : sharesKeptFile(track) ? (
                           <span
                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
                             title="Rekordbox lists the kept file twice. Only the extra listing disappears — no file leaves your disk."
                           >
-                            Extra listing · no file removed
+                            Removed from library · same file as the kept one
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-amber-100 text-te-amber-600 border border-te-amber-200 font-te-mono whitespace-nowrap"
-                            title="A second copy of the song, in another folder. Its listing is merged into the kept one, and this file moves to the trash only if you tick the trash option."
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border font-te-mono whitespace-nowrap ${
+                              deleteFromDisk
+                                ? 'bg-te-amber-100 text-te-amber-600 border-te-amber-200'
+                                : 'bg-te-grey-100 text-te-grey-500 border-te-grey-200'
+                            }`}
+                            title={deleteFromDisk
+                              ? 'A second copy of the song. Its entry is merged into the kept one and this file moves to the system Trash.'
+                              : 'A second copy of the song. Its entry is merged into the kept one; the file stays where it is. Tick the trash option to move it to the Trash.'}
                           >
-                            Own file · trashed if enabled
+                            {deleteFromDisk ? 'Removed · file goes to Trash' : 'Removed from library · file stays on disk'}
                           </span>
                         )
                       )}

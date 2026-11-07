@@ -381,6 +381,7 @@ const DuplicateDetector: React.FC = () => {
                 onToggleSelection={toggleDuplicateSelection}
                 resolutionStrategy={resolutionStrategy}
                 playlistMembership={playlistMembership}
+                deleteFromDisk={deleteFromDisk}
               />
             </div>
           </div>

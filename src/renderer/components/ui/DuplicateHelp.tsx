@@ -34,12 +34,12 @@ export const DuplicateHelp: React.FC = () => {
               stays, file and all.
             </li>
             <li>
-              <span className="inline-block px-1.5 py-0.5 rounded bg-te-grey-200 text-te-grey-600 border border-te-grey-300 mr-1.5">Extra listing · no file removed</span>
-              same file, listed twice. Only the listing goes.
+              <span className="inline-block px-1.5 py-0.5 rounded bg-te-grey-200 text-te-grey-600 border border-te-grey-300 mr-1.5">Removed from library</span>
+              the entry goes; playlists move to the kept one. The label says what happens to its file.
             </li>
             <li>
-              <span className="inline-block px-1.5 py-0.5 rounded bg-te-amber-100 text-te-amber-600 border border-te-amber-200 mr-1.5">Own file · trashed if enabled</span>
-              a second copy. Moved to the system trash, never deleted outright.
+              <span className="inline-block px-1.5 py-0.5 rounded bg-te-amber-100 text-te-amber-600 border border-te-amber-200 mr-1.5">Removed · file goes to Trash</span>
+              only with the trash option ticked, and only for a separate copy. Never deleted outright.
             </li>
           </ul>
           <p>
