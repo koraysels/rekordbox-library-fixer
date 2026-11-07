@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { ChevronDown, Music, Folder, X } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
 import type { LibraryData, Playlist } from '../../types';
+import { UpdateNotice } from './UpdateNotice';
 
 interface AppFooterProps {
   libraryData: LibraryData | null;
@@ -152,8 +153,11 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
           )}
         </div>
 
-        <div className="font-te-mono text-xs text-te-grey-500 uppercase tracking-wider">
-          V{version} • (C) Koray Sels {new Date().getFullYear()}
+        <div className="flex items-center gap-3 font-te-mono text-xs">
+          <UpdateNotice />
+          <span className="text-te-grey-500 uppercase tracking-wider">
+            V{version} • (C) Koray Sels {new Date().getFullYear()}
+          </span>
         </div>
       </div>
     </div>

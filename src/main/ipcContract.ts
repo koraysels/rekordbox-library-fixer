@@ -154,3 +154,14 @@ export interface FilterRulePayload {
 
 /** Unsubscribes an event listener registered through the bridge. */
 export type Unsubscribe = () => void;
+
+/** The app's own update, as the main process reports it on 'update-status'. */
+export type UpdateStatusPayload =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'up-to-date'; version: string }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'ready'; version: string }
+  /** Found, but this copy cannot replace itself (opened from Downloads or a disk image). */
+  | { state: 'manual'; version: string; url: string }
+  | { state: 'error'; message: string };

@@ -10,6 +10,8 @@ import { registerRelocationIpc } from './ipc/relocation';
 import { registerMaintenanceIpc } from './ipc/maintenance';
 import { registerBackupIpc } from './ipc/backups';
 import { registerSystemIpc } from './ipc/system';
+import { registerUpdateIpc } from './ipc/updates';
+import { startUpdateChecks, checkForUpdates } from './updates/updater';
 
 
 // Must run before app ready — grants media:// streaming + fetch privileges.
@@ -139,6 +141,10 @@ function createMenu() {
           click: () => {
             mainWindow?.webContents.send('show-tutorial');
           }
+        },
+        {
+          label: 'Check for Updates…',
+          click: () => { void checkForUpdates(); }
         },
         { type: 'separator' },
         { role: 'services', submenu: [] },
@@ -284,11 +290,13 @@ app.whenReady().then(async () => {
   registerMaintenanceIpc();
   registerBackupIpc();
   registerSystemIpc();
+  registerUpdateIpc();
 
   // Database storage is now handled via Dexie in the renderer process
   safeConsole.log('✅ Application initialized');
 
   createWindow();
+  startUpdateChecks();
 });
 
 app.on('window-all-closed', () => {

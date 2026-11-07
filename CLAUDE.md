@@ -103,6 +103,18 @@ collection has to go through the database.
 - **Activity history** (`src/renderer/db/duplicationHistoryDb.ts`): its own Dexie database,
   separate from the relocation history, recording one entry per library-changing operation
   with per-item detail. Surfaced by the History tab.
+- **Updates** (`src/main/updates/`, IPC in `src/main/ipc/updates.ts`, UI `UpdateNotice` in the footer):
+  checked 15 s after launch and every 6 h in a packaged app, downloaded in the background, installed on
+  "Restart to update". Windows and Linux use electron-updater. macOS cannot: Squirrel.Mac refuses an
+  update not signed with a Developer ID, which this app is not, so the app reads `latest-mac.yml` itself,
+  downloads its arch's zip, checks the feed's sha512, unpacks with `ditto` and hands a detached script the
+  swap (old bundle moved aside and restored on failure, then reopened). It exits with `app.exit` after
+  flushing storage, and the script kills a process still alive after 10 s — in testing the process could
+  hang in native teardown with JS already gone. A copy running translocated or from a disk image cannot
+  replace itself and is pointed at the releases page. The release workflow renames uploads from spaces to
+  dashes, because the feeds use dashes and GitHub turns spaces into dots; releases up to v0.6.9 have the
+  dotted names, which the Mac updater also tries. The end-to-end check: package with
+  `-c.extraMetadata.version=<older>`, run it from a scratch folder with its own `--user-data-dir`.
 - `MiniPlayer` / `PlayButton`: In-app track preview (play/pause/seek/volume) via a single
   `<audio>` element + media-chrome transport UI. Audio streams over the custom `media://`
   protocol (`src/main/mediaProtocol.ts`); AIFF is rewrapped to WAV in the renderer
