@@ -64,7 +64,7 @@ export const audioController = {
       audio.src = src;
       await audio.play();
     } catch (err) {
-      if (seq !== loadSeq) { return; }
+      if (seq !== loadSeq || isInterruption(err)) { return; }
       sync({ status: 'error', errorMessage: err instanceof Error ? err.message : 'Playback failed' });
     }
   },
@@ -72,7 +72,9 @@ export const audioController = {
   toggle(): void {
     if (!audio) { return; }
     if (audio.paused) {
-      audio.play().catch(() => sync({ status: 'error', errorMessage: 'Playback failed' }));
+      audio.play().catch((err) => {
+        if (!isInterruption(err)) { sync({ status: 'error', errorMessage: 'Playback failed' }); }
+      });
     } else {
       audio.pause();
     }
@@ -89,3 +91,13 @@ export const audioController = {
     sync({ currentTrack: null, status: 'idle', errorMessage: null });
   },
 };
+
+/**
+ * play() rejects with an AbortError when a pause or a new source interrupts it
+ * — a quick click on another track, or pause right after play. Nothing failed,
+ * so it must not surface as "The play() request was interrupted…".
+ */
+export function isInterruption(err: unknown): boolean {
+  // DOMException is not an Error subclass everywhere, so check the name itself.
+  return typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError';
+}
