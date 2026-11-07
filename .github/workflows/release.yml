@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
             target: mac # x64 + arm64, driven by package.json build.mac.target
           - os: windows-latest
             target: win
