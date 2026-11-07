@@ -21,6 +21,7 @@ import { DuplicateToolbar } from './DuplicateToolbar';
 import { countPlaylistMembership } from '../utils/playlistMembership';
 import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
 import { isStreamingTrack } from '../utils/streamingSource';
+import { pruneStaleSets } from '../utils/pruneStaleSets';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -137,8 +138,16 @@ const DuplicateDetector: React.FC = () => {
           const stored = await duplicateStorage.getDuplicateResult(libraryPath);
           if (stored) {
 
-            setDuplicates(stored.duplicates || []);
-            setSelections(stored.selectedDuplicates || []);
+            // Checked against the library as it is now: saved sets whose
+            // entries have since been merged or removed are not duplicates any more.
+            const saved = stored.duplicates || [];
+            const current = libraryData ? pruneStaleSets(saved, libraryData.tracks) : saved;
+            if (current.length < saved.length) {
+              showNotification('info', `${saved.length - current.length} saved duplicate set${saved.length - current.length === 1 ? ' was' : 's were'} already resolved and left out. Rescan for a fresh list.`);
+            }
+            setDuplicates(current);
+            const remaining = new Set(current.map((d: any) => d.id));
+            setSelections((stored.selectedDuplicates || []).filter((id: string) => remaining.has(id)));
             setHasScanned(stored.hasScanned || false);
             // NOTE: scan options and the resolution strategy are NOT restored
             // from this per-library cache. The persisted settings store is the
@@ -173,6 +182,16 @@ const DuplicateDetector: React.FC = () => {
 
     loadStoredResults();
   }, [libraryPath]);
+
+  // The library can change while results are on screen — a merge, a removal,
+  // a reload. Keep the list to sets that still exist.
+  useEffect(() => {
+    if (!libraryData) { return; }
+    setDuplicates((prev: any[]) => {
+      const next = pruneStaleSets(prev, libraryData.tracks);
+      return next.length === prev.length && next.every((set, i) => set === prev[i]) ? prev : next;
+    });
+  }, [libraryData, setDuplicates]);
 
   // Preferences are now saved in the useDuplicates hook
 
