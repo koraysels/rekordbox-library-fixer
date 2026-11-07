@@ -11,12 +11,25 @@ export interface FoundLibrary {
   modified: Date;
 }
 
-/** Where rekordbox keeps its database, newest layout first. */
-export function databaseCandidates(home: string, platform: NodeJS.Platform): string[] {
+export const DB_VARIANTS = ['rekordbox', 'rekordbox7', 'rekordbox6'] as const;
+
+/**
+ * Where rekordbox keeps its database, newest layout first.
+ *
+ * On Windows that is %APPDATA%\\Pioneer, not the home folder. Callers pass the
+ * home folder, so APPDATA is resolved here — looking in C:\\Users\\<you>\\Pioneer
+ * is what made every Windows user see "no database found" (issue #29).
+ */
+export function databaseCandidates(
+  home: string,
+  platform: NodeJS.Platform,
+  appData: string | undefined = process.env.APPDATA
+): string[] {
+  const p = platform === 'win32' ? path.win32 : path.posix;
   const base = platform === 'win32'
-    ? path.join(home, 'Pioneer')
-    : path.join(home, 'Library', 'Pioneer');
-  return ['rekordbox', 'rekordbox7', 'rekordbox6'].map((d) => path.join(base, d, 'master.db'));
+    ? p.join(appData || p.join(home, 'AppData', 'Roaming'), 'Pioneer')
+    : p.join(home, 'Library', 'Pioneer');
+  return DB_VARIANTS.map((d) => p.join(base, d, 'master.db'));
 }
 
 /** Directories people actually save an XML export into. */
