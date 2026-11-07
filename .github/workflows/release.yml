@@ -71,6 +71,16 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      # The update feeds (latest*.yml) name every file with dashes where the
+      # file has spaces, but GitHub turns spaces in an uploaded name into dots.
+      # Unrenamed, every in-app update looked for a file that was not there.
+      - name: Name files the way the update feeds expect
+        run: |
+          find artifacts -type f -name '* *' | while read -r f; do
+            mv "$f" "$(dirname "$f")/$(basename "$f" | tr ' ' '-')"
+          done
+          ls artifacts
+
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
