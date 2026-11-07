@@ -13,16 +13,33 @@ beforeEach(() => {
   (window as any).electronAPI.cancelAutoRelocate = vi.fn(async () => ({ success: true }));
 });
 
-const show = (isRunning: boolean) => render(
+const show = (isRunning: boolean, onHide: () => void = () => undefined) => render(
   <AutoRelocateProgressDialog
     isOpen
     isRunning={isRunning}
     onClose={() => undefined}
+    onHide={onHide}
     onCancel={() => undefined}
   />
 );
 
 describe('AutoRelocateProgressDialog', () => {
+  it('can be hidden while the run carries on', () => {
+    const onHide = vi.fn();
+    show(true, onHide);
+    act(() => { screen.getByText('Hide').click(); });
+    expect(onHide).toHaveBeenCalled();
+  });
+
+  it('shows the write as in progress, not finished', () => {
+    // The write is the slow part of a large run; it used to be announced only
+    // after it was done.
+    show(true);
+    act(() => emit({ type: 'updating-xml', total: 10, current: 10, message: 'Writing 9 relocations into your library…' }));
+    expect(screen.getByText('Writing 9 relocations into your library…')).toBeTruthy();
+    expect(screen.getByText('Cancel')).toBeTruthy();
+  });
+
   it('offers Cancel while the run is going', () => {
     show(true);
     expect(screen.getByText('Cancel')).toBeTruthy();

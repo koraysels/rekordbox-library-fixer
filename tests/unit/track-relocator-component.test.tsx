@@ -23,18 +23,23 @@ vi.mock('../../src/renderer/hooks/useTrackRelocator', () => ({
 
 // Mock other dependencies
 vi.mock('../../src/renderer/stores/settingsStore', () => ({
-  useSettingsStore: vi.fn(() => ({
-    relocationOptions: {
-      searchPaths: [],
-      searchDepth: 3,
-      matchThreshold: 0.7,
-      includeSubdirectories: true,
-      fileExtensions: ['.mp3', '.m4a']
-    },
-    setRelocationOptions: vi.fn(),
-    addRelocationSearchPath: vi.fn(),
-    removeRelocationSearchPath: vi.fn()
-  }))
+  // Selectors are honoured: a component selecting one field must get that field.
+  useSettingsStore: vi.fn((selector?: (state: any) => unknown) => {
+    const state = {
+      relocationOptions: {
+        searchPaths: [],
+        searchDepth: 3,
+        matchThreshold: 0.7,
+        includeSubdirectories: true,
+        fileExtensions: ['.mp3', '.m4a']
+      },
+      setRelocationOptions: vi.fn(),
+      updateRelocationOption: vi.fn(),
+      addRelocationSearchPath: vi.fn(),
+      removeRelocationSearchPath: vi.fn()
+    };
+    return selector ? selector(state) : state;
+  })
 }));
 
 vi.mock('../../src/renderer/db/relocationsDb', () => ({

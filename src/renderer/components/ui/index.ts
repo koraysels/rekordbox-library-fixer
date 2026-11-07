@@ -20,3 +20,4 @@ export { DeleteConfirmModal } from './DeleteConfirmModal';
 export { MiniPlayer } from './MiniPlayer';
 export { PlayButton } from './PlayButton';
 export { DuplicateHelp } from './DuplicateHelp';
+export { SearchDepthControl } from './SearchDepthControl';

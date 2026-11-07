@@ -289,6 +289,17 @@ export function registerRelocationIpc(): void {
 
       // Do NOT commit partial work to the XML if the user cancelled mid-run
       if (!cancelToken.cancelled && successfulRelocations.length > 0 && data.libraryPath) {
+        // Announced before the write, not after it: the backup and the write are
+        // the slow part of a large run, and the dialog sat on the last "Found"
+        // line the whole time, looking finished.
+        sendToWindow('auto-relocate-progress', {
+          operationId,
+          type: 'updating-xml',
+          total: data.tracks.length,
+          current: data.tracks.length,
+          successCount,
+          message: `Writing ${successfulRelocations.length} relocations into your library…`
+        });
         safeConsole.log(`📝 Applying ${successfulRelocations.length} auto-relocations using batch process`);
 
         try {
@@ -323,17 +334,6 @@ export function registerRelocationIpc(): void {
             error: error instanceof Error ? error.message : 'Unknown error occurred'
           };
         }
-      }
-
-      // Send XML update notification if needed
-      if (successfulRelocations.length > 0 && data.libraryPath) {
-        sendToWindow('auto-relocate-progress', {
-          operationId,
-          type: 'updating-xml',
-          total: data.tracks.length,
-          current: data.tracks.length,
-          message: `Updating XML with ${successfulRelocations.length} relocations...`
-        });
       }
 
       // Clean up cancel token and free the cached file index

@@ -428,13 +428,14 @@ export function useTrackRelocator(
           });
 
           // Remove successfully relocated tracks from missing tracks list
-          const filteredTracks = prev.missingTracks.filter(track =>
-            !successfulTrackIds.includes(track.id)
-          );
+          // Sets: a large run checks thousands of ids against thousands of tracks.
+          const relocated = new Set<string>(successfulTrackIds);
+          const failed = new Set<string>(failedTrackIds);
+          const filteredTracks = prev.missingTracks.filter(track => !relocated.has(track.id));
 
           // Mark failed tracks as unlocatable (keep them in the list but flag them)
           const newMissingTracks = filteredTracks.map(track => {
-            if (failedTrackIds.includes(track.id)) {
+            if (failed.has(track.id)) {
               return { ...track, isUnlocatable: true };
             }
             return track;

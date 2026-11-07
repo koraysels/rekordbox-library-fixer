@@ -19,8 +19,9 @@ import { useAppContext } from '../AppWithRouter';
 import type {
   RelocationCandidate
 } from '../types';
-import { SettingsSlideout, PopoverButton, PageHeader } from './ui';
+import { SettingsSlideout, PopoverButton, PageHeader, SearchDepthControl } from './ui';
 import { AutoRelocateProgressDialog } from './ui/AutoRelocateProgressDialog';
+import { AutoRelocateStatus } from './ui/AutoRelocateStatus';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
@@ -153,14 +154,13 @@ const TrackRelocator: React.FC = () => {
     }
   };
 
-  const handleProgressDialogClose = () => {
-    setShowProgressDialog(false);
-    setIsAutoRelocating(false);
-  };
+  // Closing or hiding the dialog only hides it. Whether a run is going is
+  // decided by the run itself (the finally above); clearing it here made a run
+  // still writing thousands of tracks look finished.
+  const handleProgressDialogClose = () => setShowProgressDialog(false);
 
   const handleProgressDialogCancel = () => {
-    // The cancellation is handled in the progress dialog itself
-    setIsAutoRelocating(false);
+    // The cancel request is sent by the dialog; the run ends through the finally above.
   };
 
   // Functions for managing search paths
@@ -206,16 +206,10 @@ const TrackRelocator: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-te-grey-100">
-      {/* Relocation still writes XML, so it cannot help a database-backed
-          library. Said here, where it applies, rather than on every page. */}
-      {libraryPath.toLowerCase().endsWith('.db') && (
-        <div className="flex-shrink-0 mx-4 mt-3 px-3 py-2 rounded-te border border-te-amber-200 bg-te-amber-100">
-          <p className="text-xs font-te-mono text-te-amber-600 normal-case">
-            Relocation cannot write to the rekordbox database yet — load an XML library to fix
-            moved files.
-          </p>
-        </div>
-      )}
+      <AutoRelocateStatus
+        running={isAutoRelocating && !showProgressDialog}
+        onShow={() => setShowProgressDialog(true)}
+      />
 
       {/* Header */}
       <PageHeader
@@ -309,6 +303,10 @@ const TrackRelocator: React.FC = () => {
           >
             Apply ({relocations.size})
           </PopoverButton>
+        </div>
+
+        <div className="mx-4 mb-3">
+          <SearchDepthControl />
         </div>
 
         {/* Selection Controls */}
@@ -429,9 +427,13 @@ const TrackRelocator: React.FC = () => {
                 <div className="text-center te-value py-8">
                   <FileX size={32} className="mx-auto mb-2 text-te-orange opacity-50" />
                   <p className="te-label">No candidates found</p>
-                  <p className="te-label font-te-mono mt-1">
-                    Try adding more search paths or adjusting the match threshold
+                  <p className="te-label font-te-mono mt-1 normal-case">
+                    The file may sit deeper than the search reaches. Raise the depth and refresh,
+                    or add a search path closer to it.
                   </p>
+                  <div className="mt-3 flex justify-center">
+                    <SearchDepthControl />
+                  </div>
                 </div>
               ) : (
                 <>
@@ -508,6 +510,7 @@ const TrackRelocator: React.FC = () => {
       <AutoRelocateProgressDialog
         isOpen={showProgressDialog}
         isRunning={isAutoRelocating}
+        onHide={() => setShowProgressDialog(false)}
         onClose={handleProgressDialogClose}
         onCancel={handleProgressDialogCancel}
       />

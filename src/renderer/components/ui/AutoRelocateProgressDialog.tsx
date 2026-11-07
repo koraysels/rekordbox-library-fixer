@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Loader2, StopCircle } from 'lucide-react';
 import { capLogs } from '../../utils/capLogs';
+import { SearchDepthControl } from './SearchDepthControl';
 
 interface ProgressInfo {
   operationId?: string;
@@ -23,6 +24,8 @@ interface AutoRelocateProgressDialogProps {
   /** True while the run is still going. False means it is over, however it ended. */
   isRunning: boolean;
   onClose: () => void;
+  /** Hide the dialog while the run carries on; the page shows its progress. */
+  onHide: () => void;
   onCancel: () => void;
 }
 
@@ -30,6 +33,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
   isOpen,
   isRunning,
   onClose,
+  onHide,
   onCancel
 }) => {
   const [progress, setProgress] = useState<ProgressInfo | null>(null);
@@ -55,6 +59,12 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
 
       if (progressData.operationId) {
         setOperationId(progressData.operationId);
+      }
+
+      // A new run starts clean, even if the last one finished while hidden.
+      if (progressData.type === 'start') {
+        setLogs([]);
+        setSawCompleteEvent(false);
       }
 
       // Add to logs for certain events
@@ -147,6 +157,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
                 {progress.type === 'found' && <CheckCircle className="w-4 h-4 text-green-400" />}
                 {progress.type === 'not-found' && <AlertCircle className="w-4 h-4 text-red-400" />}
                 {progress.type === 'low-confidence' && <AlertCircle className="w-4 h-4 text-yellow-400" />}
+                {progress.type === 'updating-xml' && <Loader2 className="w-4 h-4 text-te-orange animate-spin" />}
                 {progress.type === 'complete' && <CheckCircle className="w-4 h-4 text-green-400" />}
                 {progress.type === 'cancelled' && <StopCircle className="w-4 h-4 text-yellow-400" />}
                 {progress.type === 'error' && <AlertCircle className="w-4 h-4 text-red-400" />}
@@ -184,6 +195,16 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
             </div>
           )}
 
+          {isComplete && progress && progress.current - (progress.successCount || 0) > 0 && (
+            <div className="mb-4 p-3 rounded-te border border-te-grey-600 bg-te-grey-700 text-xs font-te-mono text-te-grey-400 normal-case space-y-2">
+              <p>
+                Tracks not found may sit deeper than the search reaches. Raise the depth and run
+                Auto again on what is left.
+              </p>
+              <SearchDepthControl dark />
+            </div>
+          )}
+
           {/* Logs */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <h3 className="text-sm font-medium text-te-grey-400 mb-2 font-te-display uppercase tracking-te-display">Activity Log</h3>
@@ -199,6 +220,15 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
 
         {/* Footer */}
         <div className="p-4 border-t-2 border-te-grey-700 bg-te-grey-900 flex justify-end gap-2">
+          {!isComplete && (
+            <button
+              onClick={onHide}
+              className="px-4 py-2 bg-te-grey-700 hover:bg-te-grey-600 text-te-cream rounded-te border-2 border-te-grey-600 transition-colors font-te-mono text-sm"
+              title="Keep it running and watch it from the page"
+            >
+              Hide
+            </button>
+          )}
           {!isComplete ? (
             <button
               onClick={handleCancel}
