@@ -27,6 +27,7 @@
 - [Quick Start](#quick-start)
   - [Download & Install](#download--install)
   - [Using the Tool](#using-the-tool)
+- [Using an XML Library](#using-an-xml-library)
 - [For Developers](#for-developers)
 - [Contributing](#contributing)
 - [FAQ](#faq)
@@ -52,8 +53,8 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 ## What It Does
 
 ### Two ways to load your library
-- **XML export** — the classic route: export from Rekordbox, load the file
-- **Rekordbox's own database** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
+- **Rekordbox's own database (default)** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
+- **XML export** — still supported, see [Using an XML Library](#using-an-xml-library)
 
 Resolving duplicates, relocating tracks and removing dead entries all write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory **and verified** (a truncated copy is refused rather than trusted), playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
 
@@ -217,21 +218,10 @@ npm run dev
 
 ### Using the Tool
 
-#### Step 1: Export Your Rekordbox Library
+#### Step 1: Load Your Library
 
-1. Open Rekordbox
-2. Go to **File → Export Collection in xml format**
+The app works on Rekordbox's own database, `master.db`, by default — no export needed.
 
-   ![Export Menu](screenshots/export-collection-as-xml.png)
-
-3. Save the XML file somewhere easy to find (e.g. Desktop)
-4. Large libraries (10,000+ tracks) may take a few minutes to export
-
-> **Tip**: Export your library regularly as a backup — the XML contains all your playlists, cue points, and track metadata.
-
-#### Step 2: Load Your Library
-
-**From Rekordbox's own database (recommended):**
 1. Launch Rekordbox Library Fixer — the databases on your machine are listed on the home screen
 2. Click the one you want
 3. The first time, it asks for the database key. Rekordbox encrypts `master.db`, and **this app ships no key**. The screen shows the command below for your platform; run it, and paste the 64-character result.
@@ -243,30 +233,26 @@ It installs the open-source [pyrekordbox](https://github.com/dylanljones/pyrekor
 
 **macOS / Linux** — in Terminal:
 ```bash
-python3 -m pip install --quiet --user pyrekordbox && python3 -c "from pyrekordbox.utils import deobfuscate; from pyrekordbox.db6.database import BLOB; print(deobfuscate(BLOB))"
+python3 -m pip install --quiet --user pyrekordbox && python3 -c "from sys import modules; from pyrekordbox import Rekordbox6Database as D; from pyrekordbox.utils import deobfuscate; BLOB = modules[D.__module__].BLOB; print(deobfuscate(BLOB))"
 ```
 
 **Windows** — in PowerShell:
 ```powershell
-py -m pip install --quiet --user pyrekordbox; py -c "from pyrekordbox.utils import deobfuscate; from pyrekordbox.db6.database import BLOB; print(deobfuscate(BLOB))"
+py -m pip install --quiet --user pyrekordbox; py -c "from sys import modules; from pyrekordbox import Rekordbox6Database as D; from pyrekordbox.utils import deobfuscate; BLOB = modules[D.__module__].BLOB; print(deobfuscate(BLOB))"
 ```
 
 It prints one line of 64 hexadecimal characters, starting `402fd…`. Paste the whole line. If the app says it is not 64 hexadecimal characters, the line was copied short.
 
 </details>
 
-**Or from an XML export** — drag the file onto the window, or click **Browse for an XML file**. Remember an export is a snapshot: cleaning up has to go through the database.
-
-<img src="screenshots/06-drag-drop-library.png" alt="Drag and Drop" width="600" />
-
-#### Step 3: Find Duplicates
+#### Step 2: Find Duplicates
 
 1. Go to the **Duplicate Detection** tab
 2. Configure detection settings (optional): audio fingerprinting, metadata fields, path preferences
 3. Click **Scan for Duplicates**
 4. Review the grouped results
 
-#### Step 4: Resolve Duplicates
+#### Step 3: Resolve Duplicates
 
 1. Review the duplicate groups
 2. Select duplicates to resolve (or **Select All**)
@@ -277,7 +263,7 @@ It prints one line of 64 hexadecimal characters, starting `402fd…`. Paste the 
    - **Manual** — review each pair yourself
 4. Click **Resolve Selected** and confirm
 
-#### Step 5: Relocate Missing Tracks (Optional)
+#### Step 4: Relocate Missing Tracks (Optional)
 
 If tracks show as "!" in Rekordbox:
 
@@ -287,16 +273,42 @@ If tracks show as "!" in Rekordbox:
 4. Click **Scan for Missing Tracks**
 5. Review candidates and apply the relocations you want
 
-#### Step 6: Import Back to Rekordbox
+Every change is written straight into `master.db`. Close Rekordbox first; the app takes a verified backup before it writes, and Rekordbox picks the changes up the next time it starts. There is nothing to import.
 
-**Enable XML import in Rekordbox:**
+---
+
+## Using an XML Library
+
+The database is the default, and the only way to actually clean a collection: a Rekordbox XML import can add and update tracks but never remove one, so importing a cleaned XML leaves every duplicate in place. An XML library is still supported — for working on a snapshot, or on a machine without Rekordbox.
+
+### Export your library
+
+1. Open Rekordbox
+2. Go to **File → Export Collection in xml format**
+
+   ![Export Menu](screenshots/export-collection-as-xml.png)
+
+3. Save the XML file somewhere easy to find (e.g. Desktop)
+4. Large libraries (10,000+ tracks) may take a few minutes to export
+
+> **Tip**: Export your library regularly as a backup — the XML contains all your playlists, cue points, and track metadata.
+
+### Load it
+
+Drag the file onto the window, or click **Browse for an XML file**. The Duplicate Detection, Track Relocator and Maintenance tabs then work the same as with the database, and write a new XML file.
+
+<img src="screenshots/06-drag-drop-library.png" alt="Drag and Drop" width="600" />
+
+### Import back to Rekordbox
+
+#### Enable XML import in Rekordbox
 
 1. Open Rekordbox
 2. Go to view preferences and enable **"rekordbox xml"** in the Tree View
 
 <img src="screenshots/import-xml-step-1.jpg" alt="Enable XML Import" width="600" />
 
-**Import the cleaned file:**
+#### Import the cleaned file
 
 1. Navigate to the **Database** tab
 2. Select your updated XML file (saved with `_cleaned` suffix by the tool)
@@ -306,16 +318,16 @@ If tracks show as "!" in Rekordbox:
 3. Keep **BPM change points** checked to preserve beatgrid data
 4. Click **Import** and wait for processing
 
-**Import playlists:**
+#### Import playlists
 
 1. In the left sidebar, find the **rekordbox xml** section
 2. Right-click **Playlists** and select **Import Playlist**
 
 <img src="screenshots/import-xml-step-3.jpg" alt="Import Playlists" width="400" />
 
-**Verify:**
+#### Verify
 - Check playlist track counts are correct
-- Confirm duplicates are removed
+- Duplicates you resolved are gone from the imported playlists, but stay in the collection — an XML import cannot remove a track. Remove them in Rekordbox, or resolve them against `master.db` instead
 - Test that relocated tracks play
 
 > **Backup reminder**: Before importing, back up your Rekordbox database:
@@ -402,10 +414,10 @@ Because a Rekordbox XML import can add and update tracks but cannot remove one. 
 Yes. Tested with libraries containing 50,000+ tracks. Uses IndexedDB (via Dexie.js) for performance and persistent storage.
 
 **Can I undo changes?**
-Yes. Every operation creates a backup XML file you can restore from.
+Yes. Every write to `master.db` is preceded by a verified backup of the database, listed under **Backups** so you can restore it. An XML library keeps the original file and writes a new one.
 
 **What about other DJ software?**
-Currently supports Rekordbox XML format. Serato and VirtualDJ may be added if there's enough interest.
+Rekordbox only — its `master.db`, or an XML export. Serato and VirtualDJ may be added if there's enough interest.
 
 **Is it free?**
 Free for personal use. No ads, no subscriptions, no limits.
