@@ -40,6 +40,14 @@ describe('keyCommandFor', () => {
     expect(command).not.toMatch(/[0-9a-f]{32}/i);
   });
 
+  it('does not import a module path pyrekordbox has renamed', () => {
+    // 0.5 renamed pyrekordbox.db6 to pyrekordbox.masterdb; the command printed
+    // "No module named 'pyrekordbox.db6'" for every fresh install.
+    const { command } = keyCommandFor('macos');
+    expect(command).not.toContain('pyrekordbox.db6');
+    expect(command).not.toContain('pyrekordbox.masterdb');
+  });
+
   it('quotes the python one-liner as one argument', () => {
     const { command } = keyCommandFor('macos');
     expect(command.match(/"/g)).toHaveLength(2);
