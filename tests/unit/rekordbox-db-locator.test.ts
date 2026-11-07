@@ -28,8 +28,8 @@ describe('resolveDbPath', () => {
   it('resolves under APPDATA on Windows', () => {
     const appData = 'C:\\Users\\dj\\AppData\\Roaming';
     const exists = (p: string) => p.includes('rekordbox') && p.endsWith('master.db');
-    const result = resolveDbPath(appData, 'win32', exists);
-    expect(result?.dbPath.replace(/\\/g, '/')).toContain('Pioneer/rekordbox/master.db');
+    const result = resolveDbPath('C:\\Users\\dj', 'win32', exists, appData);
+    expect(result?.dbPath).toBe('C:\\Users\\dj\\AppData\\Roaming\\Pioneer\\rekordbox\\master.db');
   });
 
   it('returns null when no database exists', () => {
