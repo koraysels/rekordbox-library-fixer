@@ -14,9 +14,17 @@ export function platformFromUserAgent(userAgent: string): HostPlatform {
   return 'linux';
 }
 
+/**
+ * pyrekordbox 0.5 renamed `db6` to `masterdb`, so importing BLOB by module path
+ * broke for anyone installing it fresh. The database class is exported at the
+ * top level in both layouts; its own module holds BLOB, wherever that lives.
+ * No single quotes: the one-liner sits inside double quotes in every shell.
+ */
 const PYTHON_ONE_LINER =
-  'from pyrekordbox.utils import deobfuscate; '
-  + 'from pyrekordbox.db6.database import BLOB; '
+  'from sys import modules; '
+  + 'from pyrekordbox import Rekordbox6Database as D; '
+  + 'from pyrekordbox.utils import deobfuscate; '
+  + 'BLOB = modules[D.__module__].BLOB; '
   + 'print(deobfuscate(BLOB))';
 
 /**
