@@ -15,6 +15,7 @@ import type {
 
 // Import the modular logger
 import { rendererLogger as logger } from '../utils/logger';
+import { withoutStreamingTracks } from '../relocation/withoutStreamingTracks';
 
 // Helper function to get effective library path with consistent fallback logic
 const getEffectiveLibraryPath = (libraryData: LibraryData | null, libraryPath?: string): string => {
@@ -99,7 +100,7 @@ export function useTrackRelocator(
           // snapshot here used to wipe the user's configured search paths.
           setState(prev => ({
             ...prev,
-            missingTracks: relocationResult.missingTracks || [],
+            missingTracks: withoutStreamingTracks(relocationResult.missingTracks || []),
             relocations: relocationResult.relocations || new Map(),
             relocationResults: relocationResult.relocationResults || [],
             hasScanCompleted: relocationResult.hasScanCompleted || false
