@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.6.10] - 2026-11-07
+
+### 🎉 New Features
+- **Sort missing tracks by best match**: tracks auto-relocate could not place now keep how close their best candidate came, and the Relocate page can put the closest near-misses first, so the ones worth checking by hand are at the top. Each shows its best match; Find records it too. Tracks that failed before this version have no score until Auto runs on them again.
+
 ## [0.6.9] - 2026-11-07
 
 v0.6.8 was tagged but never published: GitHub retired the macOS runner it built on. Everything below ships here.

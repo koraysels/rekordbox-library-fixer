@@ -426,7 +426,10 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.9** *(current)*
+**v0.6.10** *(current)*
+- Missing tracks can be sorted by best match, closest near-misses first
+
+**v0.6.9**
 - A running auto-relocation stays visible on the page; search depth is right on the Relocate page
 - Duplicates with missing files are judged on what the library still knows
 - Windows finds the rekordbox database under `%APPDATA%`
