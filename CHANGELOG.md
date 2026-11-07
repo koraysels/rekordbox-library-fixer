@@ -1,8 +1,15 @@
 # Changelog
 
-## [0.6.8] - 2026-11-07
+## [0.6.9] - 2026-11-07
+
+v0.6.8 was tagged but never published: GitHub retired the macOS runner it built on. Everything below ships here.
 
 ### 🐛 Bug Fixes
+- **A running auto-relocation stays visible**: the write was announced only after it finished, so on a large run the dialog sat on the last "Found" line through the backup and the write — and closing it marked the run finished while it carried on. The write is announced first now, the dialog can be hidden, and a strip on the page shows progress until the run ends.
+- **Search depth on the Relocate page**: a file one level too deep was simply "not found". The depth can be changed right there, and is suggested wherever nothing was found.
+- **A stale warning is gone**: the Relocate page still said relocation could not write to the rekordbox database, which it has done since v0.6.2.
+- **A duplicate set with missing files is judged on what is known**: it read a flat Medium even when one entry was "04 Flash Wiggles 1.mp3" next to "04 Flash Wiggles.mp3". A copy-named sibling now reads High, and album, bitrate and size count too. Each entry in such a set says Missing, and none offers a file to trash that is not there.
+- **The duplicate help is short and scrolls**: it ran off the bottom of the page.
 - **Windows finds the rekordbox database** (#29): the home screen looked in `C:\Users\<you>\Pioneer` instead of `%APPDATA%\Pioneer`, so every Windows user saw "No rekordbox database found" with nothing to click to paste the key. The backup scan had the same wrong path. Both now share one list of candidate paths with the locator, so they can no longer disagree.
 - **The key command works again**: pyrekordbox 0.5 renamed `pyrekordbox.db6` to `pyrekordbox.masterdb`, so the command on the load screen failed with "No module named 'pyrekordbox.db6'" on every fresh install. It now reaches the key through a class both 0.4 and 0.5 export.
 - **Streaming tracks stay out of a saved missing list**: the scan already skipped TIDAL and Spotify tracks, but a list saved before it did was restored as-is, so they kept showing as missing and "unlocatable" until a rescan. They are filtered as the list loads.

@@ -426,7 +426,14 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.8** *(current)*
+**v0.6.9** *(current)*
+- A running auto-relocation stays visible on the page; search depth is right on the Relocate page
+- Duplicates with missing files are judged on what the library still knows
+- Windows finds the rekordbox database under `%APPDATA%`
+- The key command works with pyrekordbox 0.5
+- Streaming tracks no longer show as missing from a saved list
+
+**v0.6.8** *(not published)*
 - Windows finds the rekordbox database under `%APPDATA%`
 - The key command works with pyrekordbox 0.5
 - Streaming tracks no longer show as missing from a saved list
