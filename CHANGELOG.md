@@ -3,7 +3,17 @@
 ## [0.6.10] - 2026-11-07
 
 ### 🎉 New Features
+- **The app updates itself**: it checks for a new version, downloads it in the background and asks only for a restart, in the footer. No more downloading every release by hand — this is the last one. On macOS the app swaps itself in place (it is not signed, so the standard updater can't), verifying the download first and keeping the old version until the new one is in.
+- **A clearer player**: dark, with the track's cover art and artist.
 - **Sort missing tracks by best match**: tracks auto-relocate could not place now keep how close their best candidate came, and the Relocate page can put the closest near-misses first, so the ones worth checking by hand are at the top. Each shows its best match; Find records it too. Tracks that failed before this version have no score until Auto runs on them again.
+
+### 🐛 Bug Fixes
+- **Resolved duplicates stay resolved**: saved scan results came back as they were after the library had been cleaned, so thousands of already-merged sets showed up again (one set showed 4 entries where the database held 2). Saved results and the list on screen are now checked against the library, and a rescan after resolving uses the updated library.
+- **Labels that say what happens**: "Own file · trashed if enabled" is now "Removed from library · file stays on disk", or "Removed · file goes to Trash" when the trash option is on. "Medium" is now "Probably the same · 75%", with the reason on hover.
+- **The database key is remembered**: kept in the app's data folder as well, so the load screen stops asking for it again.
+- **The footer no longer covers the player** or the bottom of each page.
+- **No "play() request was interrupted" error** when clicking quickly between tracks.
+- **Updates can find their files**: release files are uploaded under the names the update feeds use.
 
 ## [0.6.9] - 2026-11-07
 

@@ -427,6 +427,9 @@ Free for personal use. No ads, no subscriptions, no limits.
 ## Roadmap
 
 **v0.6.10** *(current)*
+- The app updates itself — download in the background, restart to install
+- Resolved duplicates stay resolved; clearer labels and match badges
+- Dark player with cover art; the database key is remembered
 - Missing tracks can be sorted by best match, closest near-misses first
 
 **v0.6.9**
