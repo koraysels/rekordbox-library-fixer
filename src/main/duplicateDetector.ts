@@ -4,6 +4,7 @@ import * as mm from 'music-metadata';
 import { Track } from './rekordboxParser';
 import { Logger } from './logger';
 import { isUniversalLossless, isFlac } from './audioQuality';
+import { missingFileSetConfidence } from './missingFileConfidence';
 
 export interface DuplicateSet {
   id: string;
@@ -90,7 +91,7 @@ export class DuplicateDetector {
           id,
           tracks: [...group],
           matchType: guessed ? 'metadata' : 'fingerprint',
-          confidence: guessed ? 75 : 100,
+          confidence: guessed ? missingFileSetConfidence(group) : 100,
           filesMissing: guessed,
         });
       };
@@ -135,7 +136,7 @@ export class DuplicateDetector {
             // A set built from metadata is a strong hint, not proof the files
             // are identical: say so rather than claiming a content match.
             matchType: guessed ? 'metadata' : 'fingerprint',
-            confidence: guessed ? 75 : 100,
+            confidence: guessed ? missingFileSetConfidence(duplicateTracks) : 100,
             filesMissing: guessed,
           });
           duplicateTracks.forEach(t => processedTracks.add(t.id));

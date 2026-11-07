@@ -193,6 +193,10 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
             console.log('🎵 Rendering track:', { id: track.id, location: track.location, name: track.name });
             const isRecommended = recommendedTrack && track.id === recommendedTrack.id;
             const isManuallySelected = resolutionStrategy === 'manual' && track.id === selectedTrackId;
+            // A "files missing" set holds only entries whose file could not be
+            // read — a readable file would have been fingerprinted into another
+            // set. Say so on the entry, not just on the set's badge.
+            const isMissing = !!duplicate.filesMissing && !isStreamingTrack(track.location);
 
             return (
               <div
@@ -217,6 +221,14 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             {streamingServiceOf(track.location)}
                           </span>
                         )}
+                        {isMissing && (
+                          <span
+                            className="text-[10px] font-te-mono px-1.5 py-0.5 rounded-te border bg-te-red-100 text-te-red-600 border-te-red-200 normal-case whitespace-nowrap"
+                            title="The file is not at this path. Relocate it from the Relocate tab."
+                          >
+                            Missing
+                          </span>
+                        )}
                       </div>
                       {resolutionStrategy !== 'manual' && (
                         isRecommended ? (
@@ -229,6 +241,13 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                             title="A streaming track has no file on disk. Only the extra rekordbox entry disappears; nothing can be trashed."
                           >
                             Extra listing · nothing on disk
+                          </span>
+                        ) : isMissing ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-te-grey-100 text-te-grey-500 border border-te-grey-200 font-te-mono whitespace-nowrap"
+                            title="The file is already gone, so only the extra rekordbox entry disappears; there is nothing to trash."
+                          >
+                            Extra listing · file missing
                           </span>
                         ) : sharesKeptFile(track) ? (
                           <span
@@ -289,7 +308,7 @@ const DuplicateItem: React.FC<DuplicateItemProps> = memo(({
                       <div className="flex flex-col space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="te-value font-medium font-te-mono">Path:</span>
-                          {!isStreamingTrack(track.location) && (
+                          {!isStreamingTrack(track.location) && !isMissing && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
