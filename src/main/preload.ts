@@ -87,6 +87,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) =>
     ipcRenderer.invoke('batch-relocate-tracks', data),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getTrackArtwork: (filePath: string): Promise<string | null> => ipcRenderer.invoke('get-track-artwork', filePath),
   
   // Open external URLs with validation
   openExternal: (url: string) => {

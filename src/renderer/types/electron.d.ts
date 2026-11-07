@@ -39,6 +39,7 @@ declare global {
       
       // App info
       getAppVersion(): Promise<any>;
+      getTrackArtwork(filePath: string): Promise<string | null>;
       
       // Consolidate Library
       consolidatePreview(data: { tracks: any[]; destination: string }): Promise<any>;

@@ -231,6 +231,7 @@ declare global {
       relocateTrack: (trackId: string, oldLocation: string, newLocation: string) => Promise<any>;
       batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) => Promise<any>;
       // App version
+      getTrackArtwork: (filePath: string) => Promise<string | null>;
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
       // Filter & Move/Copy APIs
       filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;

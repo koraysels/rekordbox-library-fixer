@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { ipcMain, dialog, shell, Notification, app } from 'electron';
 import { runtime, safeConsole, getMainWindow, sendToWindow } from '../runtime';
+import { readTrackArtwork } from '../trackArtwork';
 
 /**
  * Talking to the desktop: notifications, file dialogs, revealing a
@@ -54,6 +55,8 @@ export function registerSystemIpc(): void {
       };
     }
   });
+
+  ipcMain.handle('get-track-artwork', async (_e, filePath: string) => readTrackArtwork(filePath));
 
   ipcMain.handle('get-app-version', async () => {
     // Electron knows its own version from the packaged app; reading package.json
