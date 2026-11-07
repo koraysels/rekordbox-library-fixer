@@ -5,6 +5,7 @@ import { pickRecommendedTrack } from '../utils/pickRecommendedTrack';
 import { normalizePathForCompare } from '../utils/normalizePath';
 import { looksLikePlayableFile } from '../utils/classifyDuplicateSet';
 import { duplicationHistoryStorage, type ActivityDetail } from '../db/duplicationHistoryDb';
+import { applyMergePlans } from '../utils/applyMergePlans';
 
 interface UseDuplicateResolutionArgs {
   duplicates: any[];
@@ -88,6 +89,9 @@ export function useDuplicateResolution({
           backupPath: result.backupPath,
           details: plans.flatMap((p) => p.removeIds.map((id: string) => ({ action: 'merged' as const, from: id, to: p.keepId }))),
         });
+        // The merge changed master.db; the app scans its own loaded copy, so
+        // apply the merge there too or a rescan finds every set again.
+        if (libraryData) { setLibraryData(applyMergePlans(libraryData, plans)); }
         setDuplicates((prev: any[]) => prev.filter((d) => !selectedDuplicates.has(d.id)));
         clearAll();
       } else {
@@ -96,7 +100,7 @@ export function useDuplicateResolution({
     } finally {
       setIsScanning(false);
     }
-  }, [duplicates, selectedDuplicates, resolutionStrategy, libraryPath, showNotification, setDuplicates, clearAll, setIsScanning]);
+  }, [duplicates, selectedDuplicates, resolutionStrategy, libraryPath, libraryData, setLibraryData, showNotification, setDuplicates, clearAll, setIsScanning]);
 
   const executeResolve = useCallback(async (withDelete: boolean) => {
     const selectedDuplicateSets = duplicates.filter(d => selectedDuplicates.has(d.id));
