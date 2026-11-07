@@ -82,6 +82,8 @@ export interface MissingTrack {
   duration?: number;
   dateAdded?: string;
   isUnlocatable?: boolean; // Track marked as unlocatable after failed auto-relocation
+  /** Best candidate's confidence (0–1) from the last search; absent when none was found. */
+  bestConfidence?: number;
 }
 
 export interface RelocationCandidate {

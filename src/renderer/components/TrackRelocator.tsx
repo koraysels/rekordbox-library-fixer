@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Settings,
   RefreshCw,
@@ -22,6 +22,7 @@ import type {
 import { SettingsSlideout, PopoverButton, PageHeader, SearchDepthControl } from './ui';
 import { AutoRelocateProgressDialog } from './ui/AutoRelocateProgressDialog';
 import { AutoRelocateStatus } from './ui/AutoRelocateStatus';
+import { sortMissingTracks, type MissingTrackSort } from '../relocation/sortMissingTracks';
 import { TrackRelocatorSettings } from './TrackRelocatorSettings';
 import { VirtualizedList } from './VirtualizedList';
 import { MissingTrackItem } from './MissingTrackItem';
@@ -65,6 +66,7 @@ const TrackRelocator: React.FC = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [isAutoRelocating, setIsAutoRelocating] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [sortBy, setSortBy] = useState<MissingTrackSort>('library');
 
   // Sync search options with store when they change
   useEffect(() => {
@@ -72,12 +74,15 @@ const TrackRelocator: React.FC = () => {
     updateSearchOptions(relocationOptions);
   }, [relocationOptions, updateSearchOptions]);
 
-  // Filter missing tracks based on search term
-  const filteredMissingTracks = missingTracks.filter(track =>
-    track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    track.originalLocation.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter missing tracks based on search term, then order them
+  const filteredMissingTracks = useMemo(() => sortMissingTracks(
+    missingTracks.filter(track =>
+      track.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      track.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      track.originalLocation.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    sortBy
+  ), [missingTracks, searchTerm, sortBy]);
 
   // Handle track selection
   const toggleTrackSelection = (trackId: string) => {
@@ -319,6 +324,17 @@ const TrackRelocator: React.FC = () => {
               placeholder="Search tracks..."
               className="input w-64"
             />
+            <label className="flex items-center gap-2 text-xs te-label font-te-mono">
+              Sort
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as MissingTrackSort)}
+                className="input py-1 text-xs"
+              >
+                <option value="library">Library order</option>
+                <option value="confidence">Best match first</option>
+              </select>
+            </label>
             <div className="flex items-center space-x-2">
             <button
               onClick={selectAllTracks}

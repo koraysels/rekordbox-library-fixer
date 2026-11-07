@@ -16,6 +16,7 @@ import type {
 // Import the modular logger
 import { rendererLogger as logger } from '../utils/logger';
 import { withoutStreamingTracks } from '../relocation/withoutStreamingTracks';
+import { bestConfidenceOf } from '../relocation/sortMissingTracks';
 
 // Helper function to get effective library path with consistent fallback logic
 const getEffectiveLibraryPath = (libraryData: LibraryData | null, libraryPath?: string): string => {
@@ -201,6 +202,12 @@ export function useTrackRelocator(
         const newCandidatesCache = new Map(relocationCandidatesCache);
         newCandidatesCache.set(track.id, result.data);
         setRelocationCandidatesCache(newCandidatesCache);
+
+        const bestConfidence = bestConfidenceOf(result.data);
+        setState(prev => ({
+          ...prev,
+          missingTracks: prev.missingTracks.map(t => t.id === track.id ? { ...t, bestConfidence } : t),
+        }));
 
         // Save to database
         if (libraryData?.libraryPath) {
@@ -431,12 +438,16 @@ export function useTrackRelocator(
           // Sets: a large run checks thousands of ids against thousands of tracks.
           const relocated = new Set<string>(successfulTrackIds);
           const failed = new Set<string>(failedTrackIds);
+          // Keep how close each miss came, so near-misses can be sorted to the top.
+          const confidenceById = new Map<string, number | undefined>(
+            results.filter((r: any) => !r.success).map((r: any) => [r.trackId, r.confidence])
+          );
           const filteredTracks = prev.missingTracks.filter(track => !relocated.has(track.id));
 
           // Mark failed tracks as unlocatable (keep them in the list but flag them)
           const newMissingTracks = filteredTracks.map(track => {
             if (failed.has(track.id)) {
-              return { ...track, isUnlocatable: true };
+              return { ...track, isUnlocatable: true, bestConfidence: confidenceById.get(track.id) };
             }
             return track;
           });

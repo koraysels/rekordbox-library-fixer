@@ -76,6 +76,12 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
             <p className="te-label text-xs font-te-mono">
               Missing: <span className="te-path">{track.originalLocation}</span>
             </p>
+            {track.bestConfidence !== undefined && !hasRelocation && (
+              <p className="te-label text-xs font-te-mono mt-1">
+                Best match: <span className="te-value">{Math.round(track.bestConfidence * 100)}%</span>
+                {track.isUnlocatable && ' — below the auto threshold, check it with Find'}
+              </p>
+            )}
             {track.isUnlocatable && (
               <p className="text-te-orange text-xs font-semibold mt-1 font-te-mono">
                 ⚠️ Auto-relocation failed - marked as unlocatable
