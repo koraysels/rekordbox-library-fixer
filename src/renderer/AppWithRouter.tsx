@@ -134,7 +134,7 @@ const AppWithRouter: React.FC = () => {
         <NotificationToast notifications={notifications} onDismiss={dismissNotification} />
 
         {/* Content with route-based rendering */}
-        <div className="flex-1 pt-3 pb-6 overflow-hidden">
+        <div className="flex-1 pt-3 pb-3 overflow-hidden">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-te-grey-500">
             <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
@@ -191,11 +191,12 @@ const AppWithRouter: React.FC = () => {
 
         {/* Mini player */}
         <MiniPlayer showNotification={showNotification} />
+      </div>
+      </div>
 
-        {/* Footer */}
-        <AppFooter libraryData={libraryData} />
-      </div>
-      </div>
+      {/* Footer: in the layout, not fixed over it. Fixed, it covered the bottom
+          of every page and half of the mini player. */}
+      <AppFooter libraryData={libraryData} />
 
       {/* About Modal */}
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />

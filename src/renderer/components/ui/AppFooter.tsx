@@ -82,7 +82,7 @@ const AppFooterComponent = React.memo(({ libraryData }: AppFooterProps) => {
   }, [loadVersion]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-te-grey-300 border-t-2 border-te-grey-400 px-te-lg py-te-sm">
+    <div className="flex-shrink-0 bg-te-grey-300 border-t-2 border-te-grey-400 px-te-lg py-te-sm">
       <div className="flex items-center justify-between">
         <div className="font-te-mono text-xs text-te-grey-600">
           {libraryData && (
