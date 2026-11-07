@@ -319,7 +319,7 @@ describe('Component Rendering Tests', () => {
         render(<ConfidenceBadge confidence={95} />);
       }).not.toThrow();
 
-      expect(screen.getByText('High')).toBeInTheDocument();
+      expect(screen.getByText('Very likely the same · 95%')).toBeInTheDocument();
     });
   });
 

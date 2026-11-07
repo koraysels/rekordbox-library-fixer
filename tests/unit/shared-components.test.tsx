@@ -85,19 +85,19 @@ describe('Shared Components Integration', () => {
       }).not.toThrow();
     });
 
-    it('should show "High" for confidence >= 90', () => {
-      render(<ConfidenceBadge confidence={95} />);
-      expect(screen.getByText('High')).toBeInTheDocument();
+    it('says "Same audio" for a fingerprint match', () => {
+      render(<ConfidenceBadge confidence={100} matchType="fingerprint" />);
+      expect(screen.getByText('Same audio')).toBeInTheDocument();
     });
 
-    it('should show "Medium" for confidence between 70-89', () => {
+    it('says how sure a details match is, in words and percent', () => {
       render(<ConfidenceBadge confidence={75} />);
-      expect(screen.getByText('Medium')).toBeInTheDocument();
+      expect(screen.getByText('Probably the same · 75%')).toBeInTheDocument();
     });
 
-    it('should show "Low" for confidence < 70', () => {
-      render(<ConfidenceBadge confidence={50} />);
-      expect(screen.getByText('Low')).toBeInTheDocument();
+    it('explains itself on hover', () => {
+      render(<ConfidenceBadge confidence={50} filesMissing />);
+      expect(screen.getByText('Unsure · 50%').getAttribute('title')).toMatch(/could not be read/);
     });
 
     it('should handle edge cases', () => {
