@@ -426,7 +426,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.7** *(current)*
+**v0.6.8** *(current)*
+- Windows finds the rekordbox database under `%APPDATA%`
+- The key command works with pyrekordbox 0.5
+- Streaming tracks no longer show as missing from a saved list
+
+**v0.6.7**
 - The boundary between the two processes has real types, which turned up two latent bugs
 - Maintenance split into its three separate tools
 

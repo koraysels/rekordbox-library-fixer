@@ -65,7 +65,9 @@ collection has to go through the database.
   the driver defaults to chacha20 so `PRAGMA cipher='sqlcipher'` and `legacy=4` must precede
   the key; BPM is stored times 100; ordinary cues store `OutMsec = -1`, so only a positive
   value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
-  Rekordbox 7. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
+  Rekordbox 7 — under `~/Library` on macOS and `%APPDATA%` on Windows, never the Windows home
+  folder. `databaseCandidates` in `libraryScanner.ts` is the one list of places to look; the
+  locator, the home-screen scan and the backup scan all use it. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
   it persists in the settings store.
 - **The IPC contract** (`src/main/ipcContract.ts`): one set of payload and result types,
   imported by `preload.ts`, the handlers and the renderer's `window.electronAPI` declaration.
@@ -80,12 +82,14 @@ collection has to go through the database.
 - **The database key** (`src/renderer/utils/keyExtractionCommand.ts`): never hardcoded, never
   shipped. The load screen shows the one-line command for the host platform that prints the key
   locally via the open-source pyrekordbox package, and a pasted key is checked for shape (64 hex
-  characters) before it is used.
+  characters) before it is used. The command reaches `BLOB` through `Rekordbox6Database`'s own
+  module rather than a module path: pyrekordbox 0.5 renamed `db6` to `masterdb`.
 - **Write guard** (`src/main/librarySource.ts`): every *XML* write path refuses a `.db` path.
   The XML writer writes to `libraryPath`, so a database-backed library would otherwise have
   been overwritten with XML and destroyed. Database-backed libraries go through the
   database-native writers instead.
-- **Streaming tracks** (`isStreamingLocation` in `src/main/brokenEntries.ts`): rekordbox gives
+- **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
+  the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
   design, so they are never missing, never broken and never removable. Counting them as
   missing made the app's missing list disagree with rekordbox's.

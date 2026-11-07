@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.8] - 2026-11-07
+
+### 🐛 Bug Fixes
+- **Windows finds the rekordbox database** (#29): the home screen looked in `C:\Users\<you>\Pioneer` instead of `%APPDATA%\Pioneer`, so every Windows user saw "No rekordbox database found" with nothing to click to paste the key. The backup scan had the same wrong path. Both now share one list of candidate paths with the locator, so they can no longer disagree.
+- **The key command works again**: pyrekordbox 0.5 renamed `pyrekordbox.db6` to `pyrekordbox.masterdb`, so the command on the load screen failed with "No module named 'pyrekordbox.db6'" on every fresh install. It now reaches the key through a class both 0.4 and 0.5 export.
+- **Streaming tracks stay out of a saved missing list**: the scan already skipped TIDAL and Spotify tracks, but a list saved before it did was restored as-is, so they kept showing as missing and "unlocatable" until a rescan. They are filtered as the list loads.
+
+### 📚 Documentation
+- **The README starts from the database**: Using the Tool walks through `master.db`; exporting, loading and importing XML have their own section.
+
 ## [0.6.7] - 2026-09-25
 
 ### 🐛 Bug Fixes
