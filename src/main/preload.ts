@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type {
   TrackPayload, ScanOptionsPayload, ScanProgressPayload, DuplicateSet, MergePlanPayload,
-  RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress,
+  RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress, UpdateStatusPayload,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -87,6 +87,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) =>
     ipcRenderer.invoke('batch-relocate-tracks', data),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getSavedDbKey: (): Promise<string> => ipcRenderer.invoke('get-saved-db-key'),
+  saveDbKey: (key: string): Promise<{ success: boolean }> => ipcRenderer.invoke('save-db-key', key),
+  getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  openReleasesPage: () => ipcRenderer.invoke('open-releases-page'),
+  onUpdateStatus: (callback: (status: UpdateStatusPayload) => void) => {
+    const listener = (_e: unknown, status: UpdateStatusPayload) => callback(status);
+    ipcRenderer.on('update-status', listener);
+    return () => { ipcRenderer.removeListener('update-status', listener); };
+  },
   getTrackArtwork: (filePath: string): Promise<string | null> => ipcRenderer.invoke('get-track-artwork', filePath),
   
   // Open external URLs with validation

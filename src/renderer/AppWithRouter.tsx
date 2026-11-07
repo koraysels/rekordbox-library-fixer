@@ -7,6 +7,7 @@ import { NotificationToast, AppFooter, SplashScreen, AboutModal, TutorialModal, 
 import { Library } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import type { TabType, LibraryData, NotificationType } from './types';
+import { usePersistedDbKey } from './hooks/usePersistedDbKey';
 
 // Context for route components to access app-wide data
 interface AppContextType {
@@ -43,6 +44,7 @@ const pathToTab: Record<string, TabType> = {
 };
 
 const AppWithRouter: React.FC = () => {
+  usePersistedDbKey();
   const [showAbout, setShowAbout] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();

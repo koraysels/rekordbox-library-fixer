@@ -232,6 +232,13 @@ declare global {
       batchRelocateTracks: (data: { libraryPath: string; relocations: any[]; dbKey?: string }) => Promise<any>;
       // App version
       getTrackArtwork: (filePath: string) => Promise<string | null>;
+      getSavedDbKey: () => Promise<string>;
+      saveDbKey: (key: string) => Promise<{ success: boolean }>;
+      getUpdateStatus: () => Promise<UpdateStatus>;
+      checkForUpdates: () => Promise<UpdateStatus>;
+      installUpdate: () => Promise<{ success: boolean }>;
+      openReleasesPage: () => Promise<{ success: boolean }>;
+      onUpdateStatus: (callback: (status: UpdateStatus) => void) => () => void;
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
       // Filter & Move/Copy APIs
       filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;
@@ -253,3 +260,7 @@ declare global {
     };
   }
 }
+
+/** The app's own update, as the main process reports it. */
+import type { UpdateStatusPayload } from '../../main/ipcContract';
+export type UpdateStatus = UpdateStatusPayload;
