@@ -7,8 +7,8 @@ import * as os from 'os';
 import * as path from 'path';
 import * as mm from 'music-metadata';
 import { convertFile } from '@main/convert/convertFile';
-import { outputFacts } from '@main/convert/conversionPlan';
-import { readFileFacts } from '@main/convert/audioFacts';
+import { outputFacts, outputReadiness } from '@main/convert/conversionPlan';
+import { isReadable, readFileFacts } from '@main/convert/audioFacts';
 import { PLAYER_PROFILES } from '@main/convert/playerProfiles';
 
 const FFMPEG = process.env.FFMPEG_PATH;
@@ -19,10 +19,10 @@ let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'convert-file-')); });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 
-async function jobFor(input: string, output: string) {
+async function jobFor(input: string, output: string, target: 'aiff' | 'mp3' = 'aiff') {
   const source = await readFileFacts(input);
-  if ('unreachable' in source) throw new Error('fixture unreadable');
-  const out = outputFacts({ ...source, sampleRate: source.sampleRate! }, PLAYER_PROFILES.cdj2000, 'aiff');
+  if (!isReadable(source)) throw new Error('fixture unreadable');
+  const out = outputFacts({ ...source, sampleRate: source.sampleRate! }, PLAYER_PROFILES.cdj2000, target);
   return { input, output, out, source };
 }
 
@@ -39,6 +39,19 @@ describe('convertFile (real ffmpeg; set FFMPEG_PATH)', () => {
     expect(fs.existsSync(job.output)).toBe(true);
     expect(fs.readdirSync(dir).filter(f => f.endsWith('.converting'))).toEqual([]);
   });
+
+  real('converts a 200.02 s FLAC to MP3 and passes verification despite the encoder delay', async () => {
+    const input = path.join(dir, 'odd.flac');
+    execFileSync(FFMPEG!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=44100',
+      '-t', '200.02', '-ac', '2', '-c:a', 'flac', '-sample_fmt', 's16', input]);
+    const job = await jobFor(input, path.join(dir, 'odd.mp3'), 'mp3');
+    const r = await convertFile(FFMPEG!, job, new AbortController().signal);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.facts).toMatchObject({ format: 'mp3', sampleRate: 44100 });
+    // and the file it left is recognised as reusable next time, not as a conflict
+    const again = await readFileFacts(job.output);
+    expect(outputReadiness({ exists: true, facts: isReadable(again) ? again : undefined }, job.out, job.source.durationSec)).toBe('reusable');
+  }, 60000);
 
   real('converts a file whose name has accents and an ampersand', async () => {
     const input = path.join(dir, 'Roméo & Co.flac');

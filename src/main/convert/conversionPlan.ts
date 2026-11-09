@@ -15,8 +15,23 @@ export interface OutputFacts {
 }
 
 const MP3_KBPS = 320;
+/** An existing MP3 at the output path is only reused at (about) the bitrate we would encode: never a quieter-quality copy. */
+const MIN_REUSABLE_MP3_KBPS = 315;
 /** Verification tolerance: a converted file's duration may differ by this much. */
 const DURATION_TOLERANCE_SEC = 0.05;
+/** LAME's encoder delay plus its maximum end padding (one frame), in samples. */
+const MP3_DELAY_AND_PADDING_SAMPLES = 1105 + 1152;
+
+/**
+ * How far a converted file's duration may be from the source's. An MP3 decodes with LAME's
+ * delay and padding added — 25-52 ms at 44.1 kHz — so it gets that on top; it is the same audio.
+ * Used both to verify a conversion and to recognise an earlier one, so the two never disagree.
+ */
+export function durationToleranceSec(out: Pick<OutputFacts, 'format' | 'sampleRate'>): number {
+  return out.format === 'mp3'
+    ? DURATION_TOLERANCE_SEC + MP3_DELAY_AND_PADDING_SAMPLES / out.sampleRate
+    : DURATION_TOLERANCE_SEC;
+}
 
 const nfc = (s: string) => s.normalize('NFC');
 
@@ -97,7 +112,7 @@ export function ffmpegArgs(input: string, output: string, out: OutputFacts, sour
 export type Readiness = 'new' | 'reusable' | 'conflict';
 
 export function outputReadiness(
-  existing: { exists: boolean; facts?: AudioFacts & { durationSec?: number } },
+  existing: { exists: boolean; facts?: AudioFacts & { durationSec?: number; bitrateKbps?: number } },
   out: OutputFacts,
   sourceDurationSec: number,
 ): Readiness {
@@ -108,8 +123,11 @@ export function outputReadiness(
     f.format === out.format &&
     f.sampleRate === out.sampleRate &&
     f.bitDepth === out.bitDepth &&
+    // A release's 192 kbps MP3 beside the FLAC is not what we would make: reusing it,
+    // and trashing the FLAC, would be a quiet loss of quality.
+    (out.format !== 'mp3' || (f.bitrateKbps ?? 0) >= MIN_REUSABLE_MP3_KBPS) &&
     f.durationSec !== undefined &&
-    Math.abs(f.durationSec - sourceDurationSec) <= DURATION_TOLERANCE_SEC
+    Math.abs(f.durationSec - sourceDurationSec) <= durationToleranceSec(out)
   ) {return 'reusable';}
   return 'conflict';
 }

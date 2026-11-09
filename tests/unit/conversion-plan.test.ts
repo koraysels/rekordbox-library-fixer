@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PLAYER_PROFILES } from '../../src/main/convert/playerProfiles';
 import {
-  outputFacts, outputPath, ffmpegArgs, outputReadiness, groupBySharedFile,
+  outputFacts, outputPath, ffmpegArgs, outputReadiness, groupBySharedFile, durationToleranceSec,
 } from '../../src/main/convert/conversionPlan';
 
 const cdj = PLAYER_PROFILES.cdj2000;
@@ -64,6 +64,29 @@ describe('conversion plan', () => {
     expect(outputReadiness({ exists: true, facts: { format: 'aiff', sampleRate: 48000, bitDepth: 24, durationSec: 201 } }, aiff48x24, 200)).toBe('conflict');
     expect(outputReadiness({ exists: true }, aiff48x24, 200)).toBe('conflict');
     expect(outputReadiness({ exists: false }, aiff48x24, 200)).toBe('new');
+  });
+  it('allows an MP3 its encoder delay and padding on top of the usual 50 ms', () => {
+    const mp3 = outputFacts({ format: 'flac', sampleRate: 44100, bitDepth: 16 }, cdj, 'mp3');
+    expect(durationToleranceSec(aiff48x24)).toBe(0.05);
+    expect(durationToleranceSec(mp3)).toBeCloseTo(0.05 + (1105 + 1152) / 44100, 6);
+    const facts = { format: 'mp3' as const, sampleRate: 44100, bitrateKbps: 320 };
+    // 52 ms longer: what LAME adds at 44.1 kHz — the same audio, not a different file
+    expect(outputReadiness({ exists: true, facts: { ...facts, durationSec: 200.052 } }, mp3, 200)).toBe('reusable');
+    expect(outputReadiness({ exists: true, facts: { ...facts, durationSec: 200.3 } }, mp3, 200)).toBe('conflict');
+    // a WAV/AIFF gets no such allowance
+    expect(outputReadiness({ exists: true, facts: { format: 'aiff', sampleRate: 48000, bitDepth: 24, durationSec: 200.08 } }, aiff48x24, 200)).toBe('conflict');
+  });
+  it('never reuses a low-bitrate MP3: only one at the planned 320 kbps (CBR or VBR rounding)', () => {
+    const mp3 = outputFacts({ format: 'flac', sampleRate: 44100, bitDepth: 16 }, cdj, 'mp3');
+    const at = (kbps?: number) => outputReadiness(
+      { exists: true, facts: { format: 'mp3', sampleRate: 44100, durationSec: 200, ...(kbps ? { bitrateKbps: kbps } : {}) } }, mp3, 200,
+    );
+    expect(at(128)).toBe('conflict');
+    expect(at(192)).toBe('conflict');
+    expect(at(256)).toBe('conflict');
+    expect(at(undefined)).toBe('conflict');
+    expect(at(316.4)).toBe('reusable');
+    expect(at(320)).toBe('reusable');
   });
   it('groups entries that share one file, accents normalised', () => {
     const g = groupBySharedFile([{ id: '1', location: '/m/Roméo.flac' }, { id: '2', location: '/m/Roméo.flac' }]);

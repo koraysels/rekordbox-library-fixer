@@ -5,7 +5,7 @@
  */
 import { spawn } from 'child_process';
 import * as fs from 'fs';
-import { ffmpegArgs, OutputFacts } from './conversionPlan';
+import { durationToleranceSec, ffmpegArgs, OutputFacts } from './conversionPlan';
 import { isReadable, readFileFacts } from './audioFacts';
 import type { AudioFacts } from './playerProfiles';
 
@@ -20,7 +20,6 @@ export interface ConvertJob {
   source: AudioFacts & { durationSec: number };
 }
 
-const DURATION_TOLERANCE_SEC = 0.05;
 const STDERR_TAIL = 8 * 1024;
 
 const lastLine = (text: string) =>
@@ -98,7 +97,7 @@ export async function convertFile(ffmpeg: string, job: ConvertJob, signal: Abort
     if (out.bitDepth !== undefined && facts.bitDepth !== out.bitDepth) {
       return await fail(`Converted file is ${facts.bitDepth}-bit, expected ${out.bitDepth}-bit`);
     }
-    if (Math.abs(facts.durationSec - source.durationSec) > DURATION_TOLERANCE_SEC) {
+    if (Math.abs(facts.durationSec - source.durationSec) > durationToleranceSec(out)) {
       return await fail(`Converted duration ${facts.durationSec.toFixed(3)} s differs from source ${source.durationSec.toFixed(3)} s`);
     }
 
