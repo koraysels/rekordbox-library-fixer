@@ -9,6 +9,9 @@ describe('player profiles', () => {
   it('defaults to the CDJ-2000', () => {
     expect(DEFAULT_PLAYER).toBe('cdj2000');
   });
+  it('labels the profile for the UI', () => {
+    expect(cdj.label).toBe('CDJ-2000 / CDJ-2000NXS');
+  });
   it('passes what the CDJ-2000 plays', () => {
     expect(whyUnplayable({ format: 'mp3' }, cdj)).toEqual([]);
     expect(whyUnplayable({ format: 'aiff', sampleRate: 48000, bitDepth: 24 }, cdj)).toEqual([]);

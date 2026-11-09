@@ -38,7 +38,7 @@ export interface PlayerProfile {
 export const PLAYER_PROFILES: Record<PlayerProfile['id'], PlayerProfile> = {
   cdj2000: {
     id: 'cdj2000',
-    label: 'CDJ-2000',
+    label: 'CDJ-2000 / CDJ-2000NXS',
     formats: ['mp3', 'aac', 'wav', 'aiff'],
     maxSampleRate: 48000,
     maxBitDepth: 24,
