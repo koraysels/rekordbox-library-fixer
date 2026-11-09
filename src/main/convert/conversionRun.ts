@@ -18,22 +18,19 @@ import { PLAYER_PROFILES, whyUnplayable, formatFromLibrary, type AudioFacts } fr
 import {
   groupBySharedFile, outputFacts, outputPath, outputReadiness, type TargetFormat,
 } from './conversionPlan';
-import { factsFromLibrary, readFileFacts } from './audioFacts';
+import { factsFromLibrary, isReadable, readFileFacts } from './audioFacts';
 import { convertFile } from './convertFile';
 import { switchEntriesInDb, switchEntriesInXml, referenceKey, type EntrySwitch, type SwitchSkip, type RemainingReferences } from './applyConversions';
 
 type ReadFacts = typeof readFileFacts;
-type ReadFactsResult = Awaited<ReturnType<ReadFacts>>;
-type FileFacts = Exclude<ReadFactsResult, { unreachable: true }>;
-
-const isReadable = (r: ReadFactsResult): r is FileFacts => !('unreachable' in r);
 const nfcKey = (p: string) => p.normalize('NFC').toLowerCase();
 
 /**
  * Every file in the library the player cannot play, one candidate per file. The
  * file is read only when the library does not know its format, depth or rate;
  * otherwise it is only checked to be there, so a missing file shows up as
- * unreachable instead of disappearing from the preview later.
+ * unreachable instead of disappearing from the preview later. A file that is
+ * there but cannot be parsed is unreadable — a different fix than relocating.
  */
 export async function findUnplayable(
   library: { tracks: Map<string, TrackPayload> },
@@ -50,17 +47,19 @@ export async function findUnplayable(
     const known = factsFromLibrary(first as Parameters<typeof factsFromLibrary>[0]);
     let facts: ConvertCandidate['facts'] = known;
     let unreachable = false;
+    let unreadable = false;
 
     if (!known || !known.sampleRate) {
       const read = await readFacts(first.location);
       if (isReadable(read) && read.sampleRate) {facts = read;}
-      else {unreachable = true;}
+      else if ('unreachable' in read) {unreachable = true;}
+      else {unreadable = true;}
     } else if (whyUnplayable(known, profile).length > 0 && !exists(first.location)) {
       unreachable = true;
     }
 
     let reasons;
-    if (unreachable) {
+    if (unreachable || unreadable) {
       // Say what the library alone can tell; the file itself could not be asked.
       const format = formatFromLibrary(first as Parameters<typeof formatFromLibrary>[0]);
       const partial: AudioFacts | null = known ?? (format === 'unknown' ? null : { format });
@@ -78,6 +77,7 @@ export async function findUnplayable(
       reasons,
       facts,
       ...(unreachable ? { unreachable: true as const } : {}),
+      ...(unreadable ? { unreadable: true as const } : {}),
     });
   }
   return candidates;
@@ -106,7 +106,7 @@ export async function previewConversion(
   const items: ConvertPreviewItem[] = [];
 
   for (const c of candidates) {
-    if (c.unreachable || !c.facts) {continue;}
+    if (c.unreachable || c.unreadable || !c.facts) {continue;}
     let source = c.facts;
     if (!source.sampleRate || source.durationSec === undefined) {
       const read = await readFacts(c.location);
@@ -203,7 +203,10 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
 
     try {
       const source = await readFacts(item.from);
-      if (!isReadable(source)) { fail(item, 'file not reachable', name); continue; }
+      if (!isReadable(source)) {
+        fail(item, 'unreachable' in source ? 'file not reachable' : "couldn't read the file", name);
+        continue;
+      }
 
       if (item.readiness === 'reusable') {
         // Check again: the file may have changed since the preview.

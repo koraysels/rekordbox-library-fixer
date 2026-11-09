@@ -124,6 +124,10 @@ export const ConvertPanel: React.FC<Props> = ({ libraryData, libraryPath, showNo
                       <p className="text-xs font-te-mono normal-case text-te-grey-600">
                         {cand.reasons.map((r, i) => <span key={i} className="mr-3">{describeReason(r)}</span>)}
                       </p>
+                    ) : cand.unreadable ? (
+                      <p className="text-xs font-te-mono normal-case text-te-red-500">
+                        couldn&apos;t read the file — it is there, but its audio could not be read
+                      </p>
                     ) : (
                       <p className="text-xs font-te-mono normal-case text-te-red-500">
                         file not reachable — fix it with{' '}

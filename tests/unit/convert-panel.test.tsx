@@ -13,6 +13,10 @@ const gone = {
   trackIds: ['2'], location: '/m/gone.flac', name: 'Gone', artist: 'Nobody',
   reasons: [{ kind: 'format', format: 'flac' }], facts: null, unreachable: true,
 };
+const broken = {
+  trackIds: ['3'], location: '/m/broken.flac', name: 'Broken', artist: 'Someone',
+  reasons: [{ kind: 'format', format: 'flac' }], facts: null, unreadable: true,
+};
 const previewItem = {
   trackIds: ['1'], from: '/m/a.flac', to: '/m/a.aif', readiness: 'new',
   out: { format: 'aiff', sampleRate: 44100, bitDepth: 16, bitrateKbps: 1411 },
@@ -87,6 +91,16 @@ describe('ConvertPanel', () => {
     expect(screen.getByRole('checkbox', { name: /Gone/ })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /Track Relocation/ }));
     expect(onOpenRelocation).toHaveBeenCalled();
+  });
+
+  it("says a file that is there but can't be parsed couldn't be read, not that it is unreachable", async () => {
+    api.findUnplayable = vi.fn(async () => ({ success: true, data: [candidate, broken] }));
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: /scan/i }));
+    await screen.findByText('Broken');
+    expect(screen.getByText(/couldn't read the file/)).toBeTruthy();
+    expect(screen.queryByText(/file not reachable/)).toBeNull();
+    expect(screen.getByRole('checkbox', { name: /Broken/ })).toBeDisabled();
   });
 
   it('shows the MP3 warning only for MP3', async () => {

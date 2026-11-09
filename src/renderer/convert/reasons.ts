@@ -26,4 +26,4 @@ export function filterByReason(candidates: ConvertCandidate[], label: string): C
 }
 
 /** Files that can be converted: a file that could not be read is listed, never selectable. */
-export const isConvertible = (c: ConvertCandidate) => !c.unreachable;
+export const isConvertible = (c: ConvertCandidate) => !c.unreachable && !c.unreadable;

@@ -49,6 +49,14 @@ describe('findUnplayable', () => {
     expect(gone.unreachable).toBe(true);
   });
 
+  it('marks a file that is there but cannot be parsed unreadable, not unreachable', async () => {
+    const read = vi.fn(async () => ({ unreadable: true as const }));
+    const out = await findUnplayable(lib([track({ id: '1', location: '/m/broken.flac', kind: 'FLAC File' })]), 'cdj2000', read);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ unreadable: true, reasons: [{ kind: 'format', format: 'flac' }] });
+    expect(out[0].unreachable).toBeUndefined();
+  });
+
   it('marks a file the library describes fully but that is not on disk as unreachable', async () => {
     const out = await findUnplayable(lib([
       track({ id: '1', location: '/m/gone.wav', fileType: 11, sampleRate: 96000, bitDepth: 24 }),

@@ -188,8 +188,10 @@ export interface ConvertCandidate {
   reasons: UnplayableReason[];
   /** `durationSec` is there when the file itself was read. */
   facts: (AudioFacts & { durationSec?: number }) | null;
-  /** The file had to be read and could not be: listed, never converted ("file not reachable"). */
+  /** The file had to be read and is not there: listed, never converted ("file not reachable"). */
   unreachable?: true;
+  /** The file is there but its audio could not be read: listed, never converted ("couldn't read the file"). */
+  unreadable?: true;
 }
 
 export interface ConvertPreviewItem {

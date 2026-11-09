@@ -6,7 +6,7 @@
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import { ffmpegArgs, OutputFacts } from './conversionPlan';
-import { readFileFacts } from './audioFacts';
+import { isReadable, readFileFacts } from './audioFacts';
 import type { AudioFacts } from './playerProfiles';
 
 export type ConvertResult =
@@ -91,7 +91,7 @@ export async function convertFile(ffmpeg: string, job: ConvertJob, signal: Abort
     if (signal.aborted) {return await fail('Cancelled');}
 
     const facts = await readFileFacts(partial);
-    if ('unreachable' in facts) {return await fail('The converted file could not be read back');}
+    if (!isReadable(facts)) {return await fail('The converted file could not be read back');}
     const { out, source } = job;
     if (facts.format !== out.format) {return await fail(`Converted file is ${facts.format}, expected ${out.format}`);}
     if (facts.sampleRate !== out.sampleRate) {return await fail(`Converted file is ${facts.sampleRate} Hz, expected ${out.sampleRate} Hz`);}

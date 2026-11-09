@@ -3,7 +3,6 @@ import * as mm from 'music-metadata';
 import { AudioFacts, AudioFormat, formatFromLibrary } from './playerProfiles';
 
 const PCM_FORMATS: AudioFormat[] = ['wav', 'aiff', 'flac', 'alac'];
-const HEAD_BYTES = 2 * 1024 * 1024;
 
 /**
  * What the library already knows about a track, or null when the file itself
@@ -34,56 +33,49 @@ function formatFromHeader(container?: string, codec?: string): AudioFormat {
   return 'other';
 }
 
-async function parse(buffer: Buffer, size: number) {
-  return mm.parseBuffer(buffer, { size }, { duration: true, skipCovers: true });
-}
+type ParseFile = (filePath: string, options?: mm.IOptions) => Promise<mm.IAudioMetadata>;
 
-/** Read the header of a file for its format, rate, depth and duration. */
-export async function readFileFacts(
-  filePath: string,
-  headBytes: number = HEAD_BYTES,
-): Promise<(AudioFacts & { durationSec: number }) | { unreachable: true }> {
-  let head: Buffer;
-  let size: number;
+/**
+ * `parseFile` seeks: it reads the headers (and for MP3 without a Xing frame, the frames)
+ * from disk instead of loading the file, so a 2 GB WAV costs what a 2 MB one does. It is in
+ * the package's Node build, which is what Node and Electron's main process resolve; the
+ * renderer's tsconfig resolves the browser build, whose types leave it out, hence the cast.
+ */
+const parseFile: ParseFile = (filePath, options) =>
+  (mm as unknown as { parseFile: ParseFile }).parseFile(filePath, options);
+
+export type FileFacts = AudioFacts & { durationSec: number; bitrateKbps?: number };
+/**
+ * `unreachable`: the file is not there or cannot be opened — fixed with Track Relocation.
+ * `unreadable`: the file is there, but its audio could not be made sense of.
+ */
+export type FileFactsResult = FileFacts | { unreachable: true } | { unreadable: true };
+
+export const isReadable = (r: FileFactsResult): r is FileFacts =>
+  !('unreachable' in r) && !('unreadable' in r);
+
+/** Read a file's format, rate, depth, bitrate and duration from its headers. */
+export async function readFileFacts(filePath: string): Promise<FileFactsResult> {
   try {
-    const handle = await fs.promises.open(filePath, 'r');
-    try {
-      size = (await handle.stat()).size;
-      head = Buffer.alloc(Math.min(size, headBytes));
-      await handle.read(head, 0, head.length, 0);
-    } finally {
-      await handle.close();
-    }
+    await fs.promises.access(filePath, fs.constants.R_OK);
   } catch {
     return { unreachable: true };
   }
 
+  let meta: mm.IAudioMetadata;
   try {
-    const partial = size > head.length;
-    let meta = await parse(head, size).catch(() => null);
-    // mp3/aac durations are estimated from the bytes seen, and a WAV's is derived
-    // from the bytes the parser was given (a 7 MB WAV read from a 2 MB head came
-    // back as 5.9 s of 20 s), so a head-only parse can be confidently wrong; the
-    // other formats store it in the header.
-    const codecName = (meta?.format.codec ?? '').toLowerCase();
-    const estimated = !!meta && (
-      (/layer|aac/.test(codecName) && !meta.format.lossless)
-      || (meta.format.container ?? '').toLowerCase().startsWith('wav')
-    );
-    if (partial && (!meta || !meta.format.duration || estimated)) {
-      meta = await parse(await fs.promises.readFile(filePath), size);
-    }
-    if (!meta) {return { unreachable: true };}
-    const { container, codec, sampleRate, bitsPerSample, duration } = meta.format;
-    const facts: AudioFacts & { durationSec: number } = {
-      format: formatFromHeader(container, codec),
-      durationSec: duration ?? 0,
-    };
-    if (sampleRate) {facts.sampleRate = sampleRate;}
-    if (bitsPerSample) {facts.bitDepth = bitsPerSample;}
-    if (/ieee_float|pcm float|float/i.test(codec ?? '')) {facts.isFloat = true;}
-    return facts;
+    meta = await parseFile(filePath, { duration: true, skipCovers: true });
   } catch {
-    return { unreachable: true };
+    return { unreadable: true };
   }
+  const { container, codec, sampleRate, bitsPerSample, duration, bitrate } = meta.format;
+  const facts: FileFacts = {
+    format: formatFromHeader(container, codec),
+    durationSec: duration ?? 0,
+  };
+  if (sampleRate) {facts.sampleRate = sampleRate;}
+  if (bitsPerSample) {facts.bitDepth = bitsPerSample;}
+  if (bitrate) {facts.bitrateKbps = bitrate / 1000;}
+  if (/ieee_float|pcm float|float/i.test(codec ?? '')) {facts.isFloat = true;}
+  return facts;
 }
