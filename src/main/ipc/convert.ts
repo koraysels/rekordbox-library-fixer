@@ -1,8 +1,6 @@
 import { app, ipcMain, net, shell } from 'electron';
 import { safeConsole, sendToWindow } from '../runtime';
-import { isRekordboxDatabasePath } from '../librarySource';
-import { isRekordboxRunning } from '../rekordboxRunning';
-import { findUnplayable, previewConversion, runConversion } from '../convert/conversionRun';
+import { findUnplayable, preflightRefusal, previewConversion, runConversion } from '../convert/conversionRun';
 import { ffmpegStatus, installFfmpeg } from '../convert/ffmpegBinary';
 import { RunRegistry } from '../convert/runRegistry';
 import type {
@@ -66,15 +64,10 @@ export function registerConvertIpc(): void {
       if (ff.state !== 'ready') {
         throw new Error('ffmpeg is not installed yet — install it before converting.');
       }
-      // Fail before hours of converting rather than at the write.
-      if (isRekordboxDatabasePath(data.libraryPath)) {
-        if (!data.dbKey) {
-          throw new Error('The rekordbox database needs its key before it can be changed — paste it on the Library screen.');
-        }
-        if (isRekordboxRunning()) {
-          throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
-        }
-      }
+      // runConversion refuses on its own too; asked here first so the page reports it as a run
+      // that never started, not as one that ran and changed nothing.
+      const refusal = preflightRefusal(data);
+      if (refusal) {throw new Error(refusal);}
       const { operationId: _id, ...opts } = data;
       const result = await runConversion(opts, {
         ffmpeg: ff.path,

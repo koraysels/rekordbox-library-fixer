@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isStreamingLocation } from '../streamingLocation';
 import { isRekordboxDatabasePath } from '../librarySource';
+import { isRekordboxRunning } from '../rekordboxRunning';
 import { RekordboxParser, type RekordboxLibrary } from '../rekordboxParser';
 import type {
   ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunOptions, ConvertRunResult,
@@ -147,6 +148,24 @@ export interface RunDeps {
   readFacts?: ReadFacts;
   fileSize?: (p: string) => Promise<number>;
   loadXmlLibrary?: (xmlPath: string) => Promise<RekordboxLibrary>;
+  /** Is rekordbox running? Asked before converting a database library; defaults to the real check. */
+  checkRunning?: () => boolean;
+}
+
+const NEEDS_KEY = 'The rekordbox database needs its key before it can be changed — paste it on the Library screen.';
+const CLOSE_REKORDBOX = 'Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.';
+
+/**
+ * Why a run must not start, or undefined. A database library needs its key and rekordbox
+ * closed; better to hear that before hours of converting than at the write (which checks again).
+ */
+export function preflightRefusal(
+  opts: Pick<ConvertRunOptions, 'libraryPath' | 'dbKey'>,
+  checkRunning: () => boolean = isRekordboxRunning,
+): string | undefined {
+  if (!isRekordboxDatabasePath(opts.libraryPath)) {return undefined;}
+  if (!opts.dbKey) {return NEEDS_KEY;}
+  return checkRunning() ? CLOSE_REKORDBOX : undefined;
 }
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -184,6 +203,14 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
     result.failed.push({ from: item.from, error });
     emit('failed', `Could not convert ${name}: ${error}`, name);
   };
+
+  // Whoever calls this — the IPC handler or a headless caller — learns it before anything is converted.
+  const refusal = preflightRefusal(opts, deps.checkRunning);
+  if (refusal) {
+    result.error = refusal;
+    emit('error', refusal);
+    return result;
+  }
 
   emit('start', `Converting ${total} file${total === 1 ? '' : 's'}…`);
 
@@ -248,7 +275,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
     try {
       if (isDb) {
         if (!opts.dbKey) {
-          throw new Error('The rekordbox database needs its key before it can be changed — paste it on the Library screen.');
+          throw new Error(NEEDS_KEY);
         }
         const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         const outcome = switchDb(opts.libraryPath, opts.dbKey, switches, { backupPath: `${opts.libraryPath}.backup.${stamp}` });

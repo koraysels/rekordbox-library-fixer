@@ -125,6 +125,7 @@ function harness(opts: Partial<ConvertRunOptions> = {}, over: Partial<RunDeps> =
     switchXml: switchXml as never, trash,
     readFacts: vi.fn(async () => sourceFacts),
     fileSize: vi.fn(async () => 999),
+    checkRunning: vi.fn(() => false),
     loadXmlLibrary: vi.fn(async () => ({ version: '1', tracks: new Map(), playlists: [] }) as never),
     ...over,
   };
@@ -161,6 +162,33 @@ describe('runConversion', () => {
     expect((h.switchDb.mock.calls[0][2] as EntrySwitch[]).map(s => s.trackId)).toEqual(['ta']);
     expect(res.switchedItems).toEqual([{ trackIds: ['ta'], from: expect.any(String), to: expect.any(String) }]);
     expect(h.events.at(-1)?.type).toBe('cancelled');
+  });
+
+  it('refuses before converting anything when rekordbox is running (a headless caller learns up front)', async () => {
+    const h = harness({ trashOriginals: true }, { checkRunning: vi.fn(() => true) });
+    const res = await runConversion(h.run, h.deps);
+    expect(res.error).toMatch(/Close rekordbox first/);
+    expect(h.convert).not.toHaveBeenCalled();
+    expect(h.switchDb).not.toHaveBeenCalled();
+    expect(h.trash).not.toHaveBeenCalled();
+    expect(res).toMatchObject({ switched: 0, trashed: 0, switchedItems: [], failed: [] });
+    expect(h.events.map(e => e.type)).toEqual(['error']);
+  });
+
+  it('refuses before converting anything when the database key is missing', async () => {
+    const h = harness({ dbKey: undefined });
+    const res = await runConversion(h.run, h.deps);
+    expect(res.error).toMatch(/needs its key/);
+    expect(h.convert).not.toHaveBeenCalled();
+  });
+
+  it('does not ask whether rekordbox runs for an XML library', async () => {
+    const checkRunning = vi.fn(() => true);
+    const h = harness({ libraryPath: '/lib.xml', dbKey: undefined }, { checkRunning });
+    const res = await runConversion(h.run, h.deps);
+    expect(checkRunning).not.toHaveBeenCalled();
+    expect(res.error).toBeUndefined();
+    expect(h.convert).toHaveBeenCalledTimes(2);
   });
 
   it('the database write is refused while rekordbox runs and files are kept', async () => {
