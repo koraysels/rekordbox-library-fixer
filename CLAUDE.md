@@ -88,6 +88,25 @@ collection has to go through the database.
   The XML writer writes to `libraryPath`, so a database-backed library would otherwise have
   been overwritten with XML and destroyed. Database-backed libraries go through the
   database-native writers instead.
+- **Format converter** (`src/main/convert/`, `src/main/ipc/convert.ts`, `src/renderer/convert/`, the Convert
+  page): finds what the "Oldest player you play on" profile cannot play and converts it, keeping the same
+  library entry. `playerProfiles.ts` holds the profiles as data (CDJ-2000/NXS: MP3, AAC, WAV, AIFF; 48 kHz;
+  24-bit integer); `conversionPlan.ts` plans outputs and ffmpeg arguments (AIFF default, 32-bit/float to
+  24-bit with dither, rates capped at 48/44.1 kHz; a same-format output gets a suffix such as
+  `(24-bit)`); `conversionRun.ts` (`findUnplayable`, `previewConversion`, `runConversion`) is free of Electron
+  and React so a wizard can call it; `convertFile.ts` converts to a temp name, verifies (opens, expected
+  format, duration within 50 ms) and renames into place; `applyConversions.ts` switches entries.
+  `ffmpegBinary.ts` / `ffmpegBuilds.ts` download a pinned, checksummed ffmpeg on first use (never bundled:
+  the Apple Silicon build is non-free).
+
+  Rules the code depends on: only `FolderPath`, `FileNameL`, `FileType`, `FileSize`, `BitRate`, `BitDepth`,
+  `SampleRate` and `rb_local_usn` change, so cues, beatgrids and playlists (keyed by content ID) stay
+  attached; one library write per run, after every file is verified; the original is never trashed
+  unless the write succeeded and a count taken inside that write shows no other entry still uses it;
+  entries sharing one file switch together; references compare NFC and case-insensitively; one run at a
+  time (`runRegistry.ts`); an XML library gets no Trash option, because an XML import adds a new track
+  instead of replacing one. `readFileFacts` must not trust a duration from a header-only read (WAV, mp3,
+  aac): it reads the whole file for those.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
@@ -315,6 +334,10 @@ src/renderer/
 │   ├── DuplicateDetector.tsx      # The page: state, results, modals
 │   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
 │   └── TrackRelocator.tsx
+├── convert/                       # Convert page support, apart from React
+│   ├── reasons.ts                 # Why a track cannot play, in words
+│   ├── switchedItems.ts           # What a run switched, for the page and history
+│   └── conversionHistory.ts       # The Activity-history entry for a run
 ├── hooks/                         # Custom business logic hooks
 │   ├── useDuplicates.ts           # Duplicate detection state
 │   ├── useDuplicateResolution.ts  # The three resolve flows (XML, database, trash)
@@ -332,6 +355,9 @@ src/renderer/
 └── stores/                        # State management
     └── settingsStore.ts           # Zustand store with persistence
 ```
+
+The main process mirrors this for conversion: `src/main/convert/` (player profiles, plan, run, file
+conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`.
 
 Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/` or
 `scan/` can be tested without rendering, which is why those exist. A file growing past ~500 lines

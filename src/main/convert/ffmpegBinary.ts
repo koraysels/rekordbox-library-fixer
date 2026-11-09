@@ -84,7 +84,7 @@ async function install(
     const hash = crypto.createHash('sha256');
     let received = 0;
     let last = -1;
-    const body = Readable.fromWeb(res.body as any);
+    const body = Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]);
     body.on('data', (chunk: Buffer) => {
       hash.update(chunk);
       received += chunk.length;

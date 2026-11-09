@@ -50,7 +50,7 @@ export const DEFAULT_PLAYER: PlayerProfile['id'] = 'cdj2000';
 
 export function whyUnplayable(facts: AudioFacts, profile: PlayerProfile): UnplayableReason[] {
   // A format the player cannot read at all makes its rate and depth beside the point.
-  if (!profile.formats.includes(facts.format)) return [{ kind: 'format', format: facts.format }];
+  if (!profile.formats.includes(facts.format)) {return [{ kind: 'format', format: facts.format }];}
   const reasons: UnplayableReason[] = [];
   if (facts.sampleRate !== undefined && facts.sampleRate > profile.maxSampleRate) {
     reasons.push({ kind: 'sampleRate', hz: facts.sampleRate, max: profile.maxSampleRate });
@@ -58,7 +58,7 @@ export function whyUnplayable(facts: AudioFacts, profile: PlayerProfile): Unplay
   if (facts.bitDepth !== undefined && facts.bitDepth > profile.maxBitDepth) {
     reasons.push({ kind: 'bitDepth', bits: facts.bitDepth, max: profile.maxBitDepth });
   }
-  if (facts.isFloat && !profile.allowsFloat) reasons.push({ kind: 'float' });
+  if (facts.isFloat && !profile.allowsFloat) {reasons.push({ kind: 'float' });}
   return reasons;
 }
 
@@ -93,13 +93,13 @@ const BY_FILE_TYPE: Record<number, AudioFormat> = {
 
 function fromKind(kind: string | undefined): AudioFormat | undefined {
   const k = (kind ?? '').toLowerCase();
-  if (!k) return undefined;
-  if (k.includes('lossless')) return 'alac'; // before "mpeg-4"/"aac": ALAC Kinds can mention MPEG-4
-  if (k.includes('flac')) return 'flac';
-  if (k.includes('aiff')) return 'aiff';
-  if (k.includes('wav')) return 'wav';
-  if (k.includes('mp3')) return 'mp3';
-  if (k.includes('aac') || k.includes('mpeg-4')) return 'aac';
+  if (!k) {return undefined;}
+  if (k.includes('lossless')) {return 'alac';} // before "mpeg-4"/"aac": ALAC Kinds can mention MPEG-4
+  if (k.includes('flac')) {return 'flac';}
+  if (k.includes('aiff')) {return 'aiff';}
+  if (k.includes('wav')) {return 'wav';}
+  if (k.includes('mp3')) {return 'mp3';}
+  if (k.includes('aac') || k.includes('mpeg-4')) {return 'aac';}
   return undefined;
 }
 
@@ -110,13 +110,13 @@ const BY_EXTENSION: Record<string, AudioFormat> = {
 export function formatFromLibrary(
   input: { location: string; fileType?: number; kind?: string },
 ): AudioFormat | 'unknown' {
-  if (input.fileType !== undefined && BY_FILE_TYPE[input.fileType]) return BY_FILE_TYPE[input.fileType];
+  if (input.fileType !== undefined && BY_FILE_TYPE[input.fileType]) {return BY_FILE_TYPE[input.fileType];}
   const byKind = fromKind(input.kind);
-  if (byKind) return byKind;
+  if (byKind) {return byKind;}
   const name = input.location.split(/[\\/]/).pop() ?? '';
   const dot = name.lastIndexOf('.');
   const ext = dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
   // .m4a/.mp4 hold AAC or ALAC; only the file itself can say which.
-  if (ext === 'm4a' || ext === 'mp4') return 'unknown';
+  if (ext === 'm4a' || ext === 'mp4') {return 'unknown';}
   return BY_EXTENSION[ext] ?? 'unknown';
 }

@@ -38,10 +38,10 @@ export const referenceKey = (p: string) => nfc(p).toLowerCase();
 /** Count live locations per wanted path. */
 function countReferences(originals: string[], locations: Iterable<string>): RemainingReferences {
   const remaining: RemainingReferences = {};
-  for (const o of originals) remaining[referenceKey(o)] = 0;
+  for (const o of originals) {remaining[referenceKey(o)] = 0;}
   for (const loc of locations) {
     const key = referenceKey(loc);
-    if (key in remaining) remaining[key]++;
+    if (key in remaining) {remaining[key]++;}
   }
   return remaining;
 }

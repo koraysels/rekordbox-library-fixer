@@ -53,8 +53,8 @@ export async function findUnplayable(
 
     if (!known || !known.sampleRate) {
       const read = await readFacts(first.location);
-      if (isReadable(read) && read.sampleRate) facts = read;
-      else unreachable = true;
+      if (isReadable(read) && read.sampleRate) {facts = read;}
+      else {unreachable = true;}
     } else if (whyUnplayable(known, profile).length > 0 && !exists(first.location)) {
       unreachable = true;
     }
@@ -67,7 +67,7 @@ export async function findUnplayable(
       reasons = partial ? whyUnplayable(partial, profile) : [];
     } else {
       reasons = whyUnplayable(facts as AudioFacts, profile);
-      if (reasons.length === 0) continue;
+      if (reasons.length === 0) {continue;}
     }
 
     candidates.push({
@@ -106,11 +106,11 @@ export async function previewConversion(
   const items: ConvertPreviewItem[] = [];
 
   for (const c of candidates) {
-    if (c.unreachable || !c.facts) continue;
+    if (c.unreachable || !c.facts) {continue;}
     let source = c.facts;
     if (!source.sampleRate || source.durationSec === undefined) {
       const read = await readFacts(c.location);
-      if (!isReadable(read) || !read.sampleRate) continue;
+      if (!isReadable(read) || !read.sampleRate) {continue;}
       source = read;
     }
     const src = source as AudioFacts & { sampleRate: number; durationSec: number };
@@ -170,7 +170,9 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
   const isDb = isRekordboxDatabasePath(opts.libraryPath);
   const trashOriginals = opts.trashOriginals && isDb;
   const total = opts.items.length;
-  const result: ConvertRunResult = { switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: false };
+  const result: ConvertRunResult = {
+    switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: false,
+  };
   const done: { item: ConvertPreviewItem; sizeBytes: number }[] = [];
   let current = 0;
 
@@ -186,7 +188,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
   emit('start', `Converting ${total} file${total === 1 ? '' : 's'}…`);
 
   for (const item of opts.items) {
-    if (deps.signal.aborted) break;
+    if (deps.signal.aborted) {break;}
     current++;
     const name = path.basename(item.from);
 
@@ -265,7 +267,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
       emit('error', `The library was not changed: ${result.error}. The converted files are kept.`);
       return result;
     }
-    if (skipped.length) result.skipped = skipped;
+    if (skipped.length) {result.skipped = skipped;}
     const skippedIds = new Set(skipped.map(s => s.trackId));
     result.switchedItems = done
       .map(({ item }) => ({ trackIds: item.trackIds.filter(id => !skippedIds.has(id)), from: item.from, to: item.to }))
@@ -274,7 +276,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
     if (trashOriginals && deps.trash) {
       const notSwitched = new Set(skipped.map(s => s.trackId));
       for (const { item } of done) {
-        if (item.trackIds.some(id => notSwitched.has(id))) continue;
+        if (item.trackIds.some(id => notSwitched.has(id))) {continue;}
         // Counted inside the write: an entry the list did not know about (a re-import,
         // a track relocated onto this file) keeps the original out of the Trash.
         const left = remaining[referenceKey(item.from)];

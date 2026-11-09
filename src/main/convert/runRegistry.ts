@@ -21,12 +21,12 @@ export class RunRegistry {
 
   cancel(operationId: string): boolean {
     const controller = this.runs.get(operationId);
-    if (!controller) return false;
+    if (!controller) {return false;}
     controller.abort();
     return true;
   }
 
   end(operationId: string, controller: AbortController): void {
-    if (this.runs.get(operationId) === controller) this.runs.delete(operationId);
+    if (this.runs.get(operationId) === controller) {this.runs.delete(operationId);}
   }
 }

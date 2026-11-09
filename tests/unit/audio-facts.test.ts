@@ -45,4 +45,9 @@ describe('readFileFacts', () => {
     expect(f).toMatchObject({ format: 'mp3' });
     expect(Math.abs((f as { durationSec: number }).durationSec - 10)).toBeLessThan(0.1);
   });
+  it('gives the full duration of a WAV larger than the head', async () => {
+    const f = await readFileFacts(fx('wav-pcm32-44100-1s.wav'), 20_000);
+    expect(f).toMatchObject({ format: 'wav', sampleRate: 44100 });
+    expect(Math.abs((f as { durationSec: number }).durationSec - 1)).toBeLessThan(0.01);
+  });
 });

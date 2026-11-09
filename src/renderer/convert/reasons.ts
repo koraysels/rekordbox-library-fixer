@@ -14,7 +14,9 @@ export function groupByReason(candidates: ConvertCandidate[]): Array<{ label: st
   for (const c of candidates) {
     for (const label of new Set(c.reasons.map(reasonLabel))) { counts.set(label, (counts.get(label) ?? 0) + 1); }
   }
-  return [...counts].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  return [...counts]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
 /** Everything when `label` is empty; otherwise the files that have that reason. */

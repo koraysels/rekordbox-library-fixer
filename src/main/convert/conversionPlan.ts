@@ -22,7 +22,7 @@ const nfc = (s: string) => s.normalize('NFC');
 
 /** Cap the rate but stay in the same family: 88.2/176.4 kHz -> 44.1, everything else -> the cap. */
 function cappedRate(rate: number, max: number): number {
-  if (rate <= max) return rate;
+  if (rate <= max) {return rate;}
   return rate % 44100 === 0 ? 44100 : max;
 }
 
@@ -32,7 +32,7 @@ export function outputFacts(
   target: TargetFormat,
 ): OutputFacts {
   const sampleRate = cappedRate(source.sampleRate, profile.maxSampleRate);
-  if (target === 'mp3') return { format: target, sampleRate, bitrateKbps: MP3_KBPS };
+  if (target === 'mp3') {return { format: target, sampleRate, bitrateKbps: MP3_KBPS };}
   const bitDepth = source.isFloat
     ? Math.min(24, profile.maxBitDepth)
     : Math.min(source.bitDepth || 16, profile.maxBitDepth);
@@ -47,7 +47,8 @@ export function outputFacts(
 const EXTENSION: Record<TargetFormat, string> = { aiff: '.aif', wav: '.wav', mp3: '.mp3' };
 
 function bitDepthChanged(source: AudioFacts, out: OutputFacts): boolean {
-  return out.bitDepth !== undefined && (!!source.isFloat || (source.bitDepth !== undefined && source.bitDepth !== out.bitDepth));
+  return out.bitDepth !== undefined
+    && (!!source.isFloat || (source.bitDepth !== undefined && source.bitDepth !== out.bitDepth));
 }
 
 function rateChanged(source: AudioFacts, out: OutputFacts): boolean {
@@ -64,11 +65,11 @@ export function outputPath(sourcePath: string, source: AudioFacts, out: OutputFa
   const stem = dot > slash + 1 ? path.slice(0, dot) : path;
   const ext = EXTENSION[out.format];
   const plain = stem + ext;
-  if (plain.toLowerCase() !== path.toLowerCase()) return plain;
+  if (plain.toLowerCase() !== path.toLowerCase()) {return plain;}
 
   const parts: string[] = [];
-  if (bitDepthChanged(source, out)) parts.push(`${out.bitDepth}-bit`);
-  if (rateChanged(source, out)) parts.push(kHz(out.sampleRate));
+  if (bitDepthChanged(source, out)) {parts.push(`${out.bitDepth}-bit`);}
+  if (rateChanged(source, out)) {parts.push(kHz(out.sampleRate));}
   return `${stem} (${parts.length ? parts.join(', ') : 'converted'})${ext}`;
 }
 
@@ -100,7 +101,7 @@ export function outputReadiness(
   out: OutputFacts,
   sourceDurationSec: number,
 ): Readiness {
-  if (!existing.exists) return 'new';
+  if (!existing.exists) {return 'new';}
   const f = existing.facts;
   if (
     f &&
@@ -109,7 +110,7 @@ export function outputReadiness(
     f.bitDepth === out.bitDepth &&
     f.durationSec !== undefined &&
     Math.abs(f.durationSec - sourceDurationSec) <= DURATION_TOLERANCE_SEC
-  ) return 'reusable';
+  ) {return 'reusable';}
   return 'conflict';
 }
 
@@ -119,7 +120,7 @@ export function groupBySharedFile<T extends { id: string; location: string }>(tr
   for (const t of tracks) {
     const key = nfc(t.location);
     const list = groups.get(key);
-    if (list) list.push(t); else groups.set(key, [t]);
+    if (list) {list.push(t);} else {groups.set(key, [t]);}
   }
   return groups;
 }

@@ -56,7 +56,7 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 - **Rekordbox's own database (default)** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
 - **XML export** — still supported, see [Using an XML Library](#using-an-xml-library)
 
-Resolving duplicates, relocating tracks and removing dead entries all write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory **and verified** (a truncated copy is refused rather than trusted), playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
+Resolving duplicates, relocating tracks, converting files and removing dead entries all write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory **and verified** (a truncated copy is refused rather than trusted), playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
 
 **The key.** The app ships no key and never has. The load screen shows the one-line command for your platform — PowerShell on Windows, a terminal on macOS and Linux — that prints it on your own machine by asking the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package. Copy, run, paste once; it stays on your machine.
 
@@ -102,6 +102,9 @@ Quality priority order when lossless preference is enabled:
 - **Persistent mini-player** bar that survives page switches
 - **AIFF supported** (rewrapped to WAV on the fly — Chromium can't play AIFF natively); mp3/m4a/flac/wav/ogg play directly
 - Volume is remembered across sessions; space bar toggles play/pause
+
+### Convert for older players
+Older Pioneer decks (CDJ-2000, CDJ-2000NXS) refuse lossless M4A (ALAC), FLAC, 32-bit or float WAV and anything above 48 kHz or 24-bit. The Convert page lists every track your oldest player cannot load, says why, and turns the files you pick into AIFF (or WAV, or MP3) — then points the **same library entry** at the new file, so cues, loops, hot cues, beatgrids, ratings and playlists stay exactly where they were.
 
 ### Activity History
 - Every library-changing operation is recorded: duplicate merges and relocations
@@ -272,6 +275,18 @@ If tracks show as "!" in Rekordbox:
 3. Configure search depth and similarity threshold
 4. Click **Scan for Missing Tracks**
 5. Review candidates and apply the relocations you want
+
+#### Step 5: Convert for Older Players (Optional)
+
+If a deck will not load some of your tracks (lossless M4A, FLAC, 32-bit or 96 kHz files):
+
+1. Go to the **Convert** tab; it starts from the **Oldest player you play on** setting (change it for a one-off run if you like)
+2. The list shows every track that player cannot play, with the reason; select what to convert, or filter by reason
+3. Pick the target: **AIFF** (default, lossless, keeps your bit depth up to 24-bit and caps the sample rate at 48 kHz), **WAV**, or **MP3** (320 kbps; lossy, and encoder delay can move cues by a few milliseconds)
+4. Click **Preview** to see exactly which files will be written and how each entry changes, then convert
+5. Optionally move the originals to the Trash. They go only after the library was updated, and never while another entry still uses the file
+
+Converted files are written next to the originals, never over them; a name already taken is reported and skipped. The first time, the app asks before downloading ffmpeg (about 20-30 MB, checked against a pinned checksum and kept in the app's data folder) — it is not included in the installer. On a `master.db` library the entries are switched in place, with Rekordbox closed and a verified backup first. On an XML library the page tells you plainly that importing the XML would add the converted file as a new track without cues, so switch the entries from `master.db` instead. USB sticks hold their own copies: sync them from Rekordbox afterwards.
 
 Every change is written straight into `master.db`. Close Rekordbox first; the app takes a verified backup before it writes, and Rekordbox picks the changes up the next time it starts. There is nothing to import.
 
@@ -500,10 +515,9 @@ Free for personal use. No ads, no subscriptions, no limits.
 - In-app track preview — play/pause/seek/volume from any track row, with AIFF support
 - Relocator: handles libraries with thousands of missing tracks without crashing; safe cancellation; search settings now persist
 
-**FLAC conversion**
-- Convert FLAC files to WAV or AIFF for compatibility with older CDJs (CDJ-2000NXS and earlier) that don't support FLAC playback
-- Batch conversion with original file preservation
-- Automatic library location update after conversion
+**Convert for older players** *(in the next release; see [Convert for older players](#convert-for-older-players))*
+- More player profiles beyond the CDJ-2000 / CDJ-2000NXS
+- A guided "fix my library" flow that offers conversion as one step
 
 ---
 
