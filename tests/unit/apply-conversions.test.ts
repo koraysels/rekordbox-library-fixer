@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
-  applySwitchesToDb, switchEntriesInDb, switchEntriesInXml, FILE_TYPE_FOR, KIND_FOR, MOVED_AWAY, type EntrySwitch,
+  applySwitchesToDb, switchEntriesInDb, switchEntriesInXml, FILE_TYPE_FOR, KIND_FOR, MOVED_AWAY, referenceKey, type EntrySwitch,
 } from '../../src/main/convert/applyConversions';
 import { RekordboxParser } from '../../src/main/rekordboxParser';
 import { DATABASE_IS_READ_ONLY } from '../../src/main/librarySource';
@@ -133,7 +133,7 @@ describe('applySwitchesToDb against a stale list', () => {
     db.prepare('UPDATE djmdContent SET FolderPath = ? WHERE ID = ?').run('/old/Café.flac'.normalize('NFD'), 't1');
     const out = applySwitchesToDb(db, [sw({ oldLocation: '/old/Café.flac'.normalize('NFC') })], yes);
     expect(out.switched).toBe(1);
-    expect(out.remaining).toEqual({ ['/old/Café.flac'.normalize('NFC')]: 0 });
+    expect(out.remaining).toEqual({ [referenceKey('/old/Café.flac')]: 0 });
   });
 
   it('counts live rows still pointing at the original, NFC-normalised, ignoring deleted ones', () => {
@@ -142,7 +142,16 @@ describe('applySwitchesToDb against a stale list', () => {
       ('t4', 'Gone', '/old/Song.flac', 1)`);
     const out = applySwitchesToDb(db, [sw()], yes);
     expect(out.switched).toBe(1);
-    expect(out.remaining).toEqual({ '/old/Song.flac': 1 });
+    expect(out.remaining).toEqual({ [referenceKey('/old/Song.flac')]: 1 });
+  });
+});
+
+describe('reference counts ignore case', () => {
+  it('counts an unlisted row whose path differs only in case', () => {
+    db.exec("INSERT INTO djmdContent (ID, Title, FolderPath, rb_local_deleted) VALUES ('t5', 'Upper', '/OLD/song.FLAC', 0)");
+    const out = applySwitchesToDb(db, [sw()], yes);
+    expect(out.switched).toBe(1);
+    expect(out.remaining).toEqual({ [referenceKey('/old/Song.flac')]: 1 });
   });
 });
 
@@ -179,7 +188,7 @@ describe('switchEntriesInXml', () => {
     const out = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '1' })], yes);
     tmpFiles.push(out.backupPath);
     expect(out.switched).toBe(1);
-    expect(out.remaining).toEqual({ '/old/Song.flac': 0 });
+    expect(out.remaining).toEqual({ [referenceKey('/old/Song.flac')]: 0 });
     expect(fs.existsSync(out.backupPath)).toBe(true);
     expect(fs.readFileSync(out.backupPath, 'utf-8')).toContain('Song.flac');
     const xml = fs.readFileSync(xmlPath, 'utf-8');
@@ -207,7 +216,7 @@ describe('switchEntriesInXml', () => {
     expect(out.switched).toBe(0);
     expect(out.skipped).toEqual([{ trackId: '1', reason: MOVED_AWAY }]);
     expect(library.tracks.get('1').location).toBe('/moved/Song.flac');
-    expect(out.remaining).toEqual({ '/old/Song.flac': 1 });
+    expect(out.remaining).toEqual({ [referenceKey('/old/Song.flac')]: 1 });
     expect(saveLibrary).not.toHaveBeenCalled();
   });
 

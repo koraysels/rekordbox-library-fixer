@@ -21,19 +21,26 @@ export interface EntrySwitch {
 
 export interface SwitchSkip { trackId: string; reason: string }
 
-/** Per original path (NFC), how many live entries still point at it after the switch. */
+/** Per original path (keyed by `referenceKey`), how many live entries still point at it after the switch. */
 export type RemainingReferences = Record<string, number>;
 
 export const MOVED_AWAY = 'the track no longer points at the converted file';
 
 const nfc = (p: string) => (p ?? '').normalize('NFC');
 
-/** Count live locations per wanted path, comparing NFC-normalised: a path may be stored decomposed. */
+/**
+ * The key a reference count is kept under: NFC (a path may be stored decomposed) and
+ * lower-cased (the default macOS and Windows filesystems ignore case), so any spelling
+ * of the same file protects it. Deliberately broader than the MOVED_AWAY match.
+ */
+export const referenceKey = (p: string) => nfc(p).toLowerCase();
+
+/** Count live locations per wanted path. */
 function countReferences(originals: string[], locations: Iterable<string>): RemainingReferences {
   const remaining: RemainingReferences = {};
-  for (const o of originals) remaining[nfc(o)] = 0;
+  for (const o of originals) remaining[referenceKey(o)] = 0;
   for (const loc of locations) {
-    const key = nfc(loc);
+    const key = referenceKey(loc);
     if (key in remaining) remaining[key]++;
   }
   return remaining;

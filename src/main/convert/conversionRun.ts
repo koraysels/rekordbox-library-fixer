@@ -20,7 +20,7 @@ import {
 } from './conversionPlan';
 import { factsFromLibrary, readFileFacts } from './audioFacts';
 import { convertFile } from './convertFile';
-import { switchEntriesInDb, switchEntriesInXml, type EntrySwitch, type SwitchSkip, type RemainingReferences } from './applyConversions';
+import { switchEntriesInDb, switchEntriesInXml, referenceKey, type EntrySwitch, type SwitchSkip, type RemainingReferences } from './applyConversions';
 
 type ReadFacts = typeof readFileFacts;
 type ReadFactsResult = Awaited<ReturnType<ReadFacts>>;
@@ -273,7 +273,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
         if (item.trackIds.some(id => notSwitched.has(id))) continue;
         // Counted inside the write: an entry the list did not know about (a re-import,
         // a track relocated onto this file) keeps the original out of the Trash.
-        const left = remaining[item.from.normalize('NFC')];
+        const left = remaining[referenceKey(item.from)];
         if (left !== 0) {
           (result.notTrashed ??= []).push({
             from: item.from,

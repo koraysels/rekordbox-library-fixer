@@ -5,10 +5,10 @@ import {
 import type { ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunOptions } from '@main/ipcContract';
 import type { TrackPayload } from '@main/ipcContract';
 import type { ConvertResult } from '@main/convert/convertFile';
-import type { EntrySwitch } from '@main/convert/applyConversions';
+import { referenceKey, type EntrySwitch } from '@main/convert/applyConversions';
 import { RunRegistry } from '@main/convert/runRegistry';
 
-const none = (switches: EntrySwitch[]) => Object.fromEntries(switches.map(s => [s.oldLocation, 0]));
+const none = (switches: EntrySwitch[]) => Object.fromEntries(switches.map(s => [referenceKey(s.oldLocation), 0]));
 
 const track = (over: Partial<TrackPayload> & { id: string; location: string }): TrackPayload => ({
   name: `Track ${over.id}`, artist: 'Artist', ...over,
@@ -216,6 +216,17 @@ describe('runConversion', () => {
     expect(h.trash.mock.calls.map(c => c[0])).toEqual(['/m/b.flac']);
     expect(res.trashed).toBe(1);
     expect(res.notTrashed).toEqual([{ from: '/m/a.flac', error: expect.stringMatching(/still uses it/) }]);
+  });
+
+  it('looks the count up by the same case-insensitive key the writer uses', async () => {
+    const h = harness({ trashOriginals: true, items: [item('a', { from: '/m/A.flac' }), item('b', { from: '/m/B.flac' })] });
+    h.switchDb.mockImplementation((_d, _k, s, o) => ({
+      switched: s.length, skipped: [], remaining: { [referenceKey('/m/a.FLAC')]: 1, [referenceKey('/m/b.flac')]: 0 },
+      backupPath: o.backupPath,
+    }));
+    const res = await runConversion(h.run, h.deps);
+    expect(h.trash.mock.calls.map(c => c[0])).toEqual(['/m/B.flac']);
+    expect(res.notTrashed?.map(n => n.from)).toEqual(['/m/A.flac']);
   });
 
   it('never trashes when the write reports no reference count for the original', async () => {
