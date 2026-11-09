@@ -6,6 +6,9 @@ import type { ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunO
 import type { TrackPayload } from '@main/ipcContract';
 import type { ConvertResult } from '@main/convert/convertFile';
 import type { EntrySwitch } from '@main/convert/applyConversions';
+import { RunRegistry } from '@main/convert/runRegistry';
+
+const none = (switches: EntrySwitch[]) => Object.fromEntries(switches.map(s => [s.oldLocation, 0]));
 
 const track = (over: Partial<TrackPayload> & { id: string; location: string }): TrackPayload => ({
   name: `Track ${over.id}`, artist: 'Artist', ...over,
@@ -44,6 +47,17 @@ describe('findUnplayable', () => {
     expect(x.facts?.sampleRate).toBe(44100);
     const gone = out.find(c => c.location === '/m/gone.flac')!;
     expect(gone.unreachable).toBe(true);
+  });
+
+  it('marks a file the library describes fully but that is not on disk as unreachable', async () => {
+    const out = await findUnplayable(lib([
+      track({ id: '1', location: '/m/gone.wav', fileType: 11, sampleRate: 96000, bitDepth: 24 }),
+      track({ id: '2', location: '/m/here.wav', fileType: 11, sampleRate: 96000, bitDepth: 24 }),
+    ]), 'cdj2000', noRead, (p) => p === '/m/here.wav');
+    expect(out.find(c => c.location === '/m/gone.wav')).toMatchObject({
+      unreachable: true, reasons: [{ kind: 'sampleRate', hz: 96000, max: 48000 }],
+    });
+    expect(out.find(c => c.location === '/m/here.wav')?.unreachable).toBeUndefined();
   });
 
   it('entries sharing a file become one candidate', async () => {
@@ -90,11 +104,11 @@ function harness(opts: Partial<ConvertRunOptions> = {}, over: Partial<RunDeps> =
   });
   const switchDb = vi.fn((_db: string, _key: string, switches: EntrySwitch[], o: { backupPath: string }) => {
     order.push('write');
-    return { switched: switches.length, skipped: [], backupPath: o.backupPath };
+    return { switched: switches.length, skipped: [], remaining: none(switches), backupPath: o.backupPath };
   });
   const switchXml = vi.fn(async (_x: string, _l: unknown, switches: EntrySwitch[]) => {
     order.push('write');
-    return { switched: switches.length, skipped: [], backupPath: '/lib.xml.backup' };
+    return { switched: switches.length, skipped: [], remaining: none(switches), backupPath: '/lib.xml.backup' };
   });
   const trash = vi.fn(async (p: string) => { order.push(`trash:${p}`); });
   const deps: RunDeps = {
@@ -171,7 +185,8 @@ describe('runConversion', () => {
   it('does not trash a file whose entries were skipped by the write', async () => {
     const h = harness({ trashOriginals: true });
     h.switchDb.mockImplementation((_d, _k, s, o) => ({
-      switched: s.length - 1, skipped: [{ trackId: 'tb', reason: 'not in the collection' }], backupPath: o.backupPath,
+      switched: s.length - 1, skipped: [{ trackId: 'tb', reason: 'not in the collection' }],
+      remaining: { ...none(s), '/m/b.flac': 1 }, backupPath: o.backupPath,
     }));
     const res = await runConversion(h.run, h.deps);
     expect(h.trash.mock.calls.map(c => c[0])).toEqual(['/m/a.flac']);
@@ -187,7 +202,36 @@ describe('runConversion', () => {
     expect(h.convert).not.toHaveBeenCalled();
     expect(res.conflicts).toEqual(['/m/b.flac']);
     const switches = h.switchDb.mock.calls[0][2] as EntrySwitch[];
-    expect(switches).toEqual([{ trackId: 'ta', newLocation: '/m/a.aif', target: 'aiff', sizeBytes: 999, out: OUT }]);
+    expect(switches).toEqual([{
+      trackId: 'ta', oldLocation: '/m/a.flac', newLocation: '/m/a.aif', target: 'aiff', sizeBytes: 999, out: OUT,
+    }]);
+  });
+
+  it('does not trash an original another entry still points at', async () => {
+    const h = harness({ trashOriginals: true });
+    h.switchDb.mockImplementation((_d, _k, s, o) => ({
+      switched: s.length, skipped: [], remaining: { ...none(s), '/m/a.flac': 1 }, backupPath: o.backupPath,
+    }));
+    const res = await runConversion(h.run, h.deps);
+    expect(h.trash.mock.calls.map(c => c[0])).toEqual(['/m/b.flac']);
+    expect(res.trashed).toBe(1);
+    expect(res.notTrashed).toEqual([{ from: '/m/a.flac', error: expect.stringMatching(/still uses it/) }]);
+  });
+
+  it('never trashes when the write reports no reference count for the original', async () => {
+    const h = harness({ trashOriginals: true });
+    h.switchDb.mockImplementation((_d, _k, s, o) => ({ switched: s.length, skipped: [], remaining: {}, backupPath: o.backupPath }));
+    const res = await runConversion(h.run, h.deps);
+    expect(h.trash).not.toHaveBeenCalled();
+    expect(res.trashed).toBe(0);
+  });
+
+  it('refuses an output that is the source itself, without converting', async () => {
+    const h = harness({ items: [item('a', { to: '/M/A.FLAC'.normalize('NFD') }), item('b')] });
+    h.run.items[0].from = '/m/a.flac';
+    const res = await runConversion(h.run, h.deps);
+    expect(h.convert).toHaveBeenCalledTimes(1);
+    expect(res.failed).toEqual([{ from: '/m/a.flac', error: expect.stringMatching(/same file/) }]);
   });
 
   it('switches every entry of a shared file together', async () => {
@@ -203,5 +247,34 @@ describe('runConversion', () => {
     expect(h.switchDb).not.toHaveBeenCalled();
     expect(res.switched).toBe(0);
     expect(h.events.some(e => e.type === 'writing')).toBe(false);
+  });
+});
+
+describe('RunRegistry', () => {
+  it('refuses a second run while one is going, and a duplicate id', () => {
+    const r = new RunRegistry();
+    r.begin('a');
+    expect(() => r.begin('b')).toThrow(/already running/);
+    expect(() => r.begin('a')).toThrow(/already/);
+  });
+
+  it('a cancel before the work starts is not lost', () => {
+    const r = new RunRegistry();
+    const c = r.begin('a');
+    expect(r.cancel('a')).toBe(true);
+    expect(c.signal.aborted).toBe(true);
+    expect(r.cancel('nope')).toBe(false);
+  });
+
+  it('ending only removes its own entry', () => {
+    const r = new RunRegistry();
+    const first = r.begin('a');
+    r.end('a', first);
+    const second = r.begin('a');
+    r.end('a', first); // a stale finally from the first run
+    expect(r.cancel('a')).toBe(true);
+    expect(second.signal.aborted).toBe(true);
+    r.end('a', second);
+    expect(() => r.begin('b')).not.toThrow();
   });
 });

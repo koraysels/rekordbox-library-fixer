@@ -20,7 +20,7 @@ import {
 } from './conversionPlan';
 import { factsFromLibrary, readFileFacts } from './audioFacts';
 import { convertFile } from './convertFile';
-import { switchEntriesInDb, switchEntriesInXml, type EntrySwitch, type SwitchSkip } from './applyConversions';
+import { switchEntriesInDb, switchEntriesInXml, type EntrySwitch, type SwitchSkip, type RemainingReferences } from './applyConversions';
 
 type ReadFacts = typeof readFileFacts;
 type ReadFactsResult = Awaited<ReturnType<ReadFacts>>;
@@ -31,12 +31,15 @@ const nfcKey = (p: string) => p.normalize('NFC').toLowerCase();
 
 /**
  * Every file in the library the player cannot play, one candidate per file. The
- * file is read only when the library does not know its format, depth or rate.
+ * file is read only when the library does not know its format, depth or rate;
+ * otherwise it is only checked to be there, so a missing file shows up as
+ * unreachable instead of disappearing from the preview later.
  */
 export async function findUnplayable(
   library: { tracks: Map<string, TrackPayload> },
   profileId: PlayerProfileId,
   readFacts: ReadFacts = readFileFacts,
+  exists: (p: string) => boolean = fs.existsSync,
 ): Promise<ConvertCandidate[]> {
   const profile = PLAYER_PROFILES[profileId];
   const tracks = [...library.tracks.values()].filter(t => t.location && !isStreamingLocation(t.location));
@@ -52,6 +55,8 @@ export async function findUnplayable(
       const read = await readFacts(first.location);
       if (isReadable(read) && read.sampleRate) facts = read;
       else unreachable = true;
+    } else if (whyUnplayable(known, profile).length > 0 && !exists(first.location)) {
+      unreachable = true;
     }
 
     let reasons;
@@ -189,6 +194,10 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
       result.conflicts.push(item.from);
       continue;
     }
+    if (nfcKey(item.to) === nfcKey(item.from)) {
+      fail(item, 'The output would be the same file as the original', name);
+      continue;
+    }
 
     try {
       const source = await readFacts(item.from);
@@ -224,12 +233,13 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
   result.cancelled = deps.signal.aborted;
 
   const switches: EntrySwitch[] = done.flatMap(({ item, sizeBytes }) => item.trackIds.map(trackId => ({
-    trackId, newLocation: item.to, target: opts.target, sizeBytes, out: item.out,
+    trackId, oldLocation: item.from, newLocation: item.to, target: opts.target, sizeBytes, out: item.out,
   })));
 
   if (switches.length > 0) {
     emit('writing', `Writing ${switches.length} entr${switches.length === 1 ? 'y' : 'ies'} into your library…`);
     let skipped: SwitchSkip[];
+    let remaining: RemainingReferences;
     try {
       if (isDb) {
         if (!opts.dbKey) {
@@ -240,12 +250,14 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
         result.switched = outcome.switched;
         result.backupPath = outcome.backupPath;
         skipped = outcome.skipped;
+        remaining = outcome.remaining;
       } else {
         const library = await loadXml(opts.libraryPath);
         const outcome = await switchXml(opts.libraryPath, library, switches);
         result.switched = outcome.switched;
         result.backupPath = outcome.backupPath;
         skipped = outcome.skipped;
+        remaining = outcome.remaining;
       }
     } catch (e) {
       result.error = errorText(e);
@@ -259,6 +271,18 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
       const notSwitched = new Set(skipped.map(s => s.trackId));
       for (const { item } of done) {
         if (item.trackIds.some(id => notSwitched.has(id))) continue;
+        // Counted inside the write: an entry the list did not know about (a re-import,
+        // a track relocated onto this file) keeps the original out of the Trash.
+        const left = remaining[item.from.normalize('NFC')];
+        if (left !== 0) {
+          (result.notTrashed ??= []).push({
+            from: item.from,
+            error: left === undefined
+              ? 'Kept: the library write did not confirm nothing else uses it'
+              : `Kept: ${left} other ${left === 1 ? 'entry' : 'entries'} in your library still uses it`,
+          });
+          continue;
+        }
         try {
           await deps.trash(item.from);
           result.trashed++;

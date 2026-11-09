@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
-  applySwitchesToDb, switchEntriesInDb, switchEntriesInXml, FILE_TYPE_FOR, KIND_FOR, type EntrySwitch,
+  applySwitchesToDb, switchEntriesInDb, switchEntriesInXml, FILE_TYPE_FOR, KIND_FOR, MOVED_AWAY, type EntrySwitch,
 } from '../../src/main/convert/applyConversions';
 import { RekordboxParser } from '../../src/main/rekordboxParser';
 import { DATABASE_IS_READ_ONLY } from '../../src/main/librarySource';
@@ -16,7 +16,7 @@ let db: InstanceType<typeof Database>;
 const yes = () => true;
 
 const sw = (over: Partial<EntrySwitch> = {}): EntrySwitch => ({
-  trackId: 't1', newLocation: '/new/Song.aiff', target: 'aiff', sizeBytes: 5000,
+  trackId: 't1', oldLocation: '/old/Song.flac', newLocation: '/new/Song.aiff', target: 'aiff', sizeBytes: 5000,
   out: { format: 'aiff', sampleRate: 44100, bitDepth: 16, bitrateKbps: 1411 }, ...over,
 });
 
@@ -112,10 +112,37 @@ describe('applySwitchesToDb edge cases', () => {
   it('rolls back earlier rows and the usn counter when a later one throws', () => {
     const before = row('t1');
     // The second switch carries a value SQLite cannot bind.
-    const bad = sw({ trackId: 't2', sizeBytes: Symbol('x') as unknown as number });
+    const bad = sw({ trackId: 't2', oldLocation: '/old/Other.flac', sizeBytes: Symbol('x') as unknown as number });
     expect(() => applySwitchesToDb(db, [sw(), bad], yes)).toThrow();
     expect(row('t1')).toEqual(before);
     expect((db.prepare('SELECT int_1 n FROM agentRegistry').get() as any).n).toBe(100);
+  });
+});
+
+describe('applySwitchesToDb against a stale list', () => {
+  it('skips a row that was relocated since the list was made, and leaves it untouched', () => {
+    db.prepare("UPDATE djmdContent SET FolderPath = '/moved/Song.flac' WHERE ID = 't1'").run();
+    const before = row('t1');
+    const out = applySwitchesToDb(db, [sw()], yes);
+    expect(out.switched).toBe(0);
+    expect(out.skipped).toEqual([{ trackId: 't1', reason: MOVED_AWAY }]);
+    expect(row('t1')).toEqual(before);
+  });
+
+  it('matches the old location whether it is stored composed or decomposed', () => {
+    db.prepare('UPDATE djmdContent SET FolderPath = ? WHERE ID = ?').run('/old/Café.flac'.normalize('NFD'), 't1');
+    const out = applySwitchesToDb(db, [sw({ oldLocation: '/old/Café.flac'.normalize('NFC') })], yes);
+    expect(out.switched).toBe(1);
+    expect(out.remaining).toEqual({ ['/old/Café.flac'.normalize('NFC')]: 0 });
+  });
+
+  it('counts live rows still pointing at the original, NFC-normalised, ignoring deleted ones', () => {
+    db.exec(`INSERT INTO djmdContent (ID, Title, FolderPath, rb_local_deleted) VALUES
+      ('t3', 'Reimport', '${'/old/Song.flac'.normalize('NFD')}', 0),
+      ('t4', 'Gone', '/old/Song.flac', 1)`);
+    const out = applySwitchesToDb(db, [sw()], yes);
+    expect(out.switched).toBe(1);
+    expect(out.remaining).toEqual({ '/old/Song.flac': 1 });
   });
 });
 
@@ -152,6 +179,7 @@ describe('switchEntriesInXml', () => {
     const out = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '1' })], yes);
     tmpFiles.push(out.backupPath);
     expect(out.switched).toBe(1);
+    expect(out.remaining).toEqual({ '/old/Song.flac': 0 });
     expect(fs.existsSync(out.backupPath)).toBe(true);
     expect(fs.readFileSync(out.backupPath, 'utf-8')).toContain('Song.flac');
     const xml = fs.readFileSync(xmlPath, 'utf-8');
@@ -163,6 +191,24 @@ describe('switchEntriesInXml', () => {
     expect(xml).toContain('TEMPO');
     expect(xml).toContain('Battito="1"');
     expect(xml).toContain('POSITION_MARK');
+  });
+
+  it('skips a track that now points elsewhere and counts entries still at the original', async () => {
+    const library = { version: '1', playlists: [], tracks: new Map([
+      ['1', { id: '1', location: '/moved/Song.flac' }],
+      ['2', { id: '2', location: '/old/Song.flac' }],
+    ]) } as any;
+    const saveLibrary = vi.fn(async () => {});
+    const xmlPath = path.join(os.tmpdir(), `ac-stale-${Date.now()}.xml`);
+    tmpFiles.push(xmlPath);
+    fs.writeFileSync(xmlPath, '<x/>');
+    const out = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '1' })], yes, { saveLibrary });
+    tmpFiles.push(out.backupPath);
+    expect(out.switched).toBe(0);
+    expect(out.skipped).toEqual([{ trackId: '1', reason: MOVED_AWAY }]);
+    expect(library.tracks.get('1').location).toBe('/moved/Song.flac');
+    expect(out.remaining).toEqual({ '/old/Song.flac': 1 });
+    expect(saveLibrary).not.toHaveBeenCalled();
   });
 
   it('refuses a database path', async () => {

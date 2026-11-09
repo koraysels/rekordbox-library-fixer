@@ -4,12 +4,13 @@ import { isRekordboxDatabasePath } from '../librarySource';
 import { isRekordboxRunning } from '../rekordboxRunning';
 import { findUnplayable, previewConversion, runConversion } from '../convert/conversionRun';
 import { ffmpegStatus, installFfmpeg } from '../convert/ffmpegBinary';
+import { RunRegistry } from '../convert/runRegistry';
 import type {
   ConvertCandidate, ConvertPreviewItem, ConvertRunPayload, ConvertRunResult, FfmpegInstallProgress,
   FfmpegStatus, IpcResult, PlayerProfileId, TargetFormat, TrackPayload,
 } from '../ipcContract';
 
-const running = new Map<string, AbortController>();
+const runs = new RunRegistry();
 const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Unknown error occurred');
 const status = (): FfmpegStatus => ffmpegStatus(app.getPath('userData'), process.platform, process.arch);
 
@@ -57,7 +58,10 @@ export function registerConvertIpc(): void {
 
   ipcMain.handle('run-conversion', async (_e, data: ConvertRunPayload): Promise<IpcResult<ConvertRunResult>> => {
     const operationId = data.operationId ?? `convert-${Date.now()}`;
+    let controller: AbortController | undefined;
     try {
+      // Registered before the checks, so a cancel sent meanwhile is not lost.
+      controller = runs.begin(operationId);
       const ff = status();
       if (ff.state !== 'ready') {
         throw new Error('ffmpeg is not installed yet — install it before converting.');
@@ -71,8 +75,6 @@ export function registerConvertIpc(): void {
           throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
         }
       }
-      const controller = new AbortController();
-      running.set(operationId, controller);
       const { operationId: _id, ...opts } = data;
       const result = await runConversion(opts, {
         ffmpeg: ff.path,
@@ -83,20 +85,20 @@ export function registerConvertIpc(): void {
       });
       return { success: true, data: result };
     } catch (error) {
-      sendToWindow('conversion-progress', {
-        operationId, type: 'error', current: 0, total: data.items?.length ?? 0,
-        message: errorText(error), convertedCount: 0, failedCount: 0,
-      });
+      // A refused second run must not report an error under the id of the run still going.
+      if (controller) {
+        sendToWindow('conversion-progress', {
+          operationId, type: 'error', current: 0, total: data.items?.length ?? 0,
+          message: errorText(error), convertedCount: 0, failedCount: 0,
+        });
+      }
       return { success: false, error: errorText(error) };
     } finally {
-      running.delete(operationId);
+      if (controller) runs.end(operationId, controller);
     }
   });
 
   ipcMain.handle('cancel-conversion', async (_e, operationId: string): Promise<IpcResult> => {
-    const controller = running.get(operationId);
-    if (!controller) return { success: false, error: 'Operation not found' };
-    controller.abort();
-    return { success: true };
+    return runs.cancel(operationId) ? { success: true } : { success: false, error: 'Operation not found' };
   });
 }

@@ -11,6 +11,8 @@ type Db = InstanceType<typeof Database>;
 /** One library entry to point at the file its track was converted to. */
 export interface EntrySwitch {
   trackId: string;
+  /** Where the entry pointed when the run was planned; a row that points elsewhere now is left alone. */
+  oldLocation: string;
   newLocation: string;
   target: TargetFormat;
   sizeBytes: number;
@@ -18,6 +20,24 @@ export interface EntrySwitch {
 }
 
 export interface SwitchSkip { trackId: string; reason: string }
+
+/** Per original path (NFC), how many live entries still point at it after the switch. */
+export type RemainingReferences = Record<string, number>;
+
+export const MOVED_AWAY = 'the track no longer points at the converted file';
+
+const nfc = (p: string) => (p ?? '').normalize('NFC');
+
+/** Count live locations per wanted path, comparing NFC-normalised: a path may be stored decomposed. */
+function countReferences(originals: string[], locations: Iterable<string>): RemainingReferences {
+  const remaining: RemainingReferences = {};
+  for (const o of originals) remaining[nfc(o)] = 0;
+  for (const loc of locations) {
+    const key = nfc(loc);
+    if (key in remaining) remaining[key]++;
+  }
+  return remaining;
+}
 
 /** rekordbox's `djmdContent.FileType` codes. */
 export const FILE_TYPE_FOR: Record<TargetFormat, number> = { aiff: 12, wav: 11, mp3: 1 };
@@ -36,8 +56,9 @@ export function applySwitchesToDb(
   db: Db,
   switches: EntrySwitch[],
   isRegularFile: (p: string) => boolean = realIsRegularFile
-): { switched: number; skipped: SwitchSkip[] } {
-  const findTrack = db.prepare('SELECT ID FROM djmdContent WHERE ID = ? AND rb_local_deleted = 0');
+): { switched: number; skipped: SwitchSkip[]; remaining: RemainingReferences } {
+  const findTrack = db.prepare('SELECT ID, FolderPath FROM djmdContent WHERE ID = ? AND rb_local_deleted = 0');
+  const liveLocations = db.prepare('SELECT FolderPath FROM djmdContent WHERE rb_local_deleted = 0');
   const update = db.prepare(`
     UPDATE djmdContent
     SET FolderPath = ?, FileNameL = ?, FileType = ?, FileSize = ?, BitRate = ?,
@@ -46,6 +67,7 @@ export function applySwitchesToDb(
   `);
   const skipped: SwitchSkip[] = [];
   let switched = 0;
+  let remaining: RemainingReferences = {};
 
   db.transaction((all: EntrySwitch[]) => {
     for (const s of all) {
@@ -53,8 +75,13 @@ export function applySwitchesToDb(
         skipped.push({ trackId: s.trackId, reason: 'the file is not there' });
         continue;
       }
-      if (!findTrack.get(s.trackId)) {
+      const current = findTrack.get(s.trackId) as { FolderPath: string | null } | undefined;
+      if (!current) {
         skipped.push({ trackId: s.trackId, reason: 'not in the collection' });
+        continue;
+      }
+      if (nfc(current.FolderPath ?? '') !== nfc(s.oldLocation)) {
+        skipped.push({ trackId: s.trackId, reason: MOVED_AWAY });
         continue;
       }
       const bitDepth = s.target === 'mp3' ? MP3_BIT_DEPTH : (s.out.bitDepth ?? 0);
@@ -64,9 +91,12 @@ export function applySwitchesToDb(
       ).changes;
       if (changes > 0) { switched++; }
     }
+    // Read inside the transaction, so nothing can change between the switch and the count.
+    const rows = liveLocations.all() as Array<{ FolderPath: string | null }>;
+    remaining = countReferences(all.map(s => s.oldLocation), rows.map(r => r.FolderPath ?? ''));
   })(switches);
 
-  return { switched, skipped };
+  return { switched, skipped, remaining };
 }
 
 export interface SwitchDbOptions {
@@ -81,7 +111,7 @@ export function switchEntriesInDb(
   key: string,
   switches: EntrySwitch[],
   opts: SwitchDbOptions
-): { switched: number; skipped: SwitchSkip[]; backupPath: string } {
+): { switched: number; skipped: SwitchSkip[]; remaining: RemainingReferences; backupPath: string } {
   return withWritableRekordboxDb(dbPath, key, opts, (db) => ({
     ...applySwitchesToDb(db, switches, opts.isRegularFile ?? realIsRegularFile),
     backupPath: opts.backupPath,
@@ -95,7 +125,7 @@ export async function switchEntriesInXml(
   switches: EntrySwitch[],
   isRegularFile: (p: string) => boolean = realIsRegularFile,
   parser?: Pick<RekordboxParser, 'saveLibrary'>
-): Promise<{ switched: number; skipped: SwitchSkip[]; backupPath: string }> {
+): Promise<{ switched: number; skipped: SwitchSkip[]; remaining: RemainingReferences; backupPath: string }> {
   assertWritableLibraryPath(xmlPath);
   const backupPath = `${xmlPath}.backup.${new Date().toISOString().replace(/[:.]/g, '-')}`;
   fs.copyFileSync(xmlPath, backupPath);
@@ -112,6 +142,10 @@ export async function switchEntriesInXml(
       skipped.push({ trackId: s.trackId, reason: 'not in the collection' });
       continue;
     }
+    if (nfc(track.location) !== nfc(s.oldLocation)) {
+      skipped.push({ trackId: s.trackId, reason: MOVED_AWAY });
+      continue;
+    }
     track.location = s.newLocation;
     track.kind = KIND_FOR[s.target];
     track.bitrate = s.out.bitrateKbps;
@@ -122,5 +156,8 @@ export async function switchEntriesInXml(
   if (switched > 0) {
     await (parser ?? new RekordboxParser()).saveLibrary(library, xmlPath);
   }
-  return { switched, skipped, backupPath };
+  const remaining = countReferences(
+    switches.map(s => s.oldLocation), [...library.tracks.values()].map(t => t.location ?? ''),
+  );
+  return { switched, skipped, remaining, backupPath };
 }
