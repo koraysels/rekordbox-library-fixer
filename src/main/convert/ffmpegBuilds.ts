@@ -1,9 +1,12 @@
 /**
  * The ffmpeg builds the converter may download on first use, pinned by checksum.
  *
- * Source:  github.com/eugeneware/ffmpeg-static, release b6.0 (ffmpeg 6.0)
- * Licence: GPL (built with --enable-gpl, libmp3lame, libx264 ...). The app does not
- *          bundle or redistribute it; it fetches it onto the user's machine after asking.
+ * Source:  github.com/eugeneware/ffmpeg-static, release b6.1.1 (static builds, libmp3lame in all).
+ *          The release bundles different upstream builds per platform: macOS x64 6.1.1,
+ *          Windows 6.1.1, Linux 7.0.2, macOS arm64 6.0.
+ * Licence: GPL (--enable-gpl). The macOS arm64 build is also configured --enable-nonfree,
+ *          so it is not redistributable; no arm64 build without it was found. The app never
+ *          bundles ffmpeg: it downloads the build onto the user's machine, after asking.
  * Each build was downloaded once and hashed; sha256 and size are of the gzip bytes
  * served at `url`, so a changed or tampered file is refused.
  */
@@ -15,34 +18,33 @@ export interface FfmpegBuild {
   entry?: string;
 }
 
-export const FFMPEG_VERSION = '6.0';
-export const FFMPEG_SOURCE = 'github.com/eugeneware/ffmpeg-static (b6.0)';
+export const FFMPEG_SOURCE = 'github.com/eugeneware/ffmpeg-static (b6.1.1)';
 
-const base = 'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.0';
+const base = 'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1';
 
 export const FFMPEG_BUILDS: Partial<Record<`${NodeJS.Platform}-${string}`, FfmpegBuild>> = {
   'darwin-arm64': {
     url: `${base}/ffmpeg-darwin-arm64.gz`,
-    sha256: '6be74d6f449889c2e87a75873894f8520cad56c08ac76f2a628d85b0519daaca',
-    sizeBytes: 19253088,
+    sha256: '8923876afa8db5585022d7860ec7e589af192f441c56793971276d450ed3bbfa',
+    sizeBytes: 19246198,
     archive: 'gzip',
   },
   'darwin-x64': {
     url: `${base}/ffmpeg-darwin-x64.gz`,
-    sha256: 'a12354fce7eb62361473bbe10d53a1893695babd35869ec8e92e5dfea8d0440b',
-    sizeBytes: 25067704,
+    sha256: '929b375c1182d956c51f7ac25e0b2b0411fb01f6f407aa15c9758efeb4242106',
+    sizeBytes: 25296431,
     archive: 'gzip',
   },
   'win32-x64': {
     url: `${base}/ffmpeg-win32-x64.gz`,
-    sha256: '450d66226c79405c724e821f291cab0911e934bfa9fa2231adcab587f3e07b50',
-    sizeBytes: 28894894,
+    sha256: '8883a3dffbd0a16cf4ef95206ea05283f78908dbfb118f73c83f4951dcc06d77',
+    sizeBytes: 29581307,
     archive: 'gzip',
   },
   'linux-x64': {
     url: `${base}/ffmpeg-linux-x64.gz`,
-    sha256: '17c1ae10b52ac499180679fe6ba77e17642390c4eedb0f1e3b0ac045da55128f',
-    sizeBytes: 28928723,
+    sha256: 'bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa',
+    sizeBytes: 29354986,
     archive: 'gzip',
   },
 };

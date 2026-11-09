@@ -87,7 +87,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <p className="text-te-grey-500 text-xs mb-1 font-te-mono">
-            ffmpeg 6.0, GPL, from github.com/eugeneware/ffmpeg-static
+            ffmpeg (GPL; the Apple Silicon build also includes non-free components), downloaded on first use from github.com/eugeneware/ffmpeg-static, not distributed with this app
           </p>
           <p className="text-te-grey-500 text-xs font-te-mono">
             © 2025 Koray Sels. All rights reserved.

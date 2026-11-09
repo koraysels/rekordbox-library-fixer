@@ -38,7 +38,27 @@ export function ffmpegStatus(
  * Download the pinned build, check it, unpack it and move it into place. The binary
  * only ever appears at its final path complete and verified.
  */
-export async function installFfmpeg(
+const inFlight = new Map<string, Promise<string>>();
+
+export function installFfmpeg(
+  userData: string,
+  platform: NodeJS.Platform,
+  arch: string,
+  onProgress: (pct: number) => void,
+  fetchImpl: typeof fetch = globalThis.fetch,
+  builds: Builds = FFMPEG_BUILDS,
+): Promise<string> {
+  // Two installs would share the same temp files and fail each other.
+  const key = ffmpegPath(userData, platform);
+  const running = inFlight.get(key);
+  if (running) { return running; }
+  const job = install(userData, platform, arch, onProgress, fetchImpl, builds)
+    .finally(() => { inFlight.delete(key); });
+  inFlight.set(key, job);
+  return job;
+}
+
+async function install(
   userData: string,
   platform: NodeJS.Platform,
   arch: string,

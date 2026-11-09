@@ -72,6 +72,17 @@ describe('installFfmpeg', () => {
     expect(fs.readdirSync(path.join(dir, 'ffmpeg'))).toEqual([]);
   });
 
+  it('shares one download between concurrent installs', async () => {
+    const f = vi.fn(fakeFetch(gz)) as unknown as typeof fetch;
+    const [a, b] = await Promise.all([
+      installFfmpeg(dir, 'linux', 'x64', () => {}, f, table(build())),
+      installFfmpeg(dir, 'linux', 'x64', () => {}, f, table(build())),
+    ]);
+    expect(a).toBe(b);
+    expect(f).toHaveBeenCalledTimes(1);
+    expect(fs.readdirSync(path.join(dir, 'ffmpeg'))).toEqual(['ffmpeg']);
+  });
+
   it('rejects an unsupported platform', async () => {
     await expect(installFfmpeg(dir, 'freebsd', 'x64', () => {}, fakeFetch(gz), {})).rejects.toThrow(/not available/);
   });
