@@ -188,6 +188,28 @@ describe('ConvertPanel', () => {
     expect(screen.getByRole('button', { name: /^Convert \d/ })).toBeDisabled();
   });
 
+  it('Cancel works again on the next run after a cancelled one', async () => {
+    const pending: Array<(v: any) => void> = [];
+    api.runConversion = vi.fn(() => new Promise((r) => { pending.push(r); }));
+    const { user } = setup();
+    await scanSelectPreview(user);
+    await user.click(screen.getByRole('button', { name: 'Convert 1 track' }));
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(within(dialog).getByRole('button', { name: /Cancelling/ })).toBeDisabled();
+    pending[0]({ success: true, data: { switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: true } });
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+    await user.click(screen.getByRole('button', { name: /preview/i }));
+    await screen.findByText('/m/a.aif');
+    await user.click(screen.getByRole('button', { name: 'Convert 1 track' }));
+    const again = await screen.findByRole('dialog');
+    expect(within(again).getByRole('button', { name: 'Cancel' })).toBeEnabled();
+    await user.click(within(again).getByRole('button', { name: 'Cancel' }));
+    expect(api.cancelConversion).toHaveBeenCalledTimes(2);
+    pending[1]({ success: true, data: { switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: true } });
+  });
+
   it('shows an error and stays usable when the run rejects', async () => {
     api.runConversion = vi.fn(async () => { throw new Error('a conversion is already running'); });
     const showNotification = vi.fn();

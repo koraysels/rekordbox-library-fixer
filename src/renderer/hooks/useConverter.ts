@@ -40,6 +40,8 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
   const [showProgress, setShowProgress] = useState(false);
   const [progress, setProgress] = useState<ConvertProgress | null>(null);
   const [result, setResult] = useState<ConvertRunResult | null>(null);
+  // Counts runs, so per-run UI state (the progress dialog's "Cancelling…") starts fresh each time.
+  const [runNumber, setRunNumber] = useState(0);
   const operationId = useRef<string | null>(null);
   const previewToken = useRef(0);
   const live = useRef({ libraryData, setLibraryData });
@@ -160,6 +162,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
   const run = useCallback(async () => {
     if (!preview || running) { return; }
     const items = preview;
+    setRunNumber((n) => n + 1);
     setRunning(true);
     setShowProgress(true);
     setProgress(null);
@@ -215,7 +218,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
     candidates, visible, reasons, scanned, scanning, scan,
     reasonFilter, setReasonFilter, selected, selectedCandidates, toggle, selectAllVisible, clearSelection,
     preview, previewing, runPreview, ffmpeg, installPercent,
-    running, showProgress, setShowProgress, progress, result, dismissResult: () => setResult(null),
+    running, runNumber, showProgress, setShowProgress, progress, result, dismissResult: () => setResult(null),
     run, cancel,
   };
 }

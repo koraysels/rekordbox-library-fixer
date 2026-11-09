@@ -47,7 +47,9 @@ export const ConvertPanel: React.FC<Props> = ({ libraryData, libraryPath, showNo
   return (
     <div className="px-4 pt-4 pb-6 space-y-4">
       <ConvertStatus running={c.running && !c.showProgress} progress={c.progress} installPercent={c.installPercent} onShow={() => c.setShowProgress(true)} />
+      {/* Keyed by run: the dialog stays mounted between runs, and a cancelled run's state must not carry over. */}
       <ConvertProgressDialog
+        key={c.runNumber}
         isOpen={c.running && c.showProgress} progress={c.progress} installPercent={c.installPercent}
         onHide={() => c.setShowProgress(false)} onCancel={() => void c.cancel()}
       />
