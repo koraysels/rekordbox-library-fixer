@@ -81,7 +81,7 @@ export function relocateTracksInDb(
  * `rb_local_usn`. Leaving a row's number behind the counter is how rekordbox
  * and its cloud sync tell what has changed, so both are kept in step here.
  */
-function nextUsn(db: Db): number | null {
+export function nextUsn(db: Db): number | null {
   try {
     const row = db.prepare(
       "SELECT int_1 AS n FROM agentRegistry WHERE registry_id = 'localUpdateCount'"
