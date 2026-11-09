@@ -22,7 +22,7 @@ interface Props {
   libraryData: LibraryData | null;
   libraryPath: string;
   showNotification: ShowNotification;
-  setLibraryData: (data: LibraryData) => void;
+  setLibraryData: React.Dispatch<React.SetStateAction<LibraryData | null>>;
   /** Where "file not reachable" is fixed. */
   onOpenRelocation?: () => void;
 }

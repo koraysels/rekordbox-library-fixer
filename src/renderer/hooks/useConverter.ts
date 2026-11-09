@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { useSettingsStore } from '../stores/settingsStore';
 import { duplicationHistoryStorage } from '../db/duplicationHistoryDb';
-import { applyConversionSwitches, switchedItems } from '../convert/switchedItems';
+import { applySwitchesToLoadedLibrary, switchedItems } from '../convert/switchedItems';
 import { buildConversionEntry } from '../convert/conversionHistory';
 import { candidateKey, filterByReason, groupByReason, isConvertible } from '../convert/reasons';
 import type { LibraryData, ShowNotification } from '../types';
@@ -17,7 +17,8 @@ interface Options {
   libraryData: LibraryData | null;
   libraryPath: string;
   showNotification: ShowNotification;
-  setLibraryData: (data: LibraryData) => void;
+  /** The app's state setter: a run's result is applied as a functional update to whatever is loaded then. */
+  setLibraryData: Dispatch<SetStateAction<LibraryData | null>>;
 }
 
 /** State and bridge calls for the Convert page; what a run means lives in `../convert`. */
@@ -44,8 +45,9 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
   const [runNumber, setRunNumber] = useState(0);
   const operationId = useRef<string | null>(null);
   const previewToken = useRef(0);
-  const live = useRef({ libraryData, setLibraryData });
-  live.current = { libraryData, setLibraryData };
+  // The path loaded now, read when a run ends — possibly after this page was left.
+  const livePath = useRef(libraryPath);
+  livePath.current = libraryPath;
 
   const database = isDatabase(libraryPath);
 
@@ -132,15 +134,17 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
     }
   }, [selectedCandidates, profileId, target, showNotification]);
 
-  const finish = useCallback(async (items: ConvertPreviewItem[], outcome: ConvertRunResult) => {
+  const finish = useCallback(async (items: ConvertPreviewItem[], outcome: ConvertRunResult, runPath: string) => {
     const names: Record<string, string> = {};
     for (const c of candidates) { names[c.location] = [c.artist, c.name].filter(Boolean).join(' - '); }
-    void duplicationHistoryStorage.record(buildConversionEntry({ libraryPath, items, result: outcome, names }));
+    void duplicationHistoryStorage.record(buildConversionEntry({ libraryPath: runPath, items, result: outcome, names }));
 
     const switched = switchedItems(items, outcome);
-    const current = live.current.libraryData;
-    if (current && switched.length > 0) {
-      live.current.setLibraryData(applyConversionSwitches(current, switched));
+    if (switched.length > 0) {
+      // Not a library captured at the start: the page may have been left, the library changed or replaced.
+      setLibraryData((current) => applySwitchesToLoadedLibrary(current, runPath, switched));
+    }
+    if (switched.length > 0 && livePath.current === runPath) {
       const gone = new Set(switched.map((i) => i.from));
       setCandidates((prev) => prev.filter((c) => !gone.has(c.location)));
       setSelected((prev) => new Set([...prev].filter((k) => !gone.has(k))));
@@ -157,11 +161,12 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
         { important: true }
       );
     }
-  }, [candidates, libraryPath, showNotification]);
+  }, [candidates, setLibraryData, showNotification]);
 
   const run = useCallback(async () => {
     if (!preview || running) { return; }
     const items = preview;
+    const runPath = libraryPath;
     setRunNumber((n) => n + 1);
     setRunning(true);
     setShowProgress(true);
@@ -187,7 +192,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
       operationId.current = id;
       const res = await window.electronAPI.runConversion({
         operationId: id,
-        libraryPath,
+        libraryPath: runPath,
         dbKey: database ? useSettingsStore.getState().rekordboxDbKey : undefined,
         profileId,
         target,
@@ -198,7 +203,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
         showNotification('error', `Conversion failed: ${res.error ?? 'unknown error'}`, { important: true });
         return;
       }
-      await finish(items, res.data);
+      await finish(items, res.data, runPath);
     } catch (e) {
       showNotification('error', `Conversion failed: ${errorMessage(e)}`, { important: true });
     } finally {

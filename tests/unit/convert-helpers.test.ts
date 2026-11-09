@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { switchedItems, applyConversionSwitches } from '@renderer/convert/switchedItems';
+import { switchedItems, applyConversionSwitches, applySwitchesToLoadedLibrary } from '@renderer/convert/switchedItems';
 import { buildConversionEntry } from '@renderer/convert/conversionHistory';
 import { groupByReason, filterByReason } from '@renderer/convert/reasons';
 import type { ConvertCandidate, ConvertPreviewItem, ConvertRunResult } from '@main/ipcContract';
@@ -48,6 +48,28 @@ describe('applyConversionSwitches', () => {
     applyConversionSwitches(lib, [item(1)]);
     expect(lib.tracks.get('t1').location).toBe('/m/1.flac');
     expect(applyConversionSwitches(lib, [])).toBe(lib);
+  });
+});
+
+describe('applySwitchesToLoadedLibrary', () => {
+  const lib = (libraryPath: string, extra?: [string, any]) => ({
+    libraryPath, playlists: [],
+    tracks: new Map<string, any>([['t1', { id: 't1', location: '/m/1.flac' }], ...(extra ? [extra] : [])]),
+  });
+  it('applies the switches to the library loaded now, keeping what changed since the run started', () => {
+    const newer = lib('/x.db', ['t7', { id: 't7', location: '/m/relocated.aif' }]);
+    const next = applySwitchesToLoadedLibrary(newer, '/x.db', [item(1)])!;
+    expect(next.tracks.get('t1').location).toBe('/m/1.aif');
+    expect(next.tracks.get('t7').location).toBe('/m/relocated.aif');
+  });
+  it('leaves another library alone: the run wrote to the one it started on', () => {
+    const other = lib('/y.xml');
+    expect(applySwitchesToLoadedLibrary(other, '/x.db', [item(1)])).toBe(other);
+    expect(applySwitchesToLoadedLibrary(null, '/x.db', [item(1)])).toBeNull();
+  });
+  it('treats the composed and decomposed spelling of one path as the same library', () => {
+    const loaded = lib('/Café/x.db'.normalize('NFD'));
+    expect(applySwitchesToLoadedLibrary(loaded, '/Café/x.db'.normalize('NFC'), [item(1)])).not.toBe(loaded);
   });
 });
 

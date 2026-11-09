@@ -45,3 +45,15 @@ export function applyConversionSwitches(library: LibraryData, switched: ConvertP
   }
   return { ...library, tracks };
 }
+
+/**
+ * For a functional state update when a run ends: the switches go into the library loaded
+ * *now*, so what changed while it ran (a relocation, a merge) is kept — and only if that is
+ * still the library the run wrote to. Another library opened meanwhile is left untouched.
+ */
+export function applySwitchesToLoadedLibrary(
+  current: LibraryData | null, runLibraryPath: string, switched: ConvertPreviewItem[],
+): LibraryData | null {
+  if (!current || current.libraryPath.normalize('NFC') !== runLibraryPath.normalize('NFC')) { return current; }
+  return applyConversionSwitches(current, switched);
+}

@@ -210,6 +210,41 @@ describe('ConvertPanel', () => {
     pending[1]({ success: true, data: { switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: true } });
   });
 
+  it('a run that finishes after the page was left updates the library loaded then, not the one it started with', async () => {
+    let finishRun: (v: any) => void = () => undefined;
+    api.runConversion = vi.fn(() => new Promise((r) => { finishRun = r; }));
+    const lib = { ...library(), libraryPath: '/x/master.db' };
+    const setLibraryData = vi.fn();
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <ConvertPanel libraryData={lib} libraryPath="/x/master.db" showNotification={vi.fn()} setLibraryData={setLibraryData} />
+    );
+    await scanSelectPreview(user);
+    await user.click(screen.getByRole('button', { name: 'Convert 1 track' }));
+    await waitFor(() => expect(api.runConversion).toHaveBeenCalled());
+    unmount();
+    finishRun({
+      success: true,
+      data: { switched: 1, switchedItems: [{ trackIds: ['1'], from: '/m/a.flac', to: '/m/a.aif' }], failed: [], conflicts: [], trashed: 0, cancelled: false },
+    });
+    await waitFor(() => expect(setLibraryData).toHaveBeenCalled());
+    const update = setLibraryData.mock.calls[0][0];
+    expect(typeof update).toBe('function');
+
+    // Another library was opened meanwhile: it is kept as it is.
+    const other = { libraryPath: '/y/collection.xml', playlists: [], tracks: new Map<string, any>([['1', { id: '1', location: '/m/a.flac' }]]) };
+    expect(update(other)).toBe(other);
+
+    // The same library, changed meanwhile (a relocation): the change is kept and the switch applied to it.
+    const newer = {
+      libraryPath: '/x/master.db', playlists: [],
+      tracks: new Map<string, any>([['1', { id: '1', location: '/m/a.flac' }], ['2', { id: '2', location: '/m/moved.aif' }]]),
+    };
+    const next = update(newer);
+    expect(next.tracks.get('1').location).toBe('/m/a.aif');
+    expect(next.tracks.get('2').location).toBe('/m/moved.aif');
+  });
+
   it('shows an error and stays usable when the run rejects', async () => {
     api.runConversion = vi.fn(async () => { throw new Error('a conversion is already running'); });
     const showNotification = vi.fn();
