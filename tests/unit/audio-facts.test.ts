@@ -40,4 +40,9 @@ describe('readFileFacts', () => {
     expect(await readFileFacts(fx('wav-f32-44100.wav')))
       .toMatchObject({ format: 'wav', sampleRate: 44100, bitDepth: 32, isFloat: true });
   });
+  it('gives the full duration of a header-less MP3 larger than the head', async () => {
+    const f = await readFileFacts(fx('mp3-noxing-10s.mp3'), 20_000);
+    expect(f).toMatchObject({ format: 'mp3' });
+    expect(Math.abs((f as { durationSec: number }).durationSec - 10)).toBeLessThan(0.1);
+  });
 });

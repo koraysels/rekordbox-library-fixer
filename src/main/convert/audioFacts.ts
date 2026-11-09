@@ -34,13 +34,14 @@ function formatFromHeader(container?: string, codec?: string): AudioFormat {
   return 'other';
 }
 
-async function parse(buffer: Buffer) {
-  return mm.parseBuffer(buffer, undefined, { duration: true, skipCovers: true });
+async function parse(buffer: Buffer, size: number) {
+  return mm.parseBuffer(buffer, { size }, { duration: true, skipCovers: true });
 }
 
 /** Read the header of a file for its format, rate, depth and duration. */
 export async function readFileFacts(
   filePath: string,
+  headBytes: number = HEAD_BYTES,
 ): Promise<(AudioFacts & { durationSec: number }) | { unreachable: true }> {
   let head: Buffer;
   let size: number;
@@ -48,7 +49,7 @@ export async function readFileFacts(
     const handle = await fs.promises.open(filePath, 'r');
     try {
       size = (await handle.stat()).size;
-      head = Buffer.alloc(Math.min(size, HEAD_BYTES));
+      head = Buffer.alloc(Math.min(size, headBytes));
       await handle.read(head, 0, head.length, 0);
     } finally {
       await handle.close();
@@ -58,9 +59,14 @@ export async function readFileFacts(
   }
 
   try {
-    let meta = await parse(head).catch(() => null);
-    if ((!meta || !meta.format.duration) && size > head.length) {
-      meta = await parse(await fs.promises.readFile(filePath));
+    const partial = size > head.length;
+    let meta = await parse(head, size).catch(() => null);
+    // mp3/aac durations are estimated from the bytes seen, so a head-only
+    // parse can be confidently wrong; the other formats store it in the header.
+    const estimated = !!meta && (meta.format.codec ?? '').toLowerCase().match(/layer|aac/) !== null
+      && !meta.format.lossless;
+    if (partial && (!meta || !meta.format.duration || estimated)) {
+      meta = await parse(await fs.promises.readFile(filePath), size);
     }
     if (!meta) return { unreachable: true };
     const { container, codec, sampleRate, bitsPerSample, duration } = meta.format;
