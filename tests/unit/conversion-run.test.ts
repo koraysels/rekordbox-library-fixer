@@ -34,7 +34,7 @@ describe('findUnplayable', () => {
     expect(byLoc['/m/c.aiff'].reasons).toEqual([{ kind: 'bitDepth', bits: 32, max: 24 }]);
   });
 
-  it('reads the file when the library lacks the facts, and marks an unreadable file unreachable', async () => {
+  it('reads the file when the library lacks the facts, and marks a missing file unreachable', async () => {
     const read = vi.fn(async (p: string) => p === '/m/x.m4a'
       ? { format: 'alac' as const, sampleRate: 44100, bitDepth: 16, durationSec: 200 }
       : { unreachable: true as const });
