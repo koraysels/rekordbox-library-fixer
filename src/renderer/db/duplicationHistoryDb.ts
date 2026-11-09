@@ -14,7 +14,7 @@ export interface ActivityEntry {
   id?: number;
   libraryPath: string;
   timestamp: Date;
-  type: 'duplicate-merge' | 'relocation' | 'consolidate' | 'filter-move' | 'xml-save';
+  type: 'duplicate-merge' | 'relocation' | 'consolidate' | 'filter-move' | 'xml-save' | 'conversion';
   summary: string;
   backupPath?: string;
   details: ActivityDetail[];

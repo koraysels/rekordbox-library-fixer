@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type {
   TrackPayload, ScanOptionsPayload, ScanProgressPayload, DuplicateSet, MergePlanPayload,
   RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress, UpdateStatusPayload,
+  ConvertCandidate, ConvertRunPayload, ConvertProgress, FfmpegInstallProgress,
+  PlayerProfileId, TargetFormat,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -161,6 +163,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: Electron.IpcRendererEvent, progress: OperationProgress) => callback(progress);
     ipcRenderer.on('filter-progress', handler);
     return () => { ipcRenderer.removeListener('filter-progress', handler); };
+  },
+
+  // Format conversion
+  findUnplayable: (data: { tracks: TrackPayload[]; profileId: PlayerProfileId }) =>
+    ipcRenderer.invoke('find-unplayable', data),
+  previewConversion: (data: { candidates: ConvertCandidate[]; profileId: PlayerProfileId; target: TargetFormat }) =>
+    ipcRenderer.invoke('preview-conversion', data),
+  getFfmpegStatus: () => ipcRenderer.invoke('get-ffmpeg-status'),
+  installFfmpeg: () => ipcRenderer.invoke('install-ffmpeg'),
+  onFfmpegInstallProgress: (callback: (progress: FfmpegInstallProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: FfmpegInstallProgress) => callback(progress);
+    ipcRenderer.on('ffmpeg-install-progress', handler);
+    return () => { ipcRenderer.removeListener('ffmpeg-install-progress', handler); };
+  },
+  runConversion: (data: ConvertRunPayload) => ipcRenderer.invoke('run-conversion', data),
+  cancelConversion: (operationId: string) => ipcRenderer.invoke('cancel-conversion', operationId),
+  onConversionProgress: (callback: (progress: ConvertProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: ConvertProgress) => callback(progress);
+    ipcRenderer.on('conversion-progress', handler);
+    return () => { ipcRenderer.removeListener('conversion-progress', handler); };
   },
 
   // Native drag-and-drop

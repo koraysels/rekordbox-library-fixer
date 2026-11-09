@@ -1,0 +1,102 @@
+import { app, ipcMain, net, shell } from 'electron';
+import { safeConsole, sendToWindow } from '../runtime';
+import { isRekordboxDatabasePath } from '../librarySource';
+import { isRekordboxRunning } from '../rekordboxRunning';
+import { findUnplayable, previewConversion, runConversion } from '../convert/conversionRun';
+import { ffmpegStatus, installFfmpeg } from '../convert/ffmpegBinary';
+import type {
+  ConvertCandidate, ConvertPreviewItem, ConvertRunPayload, ConvertRunResult, FfmpegInstallProgress,
+  FfmpegStatus, IpcResult, PlayerProfileId, TargetFormat, TrackPayload,
+} from '../ipcContract';
+
+const running = new Map<string, AbortController>();
+const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Unknown error occurred');
+const status = (): FfmpegStatus => ffmpegStatus(app.getPath('userData'), process.platform, process.arch);
+
+/**
+ * Converting files the player cannot play. ffmpeg is only ever downloaded when
+ * the renderer asks for it with 'install-ffmpeg' — that is where the consent is.
+ */
+export function registerConvertIpc(): void {
+  ipcMain.handle('find-unplayable', async (_e, data: { tracks: TrackPayload[]; profileId: PlayerProfileId }):
+    Promise<IpcResult<ConvertCandidate[]>> => {
+    try {
+      const tracks = new Map(data.tracks.map(t => [t.id, t]));
+      return { success: true, data: await findUnplayable({ tracks }, data.profileId) };
+    } catch (error) {
+      return { success: false, error: errorText(error) };
+    }
+  });
+
+  ipcMain.handle('preview-conversion', async (_e, data: {
+    candidates: ConvertCandidate[]; profileId: PlayerProfileId; target: TargetFormat;
+  }): Promise<IpcResult<ConvertPreviewItem[]>> => {
+    try {
+      return { success: true, data: await previewConversion(data.candidates, data.profileId, data.target) };
+    } catch (error) {
+      return { success: false, error: errorText(error) };
+    }
+  });
+
+  ipcMain.handle('get-ffmpeg-status', async (): Promise<FfmpegStatus> => status());
+
+  ipcMain.handle('install-ffmpeg', async (): Promise<IpcResult<{ path: string }>> => {
+    try {
+      const file = await installFfmpeg(
+        app.getPath('userData'), process.platform, process.arch,
+        (percent) => sendToWindow('ffmpeg-install-progress', { percent } satisfies FfmpegInstallProgress),
+        // Electron's net honours the system proxy settings; Node's fetch does not.
+        net.fetch as unknown as typeof fetch,
+      );
+      return { success: true, data: { path: file } };
+    } catch (error) {
+      safeConsole.error('❌ ffmpeg install failed:', error);
+      return { success: false, error: errorText(error) };
+    }
+  });
+
+  ipcMain.handle('run-conversion', async (_e, data: ConvertRunPayload): Promise<IpcResult<ConvertRunResult>> => {
+    const operationId = data.operationId ?? `convert-${Date.now()}`;
+    try {
+      const ff = status();
+      if (ff.state !== 'ready') {
+        throw new Error('ffmpeg is not installed yet — install it before converting.');
+      }
+      // Fail before hours of converting rather than at the write.
+      if (isRekordboxDatabasePath(data.libraryPath)) {
+        if (!data.dbKey) {
+          throw new Error('The rekordbox database needs its key before it can be changed — paste it on the Library screen.');
+        }
+        if (isRekordboxRunning()) {
+          throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
+        }
+      }
+      const controller = new AbortController();
+      running.set(operationId, controller);
+      const { operationId: _id, ...opts } = data;
+      const result = await runConversion(opts, {
+        ffmpeg: ff.path,
+        operationId,
+        signal: controller.signal,
+        emit: (p) => sendToWindow('conversion-progress', p),
+        trash: (p) => shell.trashItem(p),
+      });
+      return { success: true, data: result };
+    } catch (error) {
+      sendToWindow('conversion-progress', {
+        operationId, type: 'error', current: 0, total: data.items?.length ?? 0,
+        message: errorText(error), convertedCount: 0, failedCount: 0,
+      });
+      return { success: false, error: errorText(error) };
+    } finally {
+      running.delete(operationId);
+    }
+  });
+
+  ipcMain.handle('cancel-conversion', async (_e, operationId: string): Promise<IpcResult> => {
+    const controller = running.get(operationId);
+    if (!controller) return { success: false, error: 'Operation not found' };
+    controller.abort();
+    return { success: true };
+  });
+}

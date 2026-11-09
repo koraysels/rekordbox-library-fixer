@@ -251,6 +251,15 @@ declare global {
       consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;
       cancelConsolidate?: (operationId: string) => Promise<any>;
       onConsolidateProgress?: (callback: (progress: any) => void) => () => void;
+      // Format conversion APIs
+      findUnplayable: (data: { tracks: any[]; profileId: PlayerProfileId }) => Promise<IpcResult<ConvertCandidate[]>>;
+      previewConversion: (data: { candidates: ConvertCandidate[]; profileId: PlayerProfileId; target: TargetFormat }) => Promise<IpcResult<ConvertPreviewItem[]>>;
+      getFfmpegStatus: () => Promise<FfmpegStatus>;
+      installFfmpeg: () => Promise<IpcResult<{ path: string }>>;
+      onFfmpegInstallProgress: (callback: (progress: FfmpegInstallProgress) => void) => () => void;
+      runConversion: (data: ConvertRunPayload) => Promise<IpcResult<ConvertRunResult>>;
+      cancelConversion: (operationId: string) => Promise<IpcResult>;
+      onConversionProgress: (callback: (progress: ConvertProgress) => void) => () => void;
       // File Drop APIs
       handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
@@ -262,5 +271,8 @@ declare global {
 }
 
 /** The app's own update, as the main process reports it. */
-import type { UpdateStatusPayload } from '../../main/ipcContract';
+import type {
+  UpdateStatusPayload, IpcResult, ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunPayload,
+  ConvertRunResult, FfmpegInstallProgress, FfmpegStatus, PlayerProfileId, TargetFormat,
+} from '../../main/ipcContract';
 export type UpdateStatus = UpdateStatusPayload;

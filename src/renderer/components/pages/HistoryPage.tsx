@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, ChevronDown, FolderOpen, Trash2, AlertTriangle, Layers, Move, Copy, Save, History as HistoryIcon } from 'lucide-react';
+import { ChevronRight, ChevronDown, FolderOpen, Trash2, AlertTriangle, Layers, Move, Copy, Save, RefreshCw, History as HistoryIcon } from 'lucide-react';
 import { useAppContext } from '../../AppWithRouter';
 import { PageHeader } from '../ui';
 import {
@@ -14,6 +14,7 @@ const TYPE_META: Record<ActivityEntry['type'], { label: string; Icon: typeof Lay
   consolidate: { label: 'Consolidate', Icon: Copy },
   'filter-move': { label: 'Filter copy/move', Icon: Copy },
   'xml-save': { label: 'Library saved', Icon: Save },
+  conversion: { label: 'Conversion', Icon: RefreshCw },
 };
 
 const formatTime = (value: Date | string) => {
