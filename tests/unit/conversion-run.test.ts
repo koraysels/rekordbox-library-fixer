@@ -151,6 +151,7 @@ describe('runConversion', () => {
     expect(res.cancelled).toBe(true);
     expect(res.failed).toEqual([]);
     expect((h.switchDb.mock.calls[0][2] as EntrySwitch[]).map(s => s.trackId)).toEqual(['ta']);
+    expect(res.switchedItems).toEqual([{ trackIds: ['ta'], from: expect.any(String), to: expect.any(String) }]);
     expect(h.events.at(-1)?.type).toBe('cancelled');
   });
 

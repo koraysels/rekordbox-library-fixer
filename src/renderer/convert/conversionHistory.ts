@@ -25,7 +25,7 @@ export function buildConversionEntry(run: {
     }
     const error = failedWhy.get(item.from)
       ?? result.error
-      ?? (result.cancelled ? 'Cancelled before this file' : 'Not switched in the library');
+      ?? (result.cancelled ? 'not converted (cancelled)' : 'Not switched in the library');
     return { action: 'failed', trackName, from: item.from, to: item.to, error };
   });
 

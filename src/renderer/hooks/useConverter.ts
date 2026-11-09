@@ -10,6 +10,7 @@ import type {
   PlayerProfileId, TargetFormat,
 } from '../../main/ipcContract';
 
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const isDatabase = (libraryPath: string) => /\.db$/i.test(libraryPath);
 
 interface Options {
@@ -40,6 +41,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
   const [progress, setProgress] = useState<ConvertProgress | null>(null);
   const [result, setResult] = useState<ConvertRunResult | null>(null);
   const operationId = useRef<string | null>(null);
+  const previewToken = useRef(0);
   const live = useRef({ libraryData, setLibraryData });
   live.current = { libraryData, setLibraryData };
 
@@ -54,7 +56,7 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
   useEffect(() => window.electronAPI.onConversionProgress((p) => setProgress(p)), []);
 
   // A different look at the library, target or player is a different run: preview again.
-  const invalidate = () => setPreview(null);
+  const invalidate = () => { previewToken.current++; setPreview(null); setPreviewing(false); };
 
   const visible = useMemo(() => filterByReason(candidates, reasonFilter), [candidates, reasonFilter]);
   const reasons = useMemo(() => groupByReason(candidates), [candidates]);
@@ -81,6 +83,8 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
       setSelected(new Set());
       setReasonFilter('');
       setScanned(true);
+    } catch (e) {
+      showNotification('error', `Could not check the library: ${errorMessage(e)}`);
     } finally {
       setScanning(false);
     }
@@ -108,16 +112,21 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
 
   const runPreview = useCallback(async () => {
     if (selectedCandidates.length === 0) { return; }
+    const token = ++previewToken.current;
     setPreviewing(true);
     try {
       const res = await window.electronAPI.previewConversion({ candidates: selectedCandidates, profileId, target });
+      // The inputs changed while this was running: its answer is about something else now.
+      if (token !== previewToken.current) { return; }
       if (!res.success || !res.data) {
         showNotification('error', `Could not preview: ${res.error ?? 'unknown error'}`);
         return;
       }
       setPreview(res.data);
+    } catch (e) {
+      if (token === previewToken.current) { showNotification('error', `Could not preview: ${errorMessage(e)}`); }
     } finally {
-      setPreviewing(false);
+      if (token === previewToken.current) { setPreviewing(false); }
     }
   }, [selectedCandidates, profileId, target, showNotification]);
 
@@ -155,13 +164,15 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
     setShowProgress(true);
     setProgress(null);
     setResult(null);
+    let stop: (() => void) | undefined;
     try {
       // The only place ffmpeg is fetched: after the DJ clicked the button that says so.
       if (ffmpeg?.state === 'missing') {
         setInstallPercent(0);
-        const stop = window.electronAPI.onFfmpegInstallProgress((p) => setInstallPercent(p.percent));
+        stop = window.electronAPI.onFfmpegInstallProgress((p) => setInstallPercent(p.percent));
         const installed = await window.electronAPI.installFfmpeg();
         stop();
+        stop = undefined;
         setInstallPercent(null);
         if (!installed.success) {
           showNotification('error', `Could not download ffmpeg: ${installed.error ?? 'unknown error'}`);
@@ -185,7 +196,11 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
         return;
       }
       await finish(items, res.data);
+    } catch (e) {
+      showNotification('error', `Conversion failed: ${errorMessage(e)}`, { important: true });
     } finally {
+      stop?.();
+      setInstallPercent(null);
       operationId.current = null;
       setRunning(false);
     }

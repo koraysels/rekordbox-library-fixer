@@ -35,7 +35,7 @@ beforeEach(() => {
     onFfmpegInstallProgress: vi.fn(() => () => undefined),
     runConversion: vi.fn(async () => ({
       success: true,
-      data: { switched: 1, failed: [], conflicts: [], trashed: 0, cancelled: false },
+      data: { switched: 1, switchedItems: [{ trackIds: ['1'], from: '/m/a.flac', to: '/m/a.aif' }], failed: [], conflicts: [], trashed: 0, cancelled: false },
     })),
     cancelConversion: vi.fn(async () => ({ success: true })),
     onConversionProgress: vi.fn(() => () => undefined),
@@ -65,6 +65,8 @@ async function scanSelectPreview(user: ReturnType<typeof userEvent.setup>) {
 
 describe('ConvertPanel', () => {
   it('starts from the oldest-player setting and does not change it', async () => {
+    const setOldestPlayer = vi.fn();
+    useSettingsStore.setState({ setOldestPlayer });
     const { user } = setup();
     const select = screen.getByLabelText('Player') as HTMLSelectElement;
     expect(select.value).toBe('cdj2000');
@@ -72,6 +74,7 @@ describe('ConvertPanel', () => {
     await screen.findByText('Song');
     expect(api.findUnplayable).toHaveBeenCalledWith(expect.objectContaining({ profileId: 'cdj2000' }));
     await user.selectOptions(select, 'cdj2000');
+    expect(setOldestPlayer).not.toHaveBeenCalled();
     expect(useSettingsStore.getState().oldestPlayer).toBe('cdj2000');
   });
 
@@ -140,5 +143,48 @@ describe('ConvertPanel', () => {
     expect(call).toMatchObject({ libraryPath: '/x/master.db', dbKey: 'k'.repeat(64), target: 'aiff', trashOriginals: false });
     expect(setLibraryData).toHaveBeenCalled();
     expect(within(screen.getByTestId('convert-summary')).getByText(/1 switched/)).toBeTruthy();
+  });
+
+  it('never sends trashOriginals for an XML library, even if it was ticked on a database one', async () => {
+    const lib = library();
+    const props = { libraryData: lib, showNotification: vi.fn(), setLibraryData: vi.fn() };
+    const user = userEvent.setup();
+    const { rerender } = render(<ConvertPanel {...props} libraryPath="/x/master.db" />);
+    await user.click(screen.getByLabelText('Move originals to Trash after switching'));
+    rerender(<ConvertPanel {...props} libraryPath="/x/collection.xml" />);
+    await scanSelectPreview(user);
+    await user.click(screen.getByRole('button', { name: 'Convert 1 track' }));
+    await waitFor(() => expect(api.runConversion).toHaveBeenCalled());
+    expect(api.runConversion.mock.calls[0][0]).toMatchObject({ libraryPath: '/x/collection.xml', trashOriginals: false });
+    expect(api.runConversion.mock.calls[0][0].dbKey).toBeUndefined();
+  });
+
+  it('ignores a preview that lands after the target changed', async () => {
+    let resolve: (v: any) => void = () => undefined;
+    api.previewConversion = vi.fn(() => new Promise((r) => { resolve = r; }));
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: /scan/i }));
+    await screen.findByText('Song');
+    await user.click(screen.getByRole('button', { name: /select all/i }));
+    await user.click(screen.getByRole('button', { name: /preview/i }));
+    await user.click(screen.getByLabelText('WAV'));
+    resolve({ success: true, data: [previewItem] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByText('/m/a.aif')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Convert \d/ })).toBeDisabled();
+  });
+
+  it('shows an error and stays usable when the run rejects', async () => {
+    api.runConversion = vi.fn(async () => { throw new Error('a conversion is already running'); });
+    const showNotification = vi.fn();
+    const user = userEvent.setup();
+    render(<ConvertPanel libraryData={library()} libraryPath="/x/master.db" showNotification={showNotification} setLibraryData={vi.fn()} />);
+    await scanSelectPreview(user);
+    await user.click(screen.getByRole('button', { name: 'Convert 1 track' }));
+    await waitFor(() => expect(showNotification).toHaveBeenCalledWith(
+      'error', expect.stringContaining('a conversion is already running'), expect.anything()
+    ));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Convert 1 track' })).toBeEnabled();
   });
 });

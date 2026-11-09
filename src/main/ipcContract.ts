@@ -226,6 +226,8 @@ export interface ConvertProgress {
 
 export interface ConvertRunResult {
   switched: number;
+  /** Exactly the entries the library write switched: nothing the run never reached, nothing it skipped. */
+  switchedItems: { trackIds: string[]; from: string; to: string }[];
   failed: { from: string; error: string }[];
   conflicts: string[];
   trashed: number;

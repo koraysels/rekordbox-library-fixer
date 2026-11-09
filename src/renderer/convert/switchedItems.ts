@@ -1,18 +1,17 @@
 import type { LibraryData } from '../types';
 import type { ConvertPreviewItem, ConvertRunResult } from '../../main/ipcContract';
 
-/** Which of the planned items a run actually switched, and what they became. */
+/**
+ * What a run actually switched, with the output facts from the plan. Taken from what the
+ * writer reports, never inferred from what the run did not list: a cancelled run leaves
+ * items it never reached, and those were not converted.
+ */
 export function switchedItems(items: ConvertPreviewItem[], result: ConvertRunResult): ConvertPreviewItem[] {
-  // A failed library write changes nothing, whatever was converted on the way.
   if (result.error) { return []; }
-  const failed = new Set(result.failed.map((f) => f.from));
-  const conflicts = new Set(result.conflicts);
-  const skipped = new Set((result.skipped ?? []).map((s) => s.trackId));
   const outcome: ConvertPreviewItem[] = [];
-  for (const item of items) {
-    if (item.readiness === 'conflict' || failed.has(item.from) || conflicts.has(item.from)) { continue; }
-    const trackIds = item.trackIds.filter((id) => !skipped.has(id));
-    if (trackIds.length > 0) { outcome.push({ ...item, trackIds }); }
+  for (const done of result.switchedItems ?? []) {
+    const planned = items.find((i) => i.from === done.from);
+    if (planned && done.trackIds.length > 0) { outcome.push({ ...planned, trackIds: done.trackIds, to: done.to }); }
   }
   return outcome;
 }

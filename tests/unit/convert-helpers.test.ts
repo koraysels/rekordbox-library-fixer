@@ -9,16 +9,24 @@ const item = (n: number, over: Partial<ConvertPreviewItem> = {}): ConvertPreview
   out: { format: 'aiff', sampleRate: 44100, bitDepth: 16, bitrateKbps: 1411 }, ...over,
 });
 const result = (over: Partial<ConvertRunResult> = {}): ConvertRunResult => ({
-  switched: 0, failed: [], conflicts: [], trashed: 0, cancelled: false, ...over,
+  switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: false, ...over,
 });
 
 describe('switchedItems', () => {
-  it('leaves out failures, conflicts and entries the write skipped', () => {
-    const items = [item(1), item(2), item(3, { readiness: 'conflict' }), item(4, { trackIds: ['a', 'b'] })];
-    const out = switchedItems(items, result({
-      failed: [{ from: '/m/2.flac', error: 'x' }], conflicts: ['/m/3.flac'], skipped: [{ trackId: 'b', reason: 'moved' }],
-    }));
+  it('is exactly what the writer reported', () => {
+    const items = [item(1), item(2), item(4, { trackIds: ['a', 'b'] })];
+    const out = switchedItems(items, result({ switchedItems: [
+      { trackIds: ['t1'], from: '/m/1.flac', to: '/m/1.aif' }, { trackIds: ['a'], from: '/m/4.flac', to: '/m/4.aif' },
+    ] }));
     expect(out.map((i) => i.trackIds)).toEqual([['t1'], ['a']]);
+  });
+  it('treats items a cancelled run never reached as not converted', () => {
+    const items = [item(1), item(2), item(3)];
+    const cancelled = result({ cancelled: true, switchedItems: [{ trackIds: ['t1'], from: '/m/1.flac', to: '/m/1.aif' }] });
+    expect(switchedItems(items, cancelled).map((i) => i.from)).toEqual(['/m/1.flac']);
+    const entry = buildConversionEntry({ libraryPath: '/x.db', items, result: cancelled });
+    expect(entry.details.map((d) => d.action)).toEqual(['converted', 'failed', 'failed']);
+    expect(entry.details[1].error).toBe('not converted (cancelled)');
   });
   it('switches nothing when the library write failed', () => {
     expect(switchedItems([item(1)], result({ error: 'locked' }))).toEqual([]);
@@ -47,7 +55,7 @@ describe('buildConversionEntry', () => {
   it('records old and new path and the outcome per file', () => {
     const entry = buildConversionEntry({
       libraryPath: '/x.db', items: [item(1), item(2)],
-      result: result({ switched: 1, trashed: 1, failed: [{ from: '/m/2.flac', error: 'ffmpeg exited 1' }], backupPath: '/b' }),
+      result: result({ switched: 1, switchedItems: [{ trackIds: ['t1'], from: '/m/1.flac', to: '/m/1.aif' }], trashed: 1, failed: [{ from: '/m/2.flac', error: 'ffmpeg exited 1' }], backupPath: '/b' }),
       names: { '/m/1.flac': 'A - One' },
     });
     expect(entry.type).toBe('conversion');

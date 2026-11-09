@@ -170,7 +170,7 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
   const isDb = isRekordboxDatabasePath(opts.libraryPath);
   const trashOriginals = opts.trashOriginals && isDb;
   const total = opts.items.length;
-  const result: ConvertRunResult = { switched: 0, failed: [], conflicts: [], trashed: 0, cancelled: false };
+  const result: ConvertRunResult = { switched: 0, switchedItems: [], failed: [], conflicts: [], trashed: 0, cancelled: false };
   const done: { item: ConvertPreviewItem; sizeBytes: number }[] = [];
   let current = 0;
 
@@ -266,6 +266,10 @@ export async function runConversion(opts: ConvertRunOptions, deps: RunDeps): Pro
       return result;
     }
     if (skipped.length) result.skipped = skipped;
+    const skippedIds = new Set(skipped.map(s => s.trackId));
+    result.switchedItems = done
+      .map(({ item }) => ({ trackIds: item.trackIds.filter(id => !skippedIds.has(id)), from: item.from, to: item.to }))
+      .filter(i => i.trackIds.length > 0);
 
     if (trashOriginals && deps.trash) {
       const notSwitched = new Set(skipped.map(s => s.trackId));
