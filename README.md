@@ -106,6 +106,8 @@ Quality priority order when lossless preference is enabled:
 ### Convert for older players
 Older Pioneer decks (CDJ-2000, CDJ-2000NXS) refuse lossless M4A (ALAC), FLAC, 32-bit or float WAV and anything above 48 kHz or 24-bit. The Convert page lists every track your oldest player cannot load, says why, and turns the files you pick into AIFF (or WAV, or MP3) — then points the **same library entry** at the new file, so cues, loops, hot cues, beatgrids, ratings and playlists stay exactly where they were.
 
+Thanks to [markst](https://github.com/markst) for [issue #11](https://github.com/koraysels/rekordbox-library-fixer/issues/11) and the [draft PR](https://github.com/markst/rekordbox-library-fixer/pull/2) this grew from.
+
 ### Activity History
 - Every library-changing operation is recorded: duplicate merges and relocations
 - Expand an entry to see exactly which tracks were merged, which files went to the trash, and what failed
@@ -286,7 +288,7 @@ If a deck will not load some of your tracks (lossless M4A, FLAC, 32-bit or 96 kH
 4. Click **Preview** to see exactly which files will be written and how each entry changes, then convert
 5. Optionally move the originals to the Trash. They go only after the library was updated, and never while another entry still uses the file
 
-Converted files are written next to the originals, never over them; a name already taken is reported and skipped. The first time, the app asks before downloading ffmpeg (about 20-30 MB, checked against a pinned checksum and kept in the app's data folder) — it is not included in the installer. On a `master.db` library the entries are switched in place, with Rekordbox closed and a verified backup first. On an XML library the page tells you plainly that importing the XML would add the converted file as a new track without cues, so switch the entries from `master.db` instead. USB sticks hold their own copies: sync them from Rekordbox afterwards.
+Converted files are written next to the originals, never over them; a name already taken is reported and skipped. The first time, the app asks before downloading ffmpeg (about 20-30 MB, checked against a pinned checksum and kept in the app's data folder) — it is not included in the installer. The ffmpeg builds are GPL-licensed, and the Apple Silicon build also includes non-free components, so ffmpeg is downloaded to your machine on first use and never distributed with the app. On a `master.db` library the entries are switched in place, with Rekordbox closed and a verified backup first. On an XML library the page tells you plainly that importing the XML would add the converted file as a new track without cues, so switch the entries from `master.db` instead. USB sticks hold their own copies: sync them from Rekordbox afterwards.
 
 Every change is written straight into `master.db`. Close Rekordbox first; the app takes a verified backup before it writes, and Rekordbox picks the changes up the next time it starts. There is nothing to import.
 
