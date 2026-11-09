@@ -172,6 +172,8 @@ export const ConvertPanel: React.FC<Props> = ({ libraryData, libraryPath, showNo
                 <span className="text-te-grey-600">{item.from}</span>
                 <span className="text-te-orange"> → </span>
                 <span>{item.to}</span>
+                {/* Every entry pointing at the file switches with it: say so, so none comes as a surprise. */}
+                {item.trackIds.length > 1 && <span className="ml-2 text-te-grey-500">{item.trackIds.length} entries</span>}
                 {item.readiness === 'conflict' && <span className="ml-2 text-te-red-500">conflict — a different file already has that name; it is skipped</span>}
                 {item.readiness === 'reusable' && <span className="ml-2 text-te-grey-500">already converted — reused</span>}
               </li>

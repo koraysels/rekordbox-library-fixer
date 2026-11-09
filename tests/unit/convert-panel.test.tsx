@@ -188,6 +188,19 @@ describe('ConvertPanel', () => {
     expect(screen.getByRole('button', { name: /^Convert \d/ })).toBeDisabled();
   });
 
+  it('says how many library entries switch when several share one file', async () => {
+    api.previewConversion = vi.fn(async () => ({
+      success: true,
+      data: [previewItem, { ...previewItem, trackIds: ['7', '8', '9'], from: '/m/shared.flac', to: '/m/shared.aif' }],
+    }));
+    const { user } = setup();
+    await scanSelectPreview(user);
+    const shared = screen.getByText('/m/shared.aif').closest('li')!;
+    expect(within(shared).getByText('3 entries')).toBeTruthy();
+    const single = screen.getByText('/m/a.aif').closest('li')!;
+    expect(within(single).queryByText(/entries/)).toBeNull();
+  });
+
   it('Cancel works again on the next run after a cancelled one', async () => {
     const pending: Array<(v: any) => void> = [];
     api.runConversion = vi.fn(() => new Promise((r) => { pending.push(r); }));
