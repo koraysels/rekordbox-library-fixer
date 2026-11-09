@@ -86,6 +86,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
           
+          <p className="text-te-grey-500 text-xs mb-1 font-te-mono">
+            ffmpeg 6.0, GPL, from github.com/eugeneware/ffmpeg-static
+          </p>
           <p className="text-te-grey-500 text-xs font-te-mono">
             © 2025 Koray Sels. All rights reserved.
           </p>
