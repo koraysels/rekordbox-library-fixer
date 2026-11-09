@@ -9,6 +9,7 @@ import {
   applySwitchesToDb, switchEntriesInDb, switchEntriesInXml, FILE_TYPE_FOR, KIND_FOR, type EntrySwitch,
 } from '../../src/main/convert/applyConversions';
 import { RekordboxParser } from '../../src/main/rekordboxParser';
+import { DATABASE_IS_READ_ONLY } from '../../src/main/librarySource';
 
 let file: string;
 let db: InstanceType<typeof Database>;
@@ -43,6 +44,9 @@ afterEach(() => {
   fs.rmSync(file, { force: true });
 });
 
+const tmpFiles: string[] = [];
+afterEach(() => { for (const f of tmpFiles.splice(0)) { fs.rmSync(f, { force: true }); } });
+
 const row = (id: string) => db.prepare('SELECT * FROM djmdContent WHERE ID = ?').get(id) as any;
 
 describe('constants', () => {
@@ -55,6 +59,7 @@ describe('constants', () => {
 describe('applySwitchesToDb', () => {
   it('switches the entry and every file-describing column, nothing else', () => {
     const before = row('t1');
+    const t2Before = row('t2');
     const out = applySwitchesToDb(db, [sw()], yes);
     expect(out.switched).toBe(1);
     const after = row('t1');
@@ -68,8 +73,7 @@ describe('applySwitchesToDb', () => {
     });
     expect(after.AnalysisDataPath).toBe('/analysis/ANLZ0.DAT');
     expect(db.prepare('SELECT ID FROM djmdCue WHERE ContentID = ?').get('t1')).toBeTruthy();
-    expect(row('t2')).toEqual({ ...row('t2') });
-    expect(row('t2').FolderPath).toBe('/old/Other.flac');
+    expect(row('t2')).toEqual(t2Before);
   });
 
   it('writes 16 for the bit depth of an MP3, as rekordbox does', () => {
@@ -95,6 +99,26 @@ describe('applySwitchesToDb', () => {
   });
 });
 
+describe('applySwitchesToDb edge cases', () => {
+  it('skips a deleted row and leaves it untouched', () => {
+    db.prepare("UPDATE djmdContent SET rb_local_deleted = 1 WHERE ID = 't1'").run();
+    const before = row('t1');
+    const out = applySwitchesToDb(db, [sw()], yes);
+    expect(out.switched).toBe(0);
+    expect(out.skipped[0]).toEqual({ trackId: 't1', reason: 'not in the collection' });
+    expect(row('t1')).toEqual(before);
+  });
+
+  it('rolls back earlier rows and the usn counter when a later one throws', () => {
+    const before = row('t1');
+    // The second switch carries a value SQLite cannot bind.
+    const bad = sw({ trackId: 't2', sizeBytes: Symbol('x') as unknown as number });
+    expect(() => applySwitchesToDb(db, [sw(), bad], yes)).toThrow();
+    expect(row('t1')).toEqual(before);
+    expect((db.prepare('SELECT int_1 n FROM agentRegistry').get() as any).n).toBe(100);
+  });
+});
+
 describe('switchEntriesInDb', () => {
   it('refuses while rekordbox runs and does not touch the file', () => {
     db.close();
@@ -116,6 +140,7 @@ describe('switchEntriesInDb', () => {
 describe('switchEntriesInXml', () => {
   it('rewrites Location, Kind, BitRate, Size, SampleRate and keeps cues and TEMPO', async () => {
     const xmlPath = path.join(os.tmpdir(), `ac-${Date.now()}.xml`);
+    tmpFiles.push(xmlPath);
     fs.writeFileSync(xmlPath, `<?xml version="1.0" encoding="UTF-8"?>
 <DJ_PLAYLISTS Version="1.0.0"><PRODUCT Name="rekordbox" Version="6.0.0" Company="Pioneer DJ"/>
 <COLLECTION Entries="1"><TRACK TrackID="1" Name="Song" Artist="A" Kind="FLAC File" Size="999" BitRate="900" SampleRate="48000" Location="file://localhost/old/Song.flac">
@@ -124,7 +149,8 @@ describe('switchEntriesInXml', () => {
 <PLAYLISTS><NODE Type="0" Name="ROOT" Count="0"/></PLAYLISTS></DJ_PLAYLISTS>`);
     const parser = new RekordboxParser();
     const library = await parser.parseLibrary(xmlPath);
-    const out = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '1' })]);
+    const out = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '1' })], yes);
+    tmpFiles.push(out.backupPath);
     expect(out.switched).toBe(1);
     expect(fs.existsSync(out.backupPath)).toBe(true);
     expect(fs.readFileSync(out.backupPath, 'utf-8')).toContain('Song.flac');
@@ -133,16 +159,31 @@ describe('switchEntriesInXml', () => {
     expect(xml).toContain('BitRate="1411"');
     expect(xml).toContain('Size="5000"');
     expect(xml).toContain('SampleRate="44100"');
-    expect(xml).toContain('/new/Song.aiff');
+    expect(xml).toContain('Location="file://localhost/new/Song.aiff"');
     expect(xml).toContain('TEMPO');
     expect(xml).toContain('Battito="1"');
     expect(xml).toContain('POSITION_MARK');
-    fs.rmSync(xmlPath, { force: true });
-    fs.rmSync(out.backupPath, { force: true });
   });
 
   it('refuses a database path', async () => {
     const library = { tracks: new Map(), playlists: [], version: '1' } as any;
-    await expect(switchEntriesInXml('/x/master.db', library, [])).rejects.toThrow();
+    await expect(switchEntriesInXml('/x/master.db', library, [])).rejects.toThrow(DATABASE_IS_READ_ONLY);
+  });
+
+  it('skips a missing file and an unknown track, writing nothing for them', async () => {
+    const xmlPath = path.join(os.tmpdir(), `ac-skip-${Date.now()}.xml`);
+    tmpFiles.push(xmlPath);
+    fs.writeFileSync(xmlPath, '<DJ_PLAYLISTS Version="1.0.0"><COLLECTION Entries="1"><TRACK TrackID="1" Name="S" Location="file://localhost/old/S.flac"/></COLLECTION><PLAYLISTS><NODE Type="0" Name="ROOT" Count="0"/></PLAYLISTS></DJ_PLAYLISTS>');
+    const library = await new RekordboxParser().parseLibrary(xmlPath);
+    const before = fs.readFileSync(xmlPath, 'utf-8');
+    const out = await switchEntriesInXml(xmlPath, library,
+      [sw({ trackId: '1' }), sw({ trackId: '9' })], (p) => false);
+    tmpFiles.push(out.backupPath);
+    expect(out.switched).toBe(0);
+    expect(out.skipped).toHaveLength(2);
+    expect(fs.readFileSync(xmlPath, 'utf-8')).toBe(before);
+    const out2 = await switchEntriesInXml(xmlPath, library, [sw({ trackId: '9' })], yes);
+    tmpFiles.push(out2.backupPath);
+    expect(out2.skipped[0]).toEqual({ trackId: '9', reason: 'not in the collection' });
   });
 });

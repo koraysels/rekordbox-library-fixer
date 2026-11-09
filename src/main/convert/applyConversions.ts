@@ -1,10 +1,7 @@
 import Database from 'better-sqlite3-multiple-ciphers';
 import * as fs from 'fs';
 import * as path from 'path';
-import { unlockDatabase } from '../rekordboxDbParser';
-import { backupDatabaseFile } from '../backupDatabase';
-import { isRekordboxRunning } from '../rekordboxRunning';
-import { nextUsn } from '../rekordboxDbRelocator';
+import { nextUsn, realIsRegularFile, withWritableRekordboxDb } from '../rekordboxDbRelocator';
 import { assertWritableLibraryPath } from '../librarySource';
 import { RekordboxParser, type RekordboxLibrary } from '../rekordboxParser';
 import type { OutputFacts, TargetFormat } from './conversionPlan';
@@ -29,10 +26,6 @@ export const KIND_FOR: Record<TargetFormat, string> = { aiff: 'AIFF File', wav: 
 
 /** In a real database 10251 of 10253 MP3 rows store 16, so an MP3 gets 16. */
 const MP3_BIT_DEPTH = 16;
-
-const realIsRegularFile = (p: string): boolean => {
-  try { return fs.statSync(p).isFile(); } catch { return false; }
-};
 
 /**
  * Point converted tracks' own entries at their new files. Only the columns that
@@ -89,24 +82,10 @@ export function switchEntriesInDb(
   switches: EntrySwitch[],
   opts: SwitchDbOptions
 ): { switched: number; skipped: SwitchSkip[]; backupPath: string } {
-  const running = opts.checkRunning ?? isRekordboxRunning;
-  if (running()) {
-    throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
-  }
-  if (!opts.backupPath) {
-    throw new Error('A backup path is required; this never writes without one.');
-  }
-  backupDatabaseFile(dbPath, opts.backupPath);
-
-  let db: Db | null = null;
-  try {
-    db = new Database(dbPath);
-    unlockDatabase(db, key);
-    const outcome = applySwitchesToDb(db, switches, opts.isRegularFile ?? realIsRegularFile);
-    return { ...outcome, backupPath: opts.backupPath };
-  } finally {
-    if (db) { db.close(); }
-  }
+  return withWritableRekordboxDb(dbPath, key, opts, (db) => ({
+    ...applySwitchesToDb(db, switches, opts.isRegularFile ?? realIsRegularFile),
+    backupPath: opts.backupPath,
+  }));
 }
 
 /** Back up the XML, update the entries, write it back. Refuses a `.db` path. */
@@ -114,16 +93,25 @@ export async function switchEntriesInXml(
   xmlPath: string,
   library: RekordboxLibrary,
   switches: EntrySwitch[],
+  isRegularFile: (p: string) => boolean = realIsRegularFile,
   parser?: Pick<RekordboxParser, 'saveLibrary'>
-): Promise<{ switched: number; backupPath: string }> {
+): Promise<{ switched: number; skipped: SwitchSkip[]; backupPath: string }> {
   assertWritableLibraryPath(xmlPath);
   const backupPath = `${xmlPath}.backup.${new Date().toISOString().replace(/[:.]/g, '-')}`;
   fs.copyFileSync(xmlPath, backupPath);
 
+  const skipped: SwitchSkip[] = [];
   let switched = 0;
   for (const s of switches) {
+    if (!s.newLocation || !isRegularFile(s.newLocation)) {
+      skipped.push({ trackId: s.trackId, reason: 'the file is not there' });
+      continue;
+    }
     const track = library.tracks.get(s.trackId);
-    if (!track) { continue; }
+    if (!track) {
+      skipped.push({ trackId: s.trackId, reason: 'not in the collection' });
+      continue;
+    }
     track.location = s.newLocation;
     track.kind = KIND_FOR[s.target];
     track.bitrate = s.out.bitrateKbps;
@@ -132,8 +120,7 @@ export async function switchEntriesInXml(
     switched++;
   }
   if (switched > 0) {
-    const writer = parser ?? new RekordboxParser();
-    await writer.saveLibrary(library, xmlPath);
+    await (parser ?? new RekordboxParser()).saveLibrary(library, xmlPath);
   }
-  return { switched, backupPath };
+  return { switched, skipped, backupPath };
 }
