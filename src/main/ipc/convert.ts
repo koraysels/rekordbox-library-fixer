@@ -68,8 +68,7 @@ export function registerConvertIpc(): void {
       // that never started, not as one that ran and changed nothing.
       const refusal = preflightRefusal(data);
       if (refusal) {throw new Error(refusal);}
-      const { operationId: _id, ...opts } = data;
-      const result = await runConversion(opts, {
+      const result = await runConversion(data, {
         ffmpeg: ff.path,
         operationId,
         signal: controller.signal,
@@ -87,7 +86,7 @@ export function registerConvertIpc(): void {
       }
       return { success: false, error: errorText(error) };
     } finally {
-      if (controller) runs.end(operationId, controller);
+      if (controller) {runs.end(operationId, controller);}
     }
   });
 

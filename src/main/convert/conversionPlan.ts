@@ -15,7 +15,7 @@ export interface OutputFacts {
 }
 
 const MP3_KBPS = 320;
-/** An existing MP3 at the output path is only reused at (about) the bitrate we would encode: never a quieter-quality copy. */
+/** An existing MP3 at the output path is reused only at (about) the bitrate we would encode, never a lower one. */
 const MIN_REUSABLE_MP3_KBPS = 315;
 /** Verification tolerance: a converted file's duration may differ by this much. */
 const DURATION_TOLERANCE_SEC = 0.05;

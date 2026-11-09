@@ -134,10 +134,13 @@ export function useConverter({ libraryData, libraryPath, showNotification, setLi
     }
   }, [selectedCandidates, profileId, target, showNotification]);
 
-  const finish = useCallback(async (items: ConvertPreviewItem[], outcome: ConvertRunResult, runPath: string) => {
+  const finish = useCallback(async (
+    items: ConvertPreviewItem[], outcome: ConvertRunResult, runPath: string,
+  ) => {
     const names: Record<string, string> = {};
     for (const c of candidates) { names[c.location] = [c.artist, c.name].filter(Boolean).join(' - '); }
-    void duplicationHistoryStorage.record(buildConversionEntry({ libraryPath: runPath, items, result: outcome, names }));
+    const entry = buildConversionEntry({ libraryPath: runPath, items, result: outcome, names });
+    void duplicationHistoryStorage.record(entry);
 
     const switched = switchedItems(items, outcome);
     if (switched.length > 0) {
