@@ -95,7 +95,8 @@ collection has to go through the database.
   24-bit with dither, rates capped at 48/44.1 kHz; a same-format output gets a suffix such as
   `(24-bit)`); `conversionRun.ts` (`findUnplayable`, `previewConversion`, `runConversion`) is free of Electron
   and React so a wizard can call it; `convertFile.ts` converts to a temp name, verifies (opens, expected
-  format, duration within 50 ms) and renames into place; `applyConversions.ts` switches entries.
+  format, duration within `durationToleranceSec` — 50 ms, plus LAME's delay and padding for MP3) and
+  renames into place; `applyConversions.ts` switches entries.
   `ffmpegBinary.ts` / `ffmpegBuilds.ts` download a pinned, checksummed ffmpeg on first use (never bundled:
   the Apple Silicon build is non-free).
 
@@ -105,8 +106,13 @@ collection has to go through the database.
   unless the write succeeded and a count taken inside that write shows no other entry still uses it;
   entries sharing one file switch together; references compare NFC and case-insensitively; one run at a
   time (`runRegistry.ts`); an XML library gets no Trash option, because an XML import adds a new track
-  instead of replacing one. `readFileFacts` must not trust a duration from a header-only read (WAV, mp3,
-  aac): it reads the whole file for those.
+  instead of replacing one. `readFileFacts` uses music-metadata's seeking `parseFile` (cast: the
+  renderer tsconfig resolves the browser build, which lacks it) — never a buffer, which loaded whole WAVs
+  and failed over 2 GiB. It returns `unreachable` (not there: Track Relocation) or `unreadable` (there,
+  but not parseable) — two different fixes. An existing MP3 is reused only at >= 315 kbps, never a
+  release's lower-bitrate copy. `runConversion` refuses up front (`preflightRefusal`: no key, rekordbox
+  running), so a headless caller hears it before converting. The page applies a run's result as a
+  functional update, only to the library it ran on.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by

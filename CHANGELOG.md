@@ -7,7 +7,7 @@
 - **ffmpeg is downloaded on first use, not shipped**: the app asks first, then fetches a pinned, checksummed build for your platform into its data folder, so the installer and updates stay small. Licence: the builds are GPL; the Apple Silicon build also includes non-free components, which is why ffmpeg is downloaded to your machine and never distributed with the app.
 
 ### 🐛 Fixes
-- **A WAV's length is read from the whole file**: only the first 2 MB were read, so a long WAV looked a fraction of its real length.
+- **A WAV's length is right, and reading it is cheap**: the file's facts are read with a seeking parser, so a long WAV no longer looks a fraction of its real length, a 300 MB WAV no longer costs 300 MB of memory, and a WAV over 2 GiB is no longer called "not reachable". A file that is there but can't be parsed now says "couldn't read the file".
 
 Thanks to markst for issue #11 and the draft PR this grew from.
 
