@@ -30,6 +30,7 @@ function runFfmpeg(ffmpeg: string, args: string[], signal: AbortSignal): Promise
   return new Promise(resolve => {
     if (signal.aborted) return resolve({ ok: false, error: 'Cancelled' });
     let stderr = '';
+    let cancelled = false;
     let settled = false;
     const done = (r: { ok: true } | { ok: false; error: string }) => {
       if (settled) return;
@@ -38,21 +39,47 @@ function runFfmpeg(ffmpeg: string, args: string[], signal: AbortSignal): Promise
       resolve(r);
     };
     const child = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'], windowsHide: true });
-    const onAbort = () => { child.kill('SIGKILL'); done({ ok: false, error: 'Cancelled' }); };
+    // Kill, but report only once the process has really exited: until then it may still hold or write the file.
+    const onAbort = () => { cancelled = true; child.kill('SIGKILL'); };
     signal.addEventListener('abort', onAbort, { once: true });
     child.stderr.on('data', (d: Buffer) => { stderr = (stderr + d.toString()).slice(-STDERR_TAIL); });
     child.on('error', err => done({ ok: false, error: `Could not run ffmpeg: ${err.message}` }));
     child.on('close', code => {
-      if (code === 0) done({ ok: true });
+      if (cancelled) done({ ok: false, error: 'Cancelled' });
+      else if (code === 0) done({ ok: true });
       else done({ ok: false, error: lastLine(stderr) || `ffmpeg exited with code ${code}` });
     });
   });
 }
 
+/** Remove a file, retrying briefly: on Windows a just-killed process can still hold it for a moment. */
+async function removeWithRetry(file: string): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { await fs.promises.rm(file, { force: true }); return; } catch { /* retry */ }
+    await new Promise(r => setTimeout(r, 100));
+  }
+}
+
+/** Move into place without ever replacing a file that is already there. */
+async function moveNoClobber(from: string, to: string): Promise<'moved' | 'exists'> {
+  try {
+    await fs.promises.link(from, to);
+    await fs.promises.unlink(from);
+    return 'moved';
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'EEXIST') return 'exists';
+    // link unsupported (some filesystems): fall back to check-then-rename
+    if (fs.existsSync(to)) return 'exists';
+    await fs.promises.rename(from, to);
+    return 'moved';
+  }
+}
+
 export async function convertFile(ffmpeg: string, job: ConvertJob, signal: AbortSignal): Promise<ConvertResult> {
   const partial = `${job.output}.converting`;
   const fail = async (error: string): Promise<ConvertResult> => {
-    await fs.promises.rm(partial, { force: true }).catch(() => {});
+    await removeWithRetry(partial);
     return { ok: false, error };
   };
 
@@ -74,7 +101,9 @@ export async function convertFile(ffmpeg: string, job: ConvertJob, signal: Abort
     }
 
     const { size } = await fs.promises.stat(partial);
-    await fs.promises.rename(partial, job.output);
+    if (await moveNoClobber(partial, job.output) === 'exists') {
+      return await fail(`A file appeared at ${job.output} during conversion; left it alone`);
+    }
     return { ok: true, outputPath: job.output, sizeBytes: size, facts };
   } catch (err) {
     return await fail(err instanceof Error ? err.message : String(err));

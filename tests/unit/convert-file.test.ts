@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 vi.unmock('fs');
 vi.unmock('music-metadata');
 import * as fs from 'fs';
+import { execFileSync } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import * as mm from 'music-metadata';
@@ -69,15 +70,31 @@ describe('convertFile (real ffmpeg; set FFMPEG_PATH)', () => {
   });
 
   real('abort removes the file in flight', async () => {
-    const input = path.join(dir, 'a.flac');
-    fs.copyFileSync(path.join(FIX, 'flac-24-96000.flac'), input);
-    const job = await jobFor(input, path.join(dir, 'a.aif'));
+    const input = path.join(dir, 'long.flac');
+    execFileSync(FFMPEG!, ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=96000:cl=stereo',
+      '-t', '3600', '-c:a', 'flac', '-sample_fmt', 's32', input]);
+    const job = await jobFor(input, path.join(dir, 'long.aif'));
     const ac = new AbortController();
     const p = convertFile(FFMPEG!, job, ac.signal);
+    const partial = `${job.output}.converting`;
+    for (let i = 0; i < 200 && !fs.existsSync(partial); i++) await new Promise(r => setTimeout(r, 25));
+    expect(fs.existsSync(partial)).toBe(true);
     ac.abort();
     const r = await p;
     expect(r.ok).toBe(false);
-    expect(fs.readdirSync(dir)).toEqual(['a.flac']);
+    expect(fs.readdirSync(dir)).toEqual(['long.flac']);
+  }, 30000);
+
+  real('never replaces a file that appeared at the output path', async () => {
+    const input = path.join(dir, 'a.flac');
+    fs.copyFileSync(path.join(FIX, 'flac-24-96000.flac'), input);
+    const job = await jobFor(input, path.join(dir, 'a.aif'));
+    fs.writeFileSync(job.output, 'precious');
+    const r = await convertFile(FFMPEG!, job, new AbortController().signal);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toContain('left it alone');
+    expect(fs.readFileSync(job.output, 'utf8')).toBe('precious');
+    expect(fs.readdirSync(dir).sort()).toEqual(['a.aif', 'a.flac']);
   });
 });
 
