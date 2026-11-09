@@ -38,6 +38,8 @@ export interface TrackPayload {
   size?: number;
   bitrate?: number;
   duration?: number;
+  fileType?: number;
+  bitDepth?: number;
   rating?: number;
   dateAdded?: string | Date;
   dateModified?: string | Date;
