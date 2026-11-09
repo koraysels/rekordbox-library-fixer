@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_PLAYER, type PlayerProfile } from '../../main/convert/playerProfiles';
 import type { ScanOptions, ResolutionStrategy, RelocationOptions } from '../types';
 
 interface SettingsState {
@@ -9,8 +10,11 @@ interface SettingsState {
   /** SQLCipher key for rekordbox master.db, pasted by the user. */
   rekordboxDbKey: string;
   relocationOptions: RelocationOptions;
+  /** The oldest player the DJ plays on; what the Convert page checks files against. */
+  oldestPlayer: PlayerProfile['id'];
 
   // Actions
+  setOldestPlayer: (id: PlayerProfile['id']) => void;
   setScanOptions: (options: ScanOptions) => void;
   setResolutionStrategy: (strategy: ResolutionStrategy) => void;
   setRekordboxDbKey: (key: string) => void;
@@ -38,6 +42,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       resolutionStrategy: 'keep-highest-quality',
       rekordboxDbKey: '',
+      oldestPlayer: DEFAULT_PLAYER,
       relocationOptions: {
         searchPaths: [],
         searchDepth: 8,
@@ -58,6 +63,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       setRekordboxDbKey: (key) => set({ rekordboxDbKey: key }),
+
+      setOldestPlayer: (id) => set({ oldestPlayer: id }),
 
       updateScanOption: (key, value) => {
         console.log(`🔧 Zustand: Updating scan option ${key}:`, value);

@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FolderOpen, Plus, X, Info } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
+import { useSettingsStore } from '../stores/settingsStore';
+import { PLAYER_PROFILES } from '../../main/convert/playerProfiles';
 
 interface SettingsPanelProps {
   isOpen?: boolean;
@@ -45,6 +47,27 @@ const QualityInfo: React.FC = () => {
         )}
       </span>
     </span>
+  );
+};
+
+const OldestPlayerSetting: React.FC = () => {
+  const oldestPlayer = useSettingsStore((s) => s.oldestPlayer);
+  const setOldestPlayer = useSettingsStore((s) => s.setOldestPlayer);
+  return (
+    <div>
+      <h3 className="font-te-display font-semibold mb-4 text-lg text-te-grey-800 uppercase tracking-te-display">Players</h3>
+      <label className="block space-y-1">
+        <span className="font-medium text-te-grey-800">Oldest player you play on</span>
+        <select
+          className="input w-full"
+          value={oldestPlayer}
+          onChange={(e) => setOldestPlayer(e.target.value as typeof oldestPlayer)}
+        >
+          {Object.values(PLAYER_PROFILES).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+        </select>
+        <p className="text-sm text-te-grey-600 font-te-mono">The Convert page lists the tracks this player cannot play</p>
+      </label>
+    </div>
   );
 };
 
@@ -251,6 +274,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               )}
             </div>
           </div>
+
+          <OldestPlayerSetting />
 
           {/* Resolution Strategy */}
           <div>

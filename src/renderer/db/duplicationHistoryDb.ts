@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 /** One line of detail inside an operation — what happened to a single item. */
 export interface ActivityDetail {
-  action: 'merged' | 'trashed' | 'relocated' | 'copied' | 'moved' | 'failed';
+  action: 'merged' | 'trashed' | 'relocated' | 'copied' | 'moved' | 'converted' | 'failed';
   trackName?: string;
   from?: string;
   to?: string;

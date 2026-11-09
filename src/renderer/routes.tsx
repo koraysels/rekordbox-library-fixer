@@ -7,6 +7,7 @@ import { MaintenancePage } from './components/pages/MaintenancePage';
 import { StatisticsPage } from './components/pages/StatisticsPage';
 import { HistoryPage } from './components/pages/HistoryPage';
 import { BackupsPage } from './components/pages/BackupsPage';
+import { ConvertPage } from './components/pages/ConvertPage';
 import { LibraryPage } from './components/pages/LibraryPage';
 
 // Root route - wraps entire app
@@ -25,6 +26,12 @@ export const relocateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/relocate',
   component: RelocatePage,
+});
+
+export const convertRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/convert',
+  component: ConvertPage,
 });
 
 export const importRoute = createRoute({
@@ -67,6 +74,7 @@ export const libraryRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   duplicatesRoute,
   relocateRoute,
+  convertRoute,
   importRoute,
   maintenanceRoute,
   statisticsRoute,

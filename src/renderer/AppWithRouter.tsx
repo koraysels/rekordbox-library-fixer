@@ -35,6 +35,7 @@ export const useAppContext = () => {
 const pathToTab: Record<string, TabType> = {
   '/': 'duplicates',
   '/relocate': 'relocate',
+  '/convert': 'convert',
   '/import': 'import',
   '/maintenance': 'maintenance',
   '/statistics': 'statistics',

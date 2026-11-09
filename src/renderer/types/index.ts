@@ -1,6 +1,6 @@
 // Global types and interfaces
 
-export type TabType = 'duplicates' | 'import' | 'relocate' | 'maintenance' | 'statistics' | 'history' | 'backups' | 'library';
+export type TabType = 'duplicates' | 'import' | 'relocate' | 'convert' | 'maintenance' | 'statistics' | 'history' | 'backups' | 'library';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
