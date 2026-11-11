@@ -84,7 +84,7 @@ function applyRelocate(plan: RelocateStepPlan, ctx: WizardContext, deps: WizardD
 function applyRemove(plan: RemoveStepPlan, ctx: WizardContext, deps: WizardDeps): StepResult {
   const result = emptyResult(plan);
   if (ctx.signal.aborted) {return { ...result, cancelled: true };}
-  const mounted = (p: string) => isVolumeMounted(p, deps.platform, deps.exists);
+  const mounted = (p: string) => isVolumeMounted(p, deps.platform, deps.exists, deps.isMountPoint);
 
   const removing = plan.remove.filter((r) => {
     if (isStreamingLocation(r.location)) {return false;}

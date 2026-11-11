@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { volumeRoot, isVolumeMounted, isInsideFolder, driveName } from '../../src/main/wizard/volumes';
+import { describe, it, expect, vi } from 'vitest';
+vi.unmock('fs');
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { volumeRoot, isVolumeMounted, isInsideFolder, driveName, isMountPoint } from '../../src/main/wizard/volumes';
 
 describe('volumeRoot', () => {
   it('finds the external volume on macOS', () => {
@@ -41,13 +45,42 @@ describe('isVolumeMounted', () => {
   it('asks whether the volume root exists', () => {
     const seen: string[] = [];
     const exists = (p: string) => { seen.push(p); return p === '/Volumes/DJ SSD'; };
-    expect(isVolumeMounted('/Volumes/DJ SSD/a.mp3', 'darwin', exists)).toBe(true);
-    expect(isVolumeMounted('/Volumes/Gone/a.mp3', 'darwin', exists)).toBe(false);
+    expect(isVolumeMounted('/Volumes/DJ SSD/a.mp3', 'darwin', exists, () => true)).toBe(true);
+    expect(isVolumeMounted('/Volumes/Gone/a.mp3', 'darwin', exists, () => true)).toBe(false);
     expect(seen).toEqual(['/Volumes/DJ SSD', '/Volumes/Gone']);
   });
 
   it('counts the internal disk as mounted', () => {
-    expect(isVolumeMounted('/Users/x/a.mp3', 'darwin', (p) => p === '/')).toBe(true);
+    expect(isVolumeMounted('/Users/x/a.mp3', 'darwin', (p) => p === '/', () => false)).toBe(true);
+  });
+
+  it('does not count an empty folder left in /Volumes as the drive', () => {
+    // An unclean eject can leave /Volumes/DJ SSD behind; the drive then mounts as "DJ SSD 1".
+    const exists = (p: string) => p === '/Volumes/DJ SSD';
+    const asked: string[] = [];
+    const mountPoint = (root: string) => { asked.push(root); return false; };
+    expect(isVolumeMounted('/Volumes/DJ SSD/a.mp3', 'darwin', exists, mountPoint)).toBe(false);
+    expect(asked).toEqual(['/Volumes/DJ SSD']);
+  });
+
+  it('asks the same of a Linux mount point, but not of a Windows drive letter', () => {
+    expect(isVolumeMounted('/media/kim/USB/a.mp3', 'linux', () => true, () => false)).toBe(false);
+    expect(isVolumeMounted('D:\\a.mp3', 'win32', () => true, () => false)).toBe(true);
+  });
+});
+
+describe('isMountPoint', () => {
+  it('is false for a plain folder on the same disk as its parent', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mount-point-'));
+    try {
+      expect(isMountPoint(dir)).toBe(false);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('is false for a folder that is not there', () => {
+    expect(isMountPoint(path.join(os.tmpdir(), 'no-such-volume-for-this-test'))).toBe(false);
   });
 });
 

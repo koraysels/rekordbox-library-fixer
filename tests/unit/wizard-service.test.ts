@@ -68,6 +68,7 @@ function fakeDeps(library: DbLibrary | (() => DbLibrary), present: string[], ove
     trash: vi.fn(async () => undefined),
     isRunning: () => false,
     exists,
+    isMountPoint: () => true,
     isRegularFile: exists,
     fileId: () => undefined,
     sameContent: async () => false,
@@ -165,6 +166,17 @@ describe('planStep', () => {
     expect(plan.setAside.map((s) => s.trackIds)).toEqual([['1']]);
   });
 
+  it('treats a drive whose /Volumes folder is only a leftover as unplugged', async () => {
+    // /Volumes/DJ exists but is not a mount point: the drive is not in it.
+    const lib = libraryOf(track('1', '/Volumes/DJ/a.mp3'));
+    const deps = fakeDeps(lib, [MUSIC, '/Volumes/DJ'], { isMountPoint: (root) => root !== '/Volumes/DJ' });
+    const plan = await planStep('remove', ctxOf(), deps) as RemoveStepPlan;
+
+    expect(plan.remove).toEqual([]);
+    expect(plan.setAside).toEqual([expect.objectContaining({ trackIds: ['1'], why: 'Drive DJ is not plugged in' })]);
+    expect(deps.relocator.findRelocationCandidates).not.toHaveBeenCalled();
+  });
+
   it('refuses to hand back a plan when cancelled mid-search', async () => {
     const controller = new AbortController();
     const lib = libraryOf(track('1', '/Users/k/Gone/a.mp3'), track('2', '/Users/k/Gone/b.mp3'));
@@ -257,6 +269,18 @@ describe('applyStep', () => {
     expect(options.fileExists?.('/Users/k/gone.mp3')).toBe(false);
     expect(result.changed).toBe(1);
     expect(result.details).toContainEqual(expect.objectContaining({ action: 'failed', trackName: 'unplugged' }));
+  });
+
+  it('removeStep.apply keeps an entry whose /Volumes folder is not a mount point', async () => {
+    const deps = fakeDeps(libraryOf(), ['/Volumes/DJ'], { isMountPoint: () => false });
+    const plan: RemoveStepPlan = {
+      step: 'remove',
+      remove: [{ trackIds: ['2'], name: 'u', artist: 'x', location: '/Volumes/DJ/a.mp3' }],
+      setAside: [],
+    };
+    const result = await applyStep(plan, ctxOf(), deps);
+    expect(deps.removeEntriesFromDb).not.toHaveBeenCalled();
+    expect(result.details).toEqual([expect.objectContaining({ action: 'failed', error: 'Kept: drive DJ is not plugged in' })]);
   });
 
   it('writes nothing when every entry to remove is on an unplugged drive', async () => {

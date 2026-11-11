@@ -42,7 +42,7 @@ const DUPLICATE_OPTIONS = {
   metadataFields: ['artist', 'title', 'duration'],
 };
 
-const mountedIn = (deps: WizardDeps) => (p: string) => isVolumeMounted(p, deps.platform, deps.exists);
+const mountedIn = (deps: WizardDeps) => (p: string) => isVolumeMounted(p, deps.platform, deps.exists, deps.isMountPoint);
 
 /** A track with a file location on a drive that is plugged in: the only kind a step may touch. */
 function onMountedDrive(t: DbTrack, deps: WizardDeps): boolean {
@@ -237,6 +237,7 @@ export async function planStep(step: WizardStepId, ctx: WizardContext, deps: Wiz
         isRegularFile: deps.isRegularFile,
         fileSize: deps.fileSize,
         freeBytes: deps.freeBytes,
+        isMountPoint: deps.isMountPoint,
         fileId: deps.fileId,
       });
       progress(ctx, step, 1, 1, 'Done');

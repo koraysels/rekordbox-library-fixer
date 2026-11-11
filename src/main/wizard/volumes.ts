@@ -1,12 +1,13 @@
 import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Which drive a path lives on, and whether that drive is plugged in.
  *
- * "Mounted" means the volume root exists. The internal disk (`/`) always does, so
- * only an external volume can read as unplugged — and an entry on an unplugged
- * volume is never removed, moved or counted as broken: its file is not lost, the
- * drive is just not there right now.
+ * "Mounted" means the volume root exists and, on macOS and Linux, is a mount
+ * point. The internal disk (`/`) always is, so only an external volume can read
+ * as unplugged — and an entry on an unplugged volume is never removed, moved or
+ * counted as broken: its file is not lost, the drive is just not there right now.
  */
 export function volumeRoot(p: string, platform: NodeJS.Platform): string {
   if (platform === 'win32') {return windowsRoot(p);}
@@ -37,12 +38,31 @@ export function driveName(p: string, platform: NodeJS.Platform): string {
   return root === '/' ? root : root.slice(root.lastIndexOf('/') + 1);
 }
 
+/**
+ * Whether a volume root is a real mount point: on a different device from the
+ * folder holding it. macOS can leave an empty `/Volumes/<name>` folder on the
+ * boot disk after an unclean eject, and mounts the drive as `<name> 1`; that
+ * folder exists, but the drive is not in it.
+ */
+export function isMountPoint(root: string): boolean {
+  try {
+    return fs.statSync(root).dev !== fs.statSync(path.dirname(root)).dev;
+  } catch {
+    return false;
+  }
+}
+
 export function isVolumeMounted(
   p: string,
   platform: NodeJS.Platform,
   exists: (p: string) => boolean = fs.existsSync,
+  mountPoint: (root: string) => boolean = isMountPoint,
 ): boolean {
-  return exists(volumeRoot(p, platform));
+  const root = volumeRoot(p, platform);
+  if (!exists(root)) {return false;}
+  // A drive letter or share that exists is there; `/` is the boot disk.
+  if (platform === 'win32' || root === '/') {return true;}
+  return mountPoint(root);
 }
 
 const forCompare = (p: string) => p.normalize('NFC').toLowerCase().replace(/\\/g, '/');

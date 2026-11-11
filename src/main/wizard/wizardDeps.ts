@@ -10,6 +10,7 @@ import type { TrackRelocator } from '../trackRelocator';
 import type { DuplicateDetector } from '../duplicateDetector';
 import { applyGather } from './gatherApply';
 import { fileIdentity, sameContent } from './sameContent';
+import { isMountPoint } from './volumes';
 
 /**
  * Everything the wizard service reaches outside itself: the database, the disk,
@@ -34,6 +35,8 @@ export interface WizardDeps {
   /** Is rekordbox running? Asked before every write. */
   isRunning: () => boolean;
   exists: (p: string) => boolean;
+  /** A volume root that is a real mount point, not an empty folder left by an unclean eject. */
+  isMountPoint: (root: string) => boolean;
   isRegularFile: (p: string) => boolean;
   fileId: (p: string) => string | undefined;
   sameContent: (a: string, b: string) => Promise<boolean>;
@@ -77,6 +80,7 @@ export function realWizardDeps(
     runConversion,
     isRunning: () => isRekordboxRunning(),
     exists: fs.existsSync,
+    isMountPoint,
     isRegularFile: realIsRegularFile,
     fileId: fileIdentity,
     sameContent: (a, b) => sameContent(a, b),

@@ -58,6 +58,8 @@ export interface GatherPlanDeps extends ClashDeps {
   isRegularFile: (p: string) => boolean;
   fileSize: (p: string) => number;
   freeBytes: (dir: string) => number;
+  /** A volume root that is a real mount point, not a leftover empty folder. */
+  isMountPoint: (root: string) => boolean;
   /**
    * Which physical file a path names (`fileIdentity` in `sameContent.ts`). Optional,
    * but the wizard passes it: two spellings of one file (`/Volumes/Macintosh HD/...`
@@ -120,7 +122,7 @@ export async function planGather(
       if (list) {list.push(loc);} else {insideByName.set(baseKey(loc), [loc]);}
       continue;
     }
-    if (!isVolumeMounted(loc, deps.platform, deps.exists)) {
+    if (!isVolumeMounted(loc, deps.platform, deps.exists, deps.isMountPoint)) {
       const drive = volumeRoot(loc, deps.platform);
       unplugged.set(drive, (unplugged.get(drive) ?? 0) + 1);
       continue;
@@ -133,7 +135,7 @@ export async function planGather(
   }
   plan.unplugged = [...unplugged].map(([drive, count]) => ({ drive, count }));
 
-  if (!isVolumeMounted(musicFolder, deps.platform, deps.exists)) {
+  if (!isVolumeMounted(musicFolder, deps.platform, deps.exists, deps.isMountPoint)) {
     plan.refusal = `Plug in ${driveLabel(musicFolder, deps.platform)} — your music folder is on it`;
     return plan;
   }

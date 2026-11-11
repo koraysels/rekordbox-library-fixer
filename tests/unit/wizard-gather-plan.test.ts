@@ -21,8 +21,21 @@ function disk(files: Record<string, number>, mounted: string[] = ['/', '/Volumes
     sameContent: vi.fn(async () => false),
     fileSize: (p: string) => files[p] ?? 0,
     freeBytes: () => 100 * GiB,
+    isMountPoint: () => true,
   };
 }
+
+describe('planGather and leftover volume folders', () => {
+  it('refuses when the music folder\'s /Volumes folder is not a mount point', async () => {
+    const from = '/Users/k/Downloads/Promos/a.mp3';
+    const plan = await planGather(library(track('1', from)), MUSIC, {
+      ...disk({ [from]: 10 }),
+      isMountPoint: (root: string) => root !== '/Volumes/SSD',
+    });
+    expect(plan.moves).toEqual([]);
+    expect(plan.refusal).toMatch(/Plug in SSD/);
+  });
+});
 
 describe('gatherDestination', () => {
   it('keeps the name of the folder the file came from', () => {
