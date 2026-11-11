@@ -11,6 +11,7 @@ import { isDatabasePath, wizardScreen, type WizardPhase } from '../../wizard/wiz
 import { PLAYER_PROFILES } from '../../../main/convert/playerProfiles';
 import type { StepPlan, StepResult, WizardStepId } from '../../../main/wizard/types';
 import { SetupScreen, type KeyRequest } from './SetupScreen';
+import { useChooseMusicFolder } from '../ui/MusicFolderSetting';
 import { XmlLibraryScreen } from './XmlLibraryScreen';
 import { CloseRekordboxScreen } from './CloseRekordboxScreen';
 import { SummaryScreen } from './SummaryScreen';
@@ -35,6 +36,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   const musicFolder = useSettingsStore((s) => s.musicFolder);
   const playerId = useSettingsStore((s) => s.oldestPlayer);
   const setAppMode = useSettingsStore((s) => s.setAppMode);
+  const chooseMusicFolder = useChooseMusicFolder();
   const saved = useWizardStore((s) => s.byLibrary[libraryPath]);
   const markDone = useWizardStore((s) => s.markDone);
   const playerName = PLAYER_PROFILES[playerId]?.label ?? 'player';
@@ -120,6 +122,13 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     setResults([]);
   };
 
+  // Another folder changes what is outside it: the last check no longer holds.
+  const changeMusicFolder = async () => {
+    const before = useSettingsStore.getState().musicFolder;
+    const chosen = await chooseMusicFolder();
+    if (chosen && chosen !== before) {setFresh(false);}
+  };
+
   const start = () => {
     askRunning();
     setPhase('steps');
@@ -191,6 +200,8 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
           check={saved?.check}
           fresh={fresh}
           playerName={playerName}
+          musicFolder={musicFolder}
+          onChangeMusicFolder={() => void changeMusicFolder()}
           busy={wizard.busy}
           progress={wizard.progress}
           error={wizard.error}

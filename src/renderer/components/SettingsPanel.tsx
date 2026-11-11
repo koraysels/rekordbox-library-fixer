@@ -4,6 +4,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 import { useSettingsStore } from '../stores/settingsStore';
 import { PLAYER_PROFILES } from '../../main/convert/playerProfiles';
+import { MusicFolderSetting } from './ui/MusicFolderSetting';
 
 interface SettingsPanelProps {
   isOpen?: boolean;
@@ -55,8 +56,8 @@ const OldestPlayerSetting: React.FC = () => {
   const setOldestPlayer = useSettingsStore((s) => s.setOldestPlayer);
   return (
     <div>
-      <h3 className="font-te-display font-semibold mb-4 text-lg text-te-grey-800 uppercase tracking-te-display">Players</h3>
-      <label className="block space-y-1">
+      <h3 className="font-te-display font-semibold mb-4 text-lg text-te-grey-800 uppercase tracking-te-display">Your setup</h3>
+      <label className="block space-y-1 mb-4">
         <span className="font-medium text-te-grey-800">Oldest player you play on</span>
         <select
           className="input w-full"
@@ -67,6 +68,7 @@ const OldestPlayerSetting: React.FC = () => {
         </select>
         <p className="text-sm text-te-grey-600 font-te-mono">The Convert page lists the tracks this player cannot play</p>
       </label>
+      <MusicFolderSetting />
     </div>
   );
 };

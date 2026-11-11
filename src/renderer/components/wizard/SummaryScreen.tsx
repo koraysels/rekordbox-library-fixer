@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, ArrowRight, RotateCw } from 'lucide-react';
+import { Search, ArrowRight, RotateCw, FolderOpen } from 'lucide-react';
 import type { WizardCheck } from '../../../main/wizard/types';
 import type { WizardProgress } from '../../../main/ipcContract';
 import { stepsFor } from '../../wizard/wizardFlow';
@@ -11,6 +11,9 @@ interface Props {
   /** The check was made just now. A saved one is shown, but fixing starts only after checking again. */
   fresh: boolean;
   playerName: string;
+  /** Where files are gathered to; changeable here, since the setup that asked for it does not come back. */
+  musicFolder: string;
+  onChangeMusicFolder: () => void;
   busy: boolean;
   progress: WizardProgress | null;
   error: string | null;
@@ -29,8 +32,20 @@ const checkedWhen = (iso: string) => {
  * itself: coming back shows the last result and a "Check again" button.
  */
 export const SummaryScreen: React.FC<Props> = ({
-  check, fresh, playerName, busy, progress, error, onCheck, onStart, onCancel,
+  check, fresh, playerName, musicFolder, onChangeMusicFolder, busy, progress, error, onCheck, onStart, onCancel,
 }) => {
+  const folderLine = (
+    <div className="flex items-center gap-2 text-xs font-te-mono normal-case text-te-grey-600">
+      <span className="flex-shrink-0">Music folder:</span>
+      <span className="te-path-tail flex-1 min-w-0" title={musicFolder}>{musicFolder}</span>
+      {!busy && (
+        <button type="button" className="btn-ghost text-xs flex items-center gap-1 flex-shrink-0" onClick={onChangeMusicFolder}>
+          <FolderOpen className="w-3 h-3" />
+          Change
+        </button>
+      )}
+    </div>
+  );
   const working = busy ? <WorkingPanel progress={progress} fallback="Checking your library…" onCancel={onCancel} /> : null;
 
   if (!check) {
@@ -45,6 +60,7 @@ export const SummaryScreen: React.FC<Props> = ({
           </button>
         )}
       >
+        {folderLine}
         {working}
         <ErrorLine message={error} />
       </WizardFrame>
@@ -97,6 +113,7 @@ export const SummaryScreen: React.FC<Props> = ({
           </div>
         ))}
       </div>
+      {folderLine}
       {check.unpluggedDrives.length > 0 && (
         <p className="text-xs font-te-mono normal-case text-te-grey-500">
           Not checked, because the drive is unplugged: {check.unpluggedDrives.join(', ')}. Plug it in and check again to include it.

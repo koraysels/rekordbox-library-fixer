@@ -137,6 +137,21 @@ describe('WizardPage', () => {
     expect(await screen.findByRole('button', { name: 'Check my library' })).toBeInTheDocument();
   });
 
+  it('the summary shows the music folder and changes it; a changed folder needs a new check', async () => {
+    (window.electronAPI.selectFolder as ReturnType<typeof vi.fn>).mockResolvedValue('/Volumes/SSD/Music');
+    render(<WizardPage isLoading={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check my library' }));
+    expect(await screen.findByRole('button', { name: /Start fixing/ })).toBeInTheDocument();
+    expect(screen.getByTitle('/Music')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Change' }));
+    await waitFor(() => expect(useSettingsStore.getState().musicFolder).toBe('/Volumes/SSD/Music'));
+    expect(await screen.findByTitle('/Volumes/SSD/Music')).toBeInTheDocument();
+    // What is outside the folder was counted against the old one.
+    expect(screen.queryByRole('button', { name: /Start fixing/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Check again' })).toBeInTheDocument();
+  });
+
   it('a write refused because rekordbox opened shows the close screen', async () => {
     wizard.plan.mockResolvedValue(relocatePlan);
     wizard.apply.mockImplementation(async () => {

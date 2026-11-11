@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { PLAYER_PROFILES } from '../../../main/convert/playerProfiles';
 import { keyCommandFor, platformFromUserAgent, looksLikeDbKey } from '../../utils/keyExtractionCommand';
 import { EmptyLibraryState } from '../ui/EmptyLibraryState';
+import { useChooseMusicFolder } from '../ui/MusicFolderSetting';
 import { WizardFrame, ErrorLine } from './WizardFrame';
 
 interface FoundLibrary { kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string }
@@ -198,11 +199,7 @@ const PlayerStep: React.FC<{ onNext: () => void }> = ({ onNext }) => {
 };
 
 const FolderStep: React.FC = () => {
-  const setMusicFolder = useSettingsStore((s) => s.setMusicFolder);
-  const choose = async () => {
-    const folder = await window.electronAPI.selectFolder();
-    if (folder) {setMusicFolder(folder);}
-  };
+  const choose = useChooseMusicFolder();
   return (
     <WizardFrame
       title="Where do you keep your music?"
