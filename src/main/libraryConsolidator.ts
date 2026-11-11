@@ -53,6 +53,11 @@ export interface PlacedFile {
   to: string;
   kind: 'moved' | 'copied' | 'reused';
   removeOriginal: boolean;
+  /**
+   * Which physical file `from` was before the run, so an entry spelling it
+   * another way (an aliased folder, `/Volumes/Macintosh HD/…`) can follow it.
+   */
+  fileId?: string;
 }
 
 export interface ConsolidateProgress {
@@ -166,6 +171,19 @@ export class LibraryConsolidator {
     const total = eligible.length;
     let current = 0;
     // Entries sharing one file: the file goes once, and every entry follows it.
+    // Keyed by the physical file where there is one, so two spellings of it —
+    // an aliased folder, `/Volumes/Macintosh HD/…` beside `/…` — count as one.
+    // Taken before anything moves: once the file is renamed, the second
+    // spelling no longer leads anywhere and could not be identified.
+    const ids = new Map<string, string | undefined>();
+    for (const t of eligible) {
+      const loc = t.location as string;
+      if (!ids.has(loc)) {ids.set(loc, io.fileId(loc));}
+    }
+    const fileKey = (loc: string) => {
+      const id = ids.get(loc);
+      return id !== undefined ? `file:${id}` : `path:${referenceKey(loc)}`;
+    };
     const done = new Map<string, string>();
     // Destinations handed out this run, so two sources never get one name.
     const taken = new Set<string>();
@@ -185,7 +203,9 @@ export class LibraryConsolidator {
       });
 
       try {
-        const already = done.get(referenceKey(src));
+        const id = ids.get(src);
+        const key = fileKey(src);
+        const already = done.get(key);
         if (already !== undefined) {
           result.skipped++;
           if (referenceKey(already) !== referenceKey(src)) {result.locationUpdates[src] = already;}
@@ -202,35 +222,35 @@ export class LibraryConsolidator {
         const dest = this.destPath(src, commonRoot, options.destination);
         if (referenceKey(src) === referenceKey(dest)) {
           result.skipped++;
-          done.set(referenceKey(src), src);
+          done.set(key, src);
           continue;
         }
 
         const { to, reuseExisting } = await resolveClash(dest, src, taken, io);
         taken.add(referenceKey(to));
 
-        if (reuseExisting && io.fileId(src) !== undefined && io.fileId(src) === io.fileId(to)) {
+        if (reuseExisting && id !== undefined && id === io.fileId(to)) {
           // The "identical file" is the source itself, reached through a link or an
           // aliased folder: it is already in place, and a move must not delete it.
           result.skipped++;
-          done.set(referenceKey(src), src);
+          done.set(key, src);
           continue;
         }
 
         if (reuseExisting) {
           result.skipped++;
           result.locationUpdates[src] = to;
-          result.placed.push({ from: src, to, kind: 'reused', removeOriginal: options.mode === 'move' });
-          done.set(referenceKey(src), to);
+          result.placed.push({ from: src, to, kind: 'reused', removeOriginal: options.mode === 'move', fileId: id });
+          done.set(key, to);
           continue;
         }
 
         await io.mkdir(path.dirname(to));
         const kind = await this.place(src, to, options.mode);
-        result.placed.push({ from: src, to, kind, removeOriginal: options.mode === 'move' && kind === 'copied' });
+        result.placed.push({ from: src, to, kind, removeOriginal: options.mode === 'move' && kind === 'copied', fileId: id });
         result.succeeded++;
         result.locationUpdates[src] = to;
-        done.set(referenceKey(src), to);
+        done.set(key, to);
       } catch (err) {
         result.failed++;
         result.errors.push({ file: src, error: errorText(err) });
@@ -304,5 +324,10 @@ export class LibraryConsolidator {
 
   isRegularFile(p: string): boolean {
     return this.io.isRegularFile(p);
+  }
+
+  /** Which physical file a path names, or `undefined` when it names none. */
+  fileId(p: string): string | undefined {
+    return this.io.fileId(p);
   }
 }

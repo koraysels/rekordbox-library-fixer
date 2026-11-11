@@ -3,6 +3,7 @@ import type { ConsolidateOptions, ConsolidateProgress, ConsolidateResult, Librar
 import type { RekordboxParser, Track } from './rekordboxParser';
 import type { IpcResult, TrackPayload } from './ipcContract';
 import { isRekordboxDatabasePath } from './librarySource';
+import { isStreamingLocation } from './streamingLocation';
 import { parseDb } from './rekordboxDbParser';
 import { relocateTracksInDb, type RelocationPlan } from './rekordboxDbRelocator';
 import { isRekordboxRunning } from './rekordboxRunning';
@@ -71,6 +72,7 @@ export async function runConsolidate(
   const running = deps.checkRunning ?? isRekordboxRunning;
 
   let entries: Array<{ id: string; location: string }> = [];
+  let xmlLibrary: Awaited<ReturnType<RekordboxParser['parseLibrary']>> | undefined;
   if (isDb) {
     if (!dbKey?.trim()) {return { success: false, error: NEEDS_KEY };}
     if (running()) {return { success: false, error: CLOSE_REKORDBOX };}
@@ -79,6 +81,27 @@ export async function runConsolidate(
     } catch (e) {
       return { success: false, error: `The rekordbox database could not be read, so no file was touched: ${errorText(e)}` };
     }
+  } else if (libraryPath) {
+    try {
+      if (!deps.xml) {throw new Error('No XML reader was given');}
+      xmlLibrary = await deps.xml.parseLibrary(libraryPath);
+    } catch (e) {
+      return { success: false, error: `The library could not be read, so no file was touched: ${errorText(e)}` };
+    }
+    entries = [...xmlLibrary.tracks.values()].map((t) => ({ id: t.id, location: t.location }));
+  }
+
+  // Which physical file each entry names, taken before anything moves: an entry
+  // spelling a file another way than the one moved (an aliased folder,
+  // `/Volumes/Macintosh HD/…`) no longer leads anywhere afterwards, yet has to
+  // follow the file.
+  const entryFile = new Map<string, string>();
+  for (const e of entries) {
+    if (!e.location || isStreamingLocation(e.location)) {continue;}
+    const key = referenceKey(e.location);
+    if (entryFile.has(key)) {continue;}
+    const id = deps.consolidator.fileId(e.location);
+    if (id !== undefined) {entryFile.set(key, id);}
   }
 
   const { placed, ...summary } = await deps.consolidator.consolidate(
@@ -86,7 +109,17 @@ export async function runConsolidate(
   );
   const data: ConsolidateRunResult = { ...summary, entriesUpdated: 0 };
   const updates = new Map(Object.entries(summary.locationUpdates).map(([from, to]) => [referenceKey(from), to]));
-  const newPlace = (loc: string) => updates.get(referenceKey(loc));
+  const fileUpdates = new Map<string, string>();
+  for (const p of placed) {
+    if (p.fileId !== undefined && !fileUpdates.has(p.fileId)) {fileUpdates.set(p.fileId, p.to);}
+  }
+  const newPlace = (loc: string) => {
+    const key = referenceKey(loc);
+    const direct = updates.get(key);
+    if (direct !== undefined) {return direct;}
+    const id = entryFile.get(key);
+    return id === undefined ? undefined : fileUpdates.get(id);
+  };
   const originals = placed.filter((p) => p.removeOriginal).map((p) => p.from);
 
   if (updates.size === 0) {return { success: true, data };}
@@ -111,9 +144,9 @@ export async function runConsolidate(
       data.entriesUpdated = outcome.tracksRelocated;
       remaining = entries.map((e) => (skipped.has(e.id) ? e.location : newPlace(e.location) ?? e.location));
     } else {
-      if (!deps.xml) {throw new Error('No XML reader was given');}
+      if (!deps.xml || !xmlLibrary) {throw new Error('No XML reader was given');}
       fs.copyFileSync(libraryPath, backupPath);
-      const library = await deps.xml.parseLibrary(libraryPath);
+      const library = xmlLibrary;
       // Every entry on a moved file follows it, not only the first one found.
       for (const t of library.tracks.values()) {
         const to = newPlace(t.location);

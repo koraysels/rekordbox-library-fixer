@@ -97,6 +97,23 @@ describe('LibraryConsolidator.consolidate', () => {
     expect(result.locationUpdates[a]).toBeUndefined();
   });
 
+  it('moves a file spelled two ways once, and points both spellings at it', async () => {
+    const real = write(path.join(src, 'Real', 'x', 'a.mp3'), 'A');
+    fs.symlinkSync(path.join(src, 'Real'), path.join(src, 'Alias'));
+    const alias = path.join(src, 'Alias', 'x', 'a.mp3');
+
+    const result = await new LibraryConsolidator().consolidate(
+      [track('1', real), track('2', alias)], { destination: dest, mode: 'move' }, noProgress, { cancelled: false },
+    );
+
+    const moved = path.join(dest, 'Real', 'x', 'a.mp3');
+    expect(read(moved)).toBe('A');
+    expect(result.locationUpdates[real]).toBe(moved);
+    expect(result.locationUpdates[alias]).toBe(moved);
+    expect(result.failed).toBe(0);
+    expect(fs.existsSync(path.join(dest, 'Alias'))).toBe(false);
+  });
+
   it('leaves a location that names a folder alone', async () => {
     const folder = path.join(src, 'House');
     write(path.join(folder, 'a.mp3'), 'A');
@@ -217,6 +234,28 @@ describe('runConsolidate on a rekordbox database', () => {
     expect(fs.existsSync(`${dbPath}.backup.test`)).toBe(true);
     // Copy keeps the originals.
     expect(fs.existsSync(a)).toBe(true);
+  });
+
+  it('switches every spelling of a moved file, even one the run was not given', async () => {
+    const real = write(path.join(src, 'Real', 'x', 'a.mp3'), 'A');
+    fs.symlinkSync(path.join(src, 'Real'), path.join(src, 'Alias'));
+    const alias = path.join(src, 'Alias', 'x', 'a.mp3');
+    makeDb([['t1', real], ['t2', alias]]);
+    const relocate = vi.fn((db: string, _key: string, plans: RelocationPlan[], opts: RelocateOptions) =>
+      relocateTracksInDb(db, '', plans, opts));
+
+    const result = await runConsolidate(
+      // Only one spelling is in the run, as when a filter matched just that entry.
+      { tracks: [track('t1', real)], libraryPath: dbPath, dbKey: 'k', options: { destination: dest, mode: 'move' } },
+      deps({ relocate, readDb: async () => [{ id: 't1', location: real }, { id: 't2', location: alias }] }),
+    );
+
+    const moved = path.join(dest, 'a.mp3');
+    expect(result.error).toBeUndefined();
+    expect(read(moved)).toBe('A');
+    expect(locationOf('t1')).toBe(moved);
+    expect(locationOf('t2')).toBe(moved);
+    expect(result.data?.entriesUpdated).toBe(2);
   });
 
   it('puts every file back when the database write fails', async () => {
