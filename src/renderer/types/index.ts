@@ -260,6 +260,12 @@ declare global {
       runConversion: (data: ConvertRunPayload) => Promise<IpcResult<ConvertRunResult>>;
       cancelConversion: (operationId: string) => Promise<IpcResult>;
       onConversionProgress: (callback: (progress: ConvertProgress) => void) => () => void;
+      // Fix-my-library wizard
+      wizardCheck: (data: WizardRequest) => Promise<IpcResult<WizardCheck>>;
+      wizardPlanStep: (data: WizardPlanPayload) => Promise<IpcResult<StepPlan>>;
+      wizardApplyStep: (data: WizardApplyPayload) => Promise<IpcResult<StepResult>>;
+      cancelWizard: (operationId: string) => Promise<IpcResult>;
+      onWizardProgress: (callback: (progress: WizardProgress) => void) => () => void;
       // File Drop APIs
       handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
@@ -275,5 +281,6 @@ import type {
   UpdateStatusPayload, IpcResult, ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunPayload,
   ConvertRunResult, FfmpegInstallProgress, FfmpegStatus, PlayerProfileId, TargetFormat,
   ConsolidatePayload, FilterMovePayload, ConsolidateRunResult,
+  WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
 } from '../../main/ipcContract';
 export type UpdateStatus = UpdateStatusPayload;

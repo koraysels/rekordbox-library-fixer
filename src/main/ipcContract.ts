@@ -16,6 +16,8 @@ import type { SwitchSkip } from './convert/applyConversions';
 import type { FfmpegStatus } from './convert/ffmpegBinary';
 import type { ConsolidateOptions, ConsolidatePreview } from './libraryConsolidator';
 import type { ConsolidateRunResult } from './consolidateRun';
+import type { StepPlan, StepResult, WizardCheck, WizardStepId } from './wizard/types';
+import type { WizardProgress } from './wizard/context';
 
 export type { TargetFormat, FfmpegStatus };
 
@@ -264,4 +266,34 @@ export interface ConvertRunResult {
 
 export interface FfmpegInstallProgress {
   percent: number;
+}
+
+// ---- Wizard ----
+
+export type { StepPlan, StepResult, WizardCheck, WizardStepId, WizardProgress };
+
+/** What every wizard call carries ('wizard-check'); progress arrives on 'wizard-progress'. */
+export interface WizardRequest {
+  /** Names the call so 'cancel-wizard' can stop it. */
+  operationId: string;
+  dbPath: string;
+  key: string;
+  musicFolder: string;
+  profileId: PlayerProfileId;
+  /** The Relocate page's search folders; the music folder is searched first regardless. */
+  searchPaths: string[];
+  searchDepth: number;
+}
+
+/** 'wizard-plan-step': what one step would do, from the library as it is now. */
+export interface WizardPlanPayload extends WizardRequest {
+  step: WizardStepId;
+}
+
+/**
+ * 'wizard-apply-step': do what a plan the user confirmed says. The result is
+ * returned even when the step refused or its write failed — then `error` is set.
+ */
+export interface WizardApplyPayload extends WizardRequest {
+  plan: StepPlan;
 }

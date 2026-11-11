@@ -4,6 +4,7 @@ import type {
   RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress, UpdateStatusPayload,
   ConvertCandidate, ConvertRunPayload, ConvertProgress, FfmpegInstallProgress,
   PlayerProfileId, TargetFormat, ConsolidatePayload, FilterMovePayload, ConsolidateRunResult, IpcResult,
+  WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -177,6 +178,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: Electron.IpcRendererEvent, progress: ConvertProgress) => callback(progress);
     ipcRenderer.on('conversion-progress', handler);
     return () => { ipcRenderer.removeListener('conversion-progress', handler); };
+  },
+
+  // Fix-my-library wizard
+  wizardCheck: (data: WizardRequest): Promise<IpcResult<WizardCheck>> =>
+    ipcRenderer.invoke('wizard-check', data),
+  wizardPlanStep: (data: WizardPlanPayload): Promise<IpcResult<StepPlan>> =>
+    ipcRenderer.invoke('wizard-plan-step', data),
+  wizardApplyStep: (data: WizardApplyPayload): Promise<IpcResult<StepResult>> =>
+    ipcRenderer.invoke('wizard-apply-step', data),
+  cancelWizard: (operationId: string): Promise<IpcResult> => ipcRenderer.invoke('cancel-wizard', operationId),
+  onWizardProgress: (callback: (progress: WizardProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: WizardProgress) => callback(progress);
+    ipcRenderer.on('wizard-progress', handler);
+    return () => { ipcRenderer.removeListener('wizard-progress', handler); };
   },
 
   // Native drag-and-drop
