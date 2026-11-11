@@ -84,8 +84,12 @@ vi.mock('../../src/renderer/hooks/useTrackRelocator', () => ({
   })
 }));
 
-vi.mock('../../src/renderer/stores/settingsStore', () => ({
-  useSettingsStore: () => ({
+vi.mock('../../src/renderer/stores/settingsStore', () => {
+  const state = {
+    musicFolder: '',
+    oldestPlayer: 'cdj2000nxs',
+    setMusicFolder: vi.fn(),
+    setOldestPlayer: vi.fn(),
     scanOptions: {
       useFingerprint: true,
       useMetadata: false,
@@ -105,8 +109,10 @@ vi.mock('../../src/renderer/stores/settingsStore', () => ({
     },
     addRelocationSearchPath: vi.fn(),
     removeRelocationSearchPath: vi.fn()
-  })
-}));
+  };
+  // A selector picks its slice, as the real store does; without one, the whole state.
+  return { useSettingsStore: (selector?: (s: typeof state) => unknown) => (selector ? selector(state) : state) };
+});
 
 // Mock window.electronAPI if it doesn't exist
 if (!window.electronAPI) {
