@@ -234,6 +234,7 @@ declare global {
       getTrackArtwork: (filePath: string) => Promise<string | null>;
       getSavedDbKey: () => Promise<string>;
       saveDbKey: (key: string) => Promise<{ success: boolean }>;
+      getBundledDbKey: () => Promise<string>;
       getUpdateStatus: () => Promise<UpdateStatus>;
       checkForUpdates: () => Promise<UpdateStatus>;
       installUpdate: () => Promise<{ success: boolean }>;

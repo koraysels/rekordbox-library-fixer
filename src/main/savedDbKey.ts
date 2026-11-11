@@ -25,6 +25,22 @@ export function readKeyFile(file: string): string {
   }
 }
 
+/**
+ * Keep a key the user gave — but not the bundled one. A saved key wins over the
+ * bundled key, so saving the bundled one would pin it: after a rekordbox update
+ * a new release's bundled key would never be used. That key is dropped from the
+ * file instead, so the file only ever holds a key the user pasted.
+ */
+export function rememberDbKey(dir: string, key: string, bundledKey: string): boolean {
+  const trimmed = key.trim();
+  if (!SHAPE.test(trimmed)) { return false; }
+  if (bundledKey && trimmed.toLowerCase() === bundledKey.toLowerCase()) {
+    fs.rmSync(path.join(dir, FILE), { force: true });
+    return true;
+  }
+  return writeSavedDbKey(dir, trimmed);
+}
+
 /** Only a key of the right shape is kept; anything else would only fail later. */
 export function writeSavedDbKey(dir: string, key: string): boolean {
   const trimmed = key.trim();

@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getSavedDbKey: (): Promise<string> => ipcRenderer.invoke('get-saved-db-key'),
   saveDbKey: (key: string): Promise<{ success: boolean }> => ipcRenderer.invoke('save-db-key', key),
+  getBundledDbKey: (): Promise<string> => ipcRenderer.invoke('get-bundled-db-key'),
   getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
