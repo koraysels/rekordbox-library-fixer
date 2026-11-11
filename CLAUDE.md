@@ -31,7 +31,7 @@ collection has to go through the database.
 
 ### State Management
 - **Zustand Store** (`src/renderer/stores/settingsStore.ts`): Persistent settings management with automatic localStorage sync
-  - Handles scan options, resolution strategy, and path preferences
+  - Handles scan options, resolution strategy, path preferences, the music folder and the app mode (wizard or advanced)
   - Uses Zustand persist middleware for automatic persistence
   - Performance-optimized with selective state updates
 - **React State**: Used for UI-specific state (duplicates list, scanning status, selections)
@@ -119,6 +119,35 @@ collection has to go through the database.
   release's lower-bitrate copy. `runConversion` refuses up front (`preflightRefusal`: no key, rekordbox
   running), so a headless caller hears it before converting. The page applies a run's result as a
   functional update, only to the library it ran on.
+- **Fix-my-library wizard** (`src/main/wizard/`, IPC in `src/main/ipc/wizard.ts`, renderer in
+  `src/renderer/wizard/` and `src/renderer/components/wizard/`; spec
+  `docs/superpowers/specs/2026-11-11-wizard-mode-design.md`): the default screen. `appMode`
+  (`'wizard' | 'advanced'`, settings store) picks it or today's pages; `musicFolder` is a setting both
+  use. Database only — an XML library gets a screen pointing at the database or Advanced. One check
+  (`runCheck`), then per step a plan (`planStep`) and an apply (`applyStep`), in the order relocate →
+  remove → duplicates → gather → convert; a step with nothing to do is skipped. Each step is a pure
+  planner (`relocatePlan`, `removePlan`, `duplicatesPlan`, `gatherPlan`) plus a main-process apply
+  (`applySteps.ts`, `gatherApply.ts`), free of Electron and React; everything outside the service comes
+  in through `WizardDeps` (`wizardDeps.ts`), so tests fake it whole. Every check and plan re-reads the
+  database, so each step works from the library the previous one left. Each apply is one verified backup
+  and one write through the existing writers, refused while rekordbox runs (`Close rekordbox to
+  continue`), and one Activity-history entry (`wizardHistory.ts`). Sure cases are fixed with one
+  confirm; the rest are set aside in "Check these yourself", linked to the matching Advanced page.
+  The last check per library is kept (`wizardStore.ts`, key `rekordbox-wizard`); continuing always
+  checks again. No undo: backups are in History, trashed files in the Trash.
+
+  Rules the code depends on: relocation applies a match of 0.9 or more; remove drops only an entry with
+  no candidate at any confidence, on a mounted drive (`volumes.ts`: the volume root exists), re-checked
+  at apply; an entry on an unplugged drive is never removed, moved or counted as missing; duplicates
+  are sure only for entries on one file (by `dev:ino`, so two spellings are one file) or files equal in
+  size, length within 1 s and byte content (`sameContent` streams, never loads a file), the keeper has
+  the most cues + playlist slots, then quality, then lives in the music folder; extra files are trashed
+  only when the re-read library no longer uses them. Gather moves files outside the music folder to
+  `<music folder>/<source folder name>/<file>`, never overwriting (identical file reused, otherwise
+  ` (2)`, ` (3)`…), copy → verify → switch → trash across drives, refuses up front without 1 GiB of
+  headroom or with rekordbox running, and puts every file back if the write fails. Convert is
+  `runConversion` with AIFF and originals to the Trash. Advanced's Consolidate shares the clash rule
+  and writes to the database for a database library; it has no overwrite option any more.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
@@ -279,7 +308,7 @@ exposed through `window.electronAPI`:
 ## State Management Architecture
 
 ### Settings Persistence
-- Settings (scan options, resolution strategy, path preferences) are managed by Zustand store
+- Settings (scan options, resolution strategy, path preferences, music folder, app mode) are managed by Zustand store
 - Automatic persistence via Zustand persist middleware to localStorage key `rekordbox-settings`
 - Store located at `src/renderer/stores/settingsStore.ts`
 
@@ -343,6 +372,8 @@ src/renderer/
 │   │   ├── ConsolidatePanel.tsx   # Gather the library onto one drive
 │   │   ├── FilterMovePanel.tsx    # Move the part that matches some rules
 │   │   └── shared.tsx             # What both genuinely share
+│   ├── wizard/                    # The wizard's screens: WizardPage sequences
+│   │                              # Setup, Close rekordbox, Summary, Step, Done
 │   ├── DuplicateDetector.tsx      # The page: state, results, modals
 │   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
 │   └── TrackRelocator.tsx
@@ -350,7 +381,14 @@ src/renderer/
 │   ├── reasons.ts                 # Why a track cannot play, in words
 │   ├── switchedItems.ts           # What a run switched, for the page and history
 │   └── conversionHistory.ts       # The Activity-history entry for a run
+├── wizard/                        # The wizard apart from React
+│   ├── wizardFlow.ts              # Which steps a check calls for; empty plans
+│   ├── wizardScreen.ts            # Which screen shows (setup, close, summary…)
+│   ├── stepText.ts                # What each step's screen says
+│   ├── wizardStore.ts             # Last check and finished steps, per library
+│   └── wizardHistory.ts           # The Activity-history entry for a step
 ├── hooks/                         # Custom business logic hooks
+│   ├── useWizard.ts               # Check, plan, apply, cancel; reloads after a write
 │   ├── useDuplicates.ts           # Duplicate detection state
 │   ├── useDuplicateResolution.ts  # The three resolve flows (XML, database, trash)
 │   ├── useTrackRelocator.ts       # Relocation state
@@ -369,10 +407,13 @@ src/renderer/
 ```
 
 The main process mirrors this for conversion: `src/main/convert/` (player profiles, plan, run, file
-conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`.
+conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`; and for
+the wizard: `src/main/wizard/` (volumes, the four planners, `sameContent`, gather apply, the service
+and its deps) with its IPC in `src/main/ipc/wizard.ts`. `tests/unit/wizard-whole-run.test.ts` runs
+every step on an encrypted temp database and checks cues, loops and playlists survive.
 
-Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/` or
-`scan/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
+Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/`,
+`scan/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
 is the signal that something in it wants to move out.
 
 ### Component Patterns

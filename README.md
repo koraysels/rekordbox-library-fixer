@@ -52,13 +52,24 @@ I'm aware of commercial tools like Rekordbox Collection Tool (RCT) by MixMasterG
 
 ## What It Does
 
+### Fix my library (the wizard)
+The app opens on a wizard that does the whole clean-up for you, in order, on Rekordbox's database. The first time it asks for your database, your oldest player and your music folder. Then **Check my library** gives a short summary — how many tracks are missing, how many duplicates, how many won't play on your player, how many live outside your music folder — and walks you through one step at a time:
+
+1. **Find moved tracks** — a match of 90 % or more is applied; anything less sure is set aside.
+2. **Remove entries that can't be found** — only when nothing resembling the file turned up, and never for a track on a drive that isn't plugged in.
+3. **Merge duplicates** — entries pointing at one file, or files that are byte-for-byte identical. The entry with the most cues and playlist slots is kept, playlists move onto it, and the extra file goes to the Trash once nothing uses it.
+4. **Move everything into your music folder** — into a folder named after the one each track came from. Nothing is ever overwritten: an identical file already there is reused, a different one gets a ` (2)`.
+5. **Make every track play on your player** — the converter, to AIFF, with the originals moved to the Trash.
+
+Each step shows what will happen and the list behind the count before you confirm, takes its own verified backup, writes once, and lands in the Activity history. Steps with nothing to do are skipped. Anything the wizard isn't sure about goes in a **Check these yourself** list that opens the matching page. Rekordbox has to be closed; the wizard waits for it. The **Advanced** switch shows all the pages below, unchanged, and the app remembers which you used last. An XML library opens in Advanced: an XML import can't remove entries or switch them to a new file, so most steps couldn't do their job.
+
 ### Two ways to load your library
-- **Rekordbox's own database (default)** — read `master.db` directly, no export needed. It is encrypted, so paste its key once on the load screen — the screen shows the one-line command that prints it on your own machine, for your platform. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
+- **Rekordbox's own database (default)** — read `master.db` directly, no export needed. It is encrypted; release builds open it with the key built in, and if that ever fails (a Rekordbox update could change it) the load screen asks you to paste it, showing the one-line command that prints it on your own machine. Reading happens on a copy (including its WAL), so Rekordbox can stay open while you look around.
 - **XML export** — still supported, see [Using an XML Library](#using-an-xml-library)
 
 Resolving duplicates, relocating tracks, converting files and removing dead entries all write back into `master.db` itself, because a Rekordbox XML import can only add and update tracks — it can never remove one. That is why an XML round-trip leaves every duplicate in place. Writing is deliberately hedged: Rekordbox must be closed, a backup is taken first and is mandatory **and verified** (a truncated copy is refused rather than trusted), playlist links are re-pointed at the kept entry before anything is removed, and Rekordbox's own update counter is bumped so it notices the change on next launch.
 
-**The key.** The app ships no key and never has. The load screen shows the one-line command for your platform — PowerShell on Windows, a terminal on macOS and Linux — that prints it on your own machine by asking the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package. Copy, run, paste once; it stays on your machine.
+**The key.** Release builds include the database key, added at build time and never stored in this repository; a build from source without it simply asks for it. When the key is needed, the load screen shows the one-line command for your platform — PowerShell on Windows, a terminal on macOS and Linux — that prints it on your own machine by asking the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package. Copy, run, paste once; it stays on your machine.
 
 ### Library tab
 The first tab in the sidebar. With nothing loaded it holds the picker, including the libraries found on your system. With a library open it shows what is loaded — file name, full path, track count, playlists, missing files and duplicate entries — and lets you close it or switch to another one. Backups and History stay reachable at all times, even with no library loaded.
@@ -229,12 +240,14 @@ The app works on Rekordbox's own database, `master.db`, by default — no export
 
 1. Launch Rekordbox Library Fixer — the databases on your machine are listed on the home screen
 2. Click the one you want
-3. The first time, it asks for the database key. Rekordbox encrypts `master.db`, and **this app ships no key**. The screen shows the command below for your platform; run it, and paste the 64-character result.
+3. Rekordbox encrypts `master.db`. A release build opens it with the key built in. If it can't — a build from source without the key, or a Rekordbox update that changed it — it asks for the key: the screen shows the command below for your platform; run it, and paste the 64-character result.
+
+The wizard is the default screen; the steps below are the **Advanced** pages, for doing each part by hand.
 
 <details>
 <summary><strong>The command that prints your key</strong></summary>
 
-It installs the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package and asks it for the key, so the value is produced on your own machine from a package you can read — not handed to you by this app. The key is the same on every Rekordbox 6/7 install, and you only paste it once.
+It installs the open-source [pyrekordbox](https://github.com/dylanljones/pyrekordbox) package and asks it for the key, so the value is produced on your own machine from a package you can read. The key is the same on every Rekordbox 6/7 install, and you only paste it once.
 
 **macOS / Linux** — in Terminal:
 ```bash
@@ -422,7 +435,7 @@ button that quietly does nothing.
 A backup is taken before any change, and it is mandatory — writing is refused if one cannot be made. Files go to the system trash rather than being deleted, and a file the kept track still uses is never touched. Writing to `master.db` additionally requires Rekordbox to be closed.
 
 **Where do I get the database key?**
-The load screen shows a command for your platform that prints it. It installs `pyrekordbox` and asks it, so the key comes from a package you can read rather than from this app — which ships no key. It is the same on every Rekordbox 6/7 install.
+Release builds include it, so usually you don't need to. If the app asks for it, the load screen shows a command for your platform that prints it. It installs `pyrekordbox` and asks it, so the key comes from a package you can read. It is the same on every Rekordbox 6/7 install.
 
 **Why does resolving duplicates need to write to master.db?**
 Because a Rekordbox XML import can add and update tracks but cannot remove one. Importing a cleaned XML leaves every duplicate sitting in your collection. Changing the database is the only way to actually clean it.
@@ -442,6 +455,11 @@ Free for personal use. No ads, no subscriptions, no limits.
 ---
 
 ## Roadmap
+
+**Next**
+- A fix-my-library wizard as the default screen: check, then relocate, remove, merge, gather and convert, one confirm per step
+- The database key is built into release builds; pasting it is the fallback
+- Consolidate writes to the database and never overwrites a file
 
 **v0.7.0** *(current)*
 - A Convert page turns tracks your oldest player can't load into ones it can, keeping cues, beatgrids and playlists
