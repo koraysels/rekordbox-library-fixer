@@ -75,6 +75,28 @@ describe('useWizard', () => {
     expect(result.current.error).toBe('Close rekordbox to continue');
   });
 
+  it('a step that wrote nothing but left files behind is recorded, not reloaded and not done', async () => {
+    useWizardStore.getState().setCheck('/lib/master.db', check);
+    const stuck = {
+      action: 'failed' as const, trackName: 'A', from: '/Music/A.mp3', to: '/Old/A.mp3',
+      error: 'Could not be put back: something is now at /Old/A.mp3',
+    };
+    api.wizardApplyStep.mockResolvedValue({
+      success: true,
+      data: {
+        step: 'gather', changed: 0, details: [stuck], cancelled: false,
+        error: 'The library was not changed: disk I/O error. 1 file(s) could not be put back — see the list.',
+      },
+    });
+    const { result } = renderHook(() => useWizard());
+    await act(async () => { await result.current.apply({ step: 'gather', moves: [], setAside: [] } as never); });
+    expect(record).toHaveBeenCalledTimes(1);
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ type: 'consolidate', details: [stuck] }));
+    expect(onLoadFromDb).not.toHaveBeenCalled();
+    expect(useWizardStore.getState().byLibrary['/lib/master.db'].done).toEqual([]);
+    expect(result.current.error).toMatch(/could not be put back/);
+  });
+
   it('a cancelled step that wrote is recorded and reloaded but not done', async () => {
     useWizardStore.getState().setCheck('/lib/master.db', check);
     api.wizardApplyStep.mockResolvedValue({

@@ -87,9 +87,12 @@ export function useWizard() {
   }, [request, run]);
 
   /**
-   * Apply a confirmed plan. Anything written is recorded in History and the
-   * library reloaded, even when the step stopped part-way; the step counts as
-   * done only when it finished without an error or a cancel.
+   * Apply a confirmed plan. Anything that happened is recorded in History, even
+   * when the step stopped part-way or wrote nothing — files moved by a gather
+   * whose write failed and could not be put back are only on record there. A
+   * refusal has no details and records nothing. The library is reloaded only
+   * when it was written; the step counts as done only when it finished without
+   * an error or a cancel.
    */
   const apply = useCallback(async (stepPlan: StepPlan): Promise<StepResult | null> => {
     const req = request(`apply-${stepPlan.step}`);
@@ -97,7 +100,8 @@ export function useWizard() {
     if (!result) {return null;}
 
     const wrote = result.changed > 0 || !!result.backupPath;
-    if (wrote) {await duplicationHistoryStorage.record(historyEntryFor(result, req.dbPath));}
+    const happened = wrote || result.details.length > 0;
+    if (happened) {await duplicationHistoryStorage.record(historyEntryFor(result, req.dbPath));}
     if (result.error) {setError(result.error);}
     if (!result.error && !result.cancelled) {markDone(req.dbPath, stepPlan.step);}
     if (wrote) {onLoadFromDb?.(req.dbPath);}
