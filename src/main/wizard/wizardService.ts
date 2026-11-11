@@ -12,6 +12,7 @@ import type { IndexSummary, MissingTrack, RelocationCandidate, RelocationOptions
 import type { ConvertCandidate, TrackPayload } from '../ipcContract';
 import { referenceKey } from '../convert/applyConversions';
 import { isStreamingLocation } from '../streamingLocation';
+import { withMusicFolderFirst } from '../searchPaths';
 import { driveName, isInsideFolder, isVolumeMounted, volumeRoot } from './volumes';
 import { planRelocations } from './relocatePlan';
 import { planRemovals } from './removePlan';
@@ -122,18 +123,6 @@ export async function runCheck(ctx: WizardContext, deps: WizardDeps): Promise<Wi
   };
 }
 
-/** The music folder first, then the Relocate page's folders, each once. */
-export function wizardSearchPaths(musicFolder: string, searchPaths: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const p of [musicFolder, ...searchPaths]) {
-    if (!p || seen.has(referenceKey(p))) {continue;}
-    seen.add(referenceKey(p));
-    out.push(p);
-  }
-  return out;
-}
-
 interface CandidateSearch {
   candidates: Map<string, RelocationCandidate[]>;
   /**
@@ -185,7 +174,8 @@ async function searchCandidates(
   if (!ctx.musicFolder || !deps.exists(ctx.musicFolder)) {throw new Error(NEEDS_MUSIC_FOLDER);}
 
   const options: RelocationOptions = {
-    searchPaths: wizardSearchPaths(ctx.musicFolder, ctx.searchPaths),
+    // The music folder first, then the Relocate page's folders — as the Relocate page searches.
+    searchPaths: withMusicFolderFirst(ctx.musicFolder, ctx.searchPaths),
     searchDepth: Number.POSITIVE_INFINITY,
     matchThreshold: SEARCH_MATCH_THRESHOLD,
     includeSubdirectories: true,

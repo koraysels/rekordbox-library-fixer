@@ -17,6 +17,7 @@ import type {
 import { rendererLogger as logger } from '../utils/logger';
 import { withoutStreamingTracks } from '../relocation/withoutStreamingTracks';
 import { bestConfidenceOf } from '../relocation/sortMissingTracks';
+import { withMusicFolderFirst } from '../../main/searchPaths';
 
 // Helper function to get effective library path with consistent fallback logic
 const getEffectiveLibraryPath = (libraryData: LibraryData | null, libraryPath?: string): string => {
@@ -83,6 +84,14 @@ export function useTrackRelocator(
     searchOptions: initialSearchOptions || { ...defaultSearchOptions },
     dropboxConnected: false
   });
+
+  // The music folder is searched first, and is a search path on its own: a DJ
+  // who set it has somewhere to search without configuring anything else.
+  const musicFolder = useSettingsStore((s) => s.musicFolder);
+  const effectiveSearchOptions = useMemo<RelocationOptions>(() => ({
+    ...state.searchOptions,
+    searchPaths: withMusicFolderFirst(musicFolder, state.searchOptions.searchPaths),
+  }), [state.searchOptions, musicFolder]);
 
   const [relocationCandidatesCache, setRelocationCandidatesCache] = useState<Map<string, RelocationCandidate[]>>(new Map());
 
@@ -167,7 +176,7 @@ export function useTrackRelocator(
 
   // Find relocation candidates for a track
   const findRelocationCandidates = useCallback(async (track: MissingTrack) => {
-    if (state.searchOptions.searchPaths.length === 0) {
+    if (effectiveSearchOptions.searchPaths.length === 0) {
       showNotification('error', 'Please configure search paths first');
       return;
     }
@@ -195,7 +204,7 @@ export function useTrackRelocator(
     }));
 
     try {
-      const result = await window.electronAPI.findRelocationCandidates(track, state.searchOptions);
+      const result = await window.electronAPI.findRelocationCandidates(track, effectiveSearchOptions);
 
       if (result.success) {
         // Cache the candidates
@@ -240,7 +249,7 @@ export function useTrackRelocator(
       setState(prev => ({ ...prev, isFindingCandidates: false }));
       showNotification('error', 'Failed to find relocation candidates');
     }
-  }, [state.searchOptions, state.missingTracks, state.relocations, state.relocationResults, state.hasScanCompleted, relocationCandidatesCache, libraryData?.libraryPath, showNotification]);
+  }, [effectiveSearchOptions, state.searchOptions, state.missingTracks, state.relocations, state.relocationResults, state.hasScanCompleted, relocationCandidatesCache, libraryData?.libraryPath, showNotification]);
 
   // Add a relocation mapping
   const addRelocation = useCallback((trackId: string, newLocation: string) => {
@@ -371,7 +380,7 @@ export function useTrackRelocator(
       return;
     }
 
-    if (state.searchOptions.searchPaths.length === 0) {
+    if (effectiveSearchOptions.searchPaths.length === 0) {
       showNotification('error', 'Please configure search paths first');
       return;
     }
@@ -384,7 +393,7 @@ export function useTrackRelocator(
       const result = await window.electronAPI.autoRelocateTracks({
         dbKey: useSettingsStore.getState().rekordboxDbKey,
         tracks,
-        options: state.searchOptions,
+        options: effectiveSearchOptions,
         libraryPath: effectiveLibraryPath
       });
 
@@ -507,7 +516,7 @@ export function useTrackRelocator(
       console.error('❌ Auto-relocate error:', error);
       showNotification('error', `Failed to auto-relocate tracks: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [state.searchOptions, state.missingTracks, libraryData, libraryPath, showNotification, setLibraryData]);
+  }, [effectiveSearchOptions, state.missingTracks, libraryData, libraryPath, showNotification, setLibraryData]);
 
   // Detect cloud sync issues
   const updateSearchOptions = useCallback((options: Partial<RelocationOptions>) => {
@@ -562,8 +571,8 @@ export function useTrackRelocator(
     unlocatableTracks: state.missingTracks.filter(track => track.isUnlocatable).length,
     configuredRelocations: state.relocations.size,
     successfulRelocations: state.relocationResults.filter(r => r.success).length,
-    hasSearchPaths: state.searchOptions.searchPaths.length > 0
-  }), [state.missingTracks, state.relocations, state.relocationResults, state.searchOptions]);
+    hasSearchPaths: effectiveSearchOptions.searchPaths.length > 0
+  }), [state.missingTracks, state.relocations, state.relocationResults, effectiveSearchOptions]);
 
   return {
     // State
