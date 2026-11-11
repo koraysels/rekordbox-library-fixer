@@ -33,17 +33,19 @@ const DOING: Record<WizardStepId, string> = {
   convert: 'converting',
 };
 
+/** What a step did, in plain words: the History line without its "Wizard: " prefix. */
+export function describeResult(result: StepResult): string {
+  const said = result.error ? `${DOING[result.step]} failed: ${result.error}` : DID[result.step](result);
+  return result.cancelled && !result.error ? `${said} (cancelled)` : said;
+}
+
 /** One Activity-history entry per wizard step, like every other library-changing operation. */
 export function historyEntryFor(result: StepResult, libraryPath: string, now: Date = new Date()): Omit<ActivityEntry, 'id'> {
-  let summary = result.error
-    ? `Wizard: ${DOING[result.step]} failed: ${result.error}`
-    : `Wizard: ${DID[result.step](result)}`;
-  if (result.cancelled && !result.error) {summary += ' (cancelled)';}
   return {
     libraryPath,
     timestamp: now,
     type: TYPE[result.step],
-    summary,
+    summary: `Wizard: ${describeResult(result)}`,
     backupPath: result.backupPath,
     details: result.details,
   };

@@ -12,7 +12,8 @@ import {
     RefreshCw,
     FolderOpen,
     X,
-    HelpCircle
+    HelpCircle,
+    Wand2
 } from 'lucide-react';
 import {motion} from 'framer-motion';
 import type {TabType, LibraryData} from '../types';
@@ -91,6 +92,8 @@ interface SidebarProps {
     onSelectLibrary: () => void;
     onUnloadLibrary?: () => void;
     onShowTutorial?: () => void;
+    /** Back to the wizard, which fixes the library step by step. */
+    onShowWizard?: () => void;
 }
 
 export function Sidebar({
@@ -99,7 +102,8 @@ export function Sidebar({
                             libraryPath,
                             onSelectLibrary,
                             onUnloadLibrary,
-                            onShowTutorial
+                            onShowTutorial,
+                            onShowWizard
                         }: SidebarProps) {
     return (
         <nav className="w-64 bg-te-grey-200 border-r-2 border-te-grey-300 flex flex-col pb-6">
@@ -118,6 +122,19 @@ export function Sidebar({
                         <p className="text-xs text-te-grey-500 font-te-mono tracking-wider">LIBRARY FIXER</p>
                     </div>
                 </div>
+                {onShowWizard && (
+                    <button
+                        type="button"
+                        onClick={onShowWizard}
+                        title="Fix the whole library step by step"
+                        className="mt-te-md w-full flex items-center justify-center gap-te-sm p-te-sm rounded-te border-2 border-te-grey-300
+                     bg-te-cream text-te-grey-700 hover:border-te-orange hover:text-te-orange transition-colors
+                     font-te-mono text-xs font-medium uppercase tracking-wider"
+                    >
+                        <Wand2 className="w-4 h-4"/>
+                        Wizard
+                    </button>
+                )}
             </div>
 
             {/* Navigation Links - TE Minimal Style */}
