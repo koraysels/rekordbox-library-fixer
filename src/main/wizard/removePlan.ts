@@ -1,0 +1,39 @@
+import type { MissingTrack, RelocationCandidate } from '../trackRelocator';
+import { isStreamingLocation } from '../streamingLocation';
+import { driveName } from './volumes';
+import { bestCandidate, refOf } from './relocatePlan';
+import type { RemoveStepPlan } from './types';
+
+/**
+ * The entries the wizard removes: still missing after relocation, on a drive
+ * that is plugged in, and with no relocation candidate at any confidence. An
+ * entry on an unplugged drive is never removed — its file is not lost — and one
+ * with even a weak guess is left for the user to look at.
+ */
+export function planRemovals(
+  missing: MissingTrack[],
+  candidates: Map<string, RelocationCandidate[]>,
+  isMounted: (p: string) => boolean,
+  platform: NodeJS.Platform = process.platform,
+): RemoveStepPlan {
+  const plan: RemoveStepPlan = { step: 'remove', remove: [], setAside: [] };
+  for (const track of missing) {
+    const location = track.originalLocation;
+    if (isStreamingLocation(location)) {continue;}
+    if (!isMounted(location)) {
+      plan.setAside.push({ ...refOf(track), why: `Drive ${driveName(location, platform)} is not plugged in` });
+      continue;
+    }
+    const best = bestCandidate(candidates.get(track.id));
+    if (best) {
+      plan.setAside.push({
+        ...refOf(track),
+        why: 'Might be found by hand',
+        bestGuess: { path: best.path, confidence: best.confidence },
+      });
+      continue;
+    }
+    plan.remove.push(refOf(track));
+  }
+  return plan;
+}
