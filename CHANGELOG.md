@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0] - 2026-11-11
 
 ### 🎉 New Features
 - **Convert for older players**: a new Convert page lists every track your oldest player cannot load (lossless M4A/ALAC, FLAC, 32-bit or float WAV, anything above 48 kHz or 24-bit), with the reason for each, and converts the ones you pick to AIFF (default), WAV or MP3. The library entry is switched to the new file rather than duplicated, so cues, loops, hot cues, beatgrids, play counts and playlists stay attached; only the file columns change (path, file name, type, size, bit rate, bit depth, sample rate). A preview shows every file written and every entry changed first, and several entries on one file are switched together. Originals stay unless you choose to move them to the Trash, which happens only after the library write succeeded and no other entry uses the file. Works on `master.db` (Rekordbox closed, verified backup first) and on an XML library (with the caveat that an XML import adds a new track). Recorded in the Activity history. "Oldest player you play on" is a new setting.

@@ -443,7 +443,10 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.6.10** *(current)*
+**v0.7.0** *(current)*
+- A Convert page turns tracks your oldest player can't load into ones it can, keeping cues, beatgrids and playlists
+
+**v0.6.10**
 - The app updates itself — download in the background, restart to install
 - Resolved duplicates stay resolved; clearer labels and match badges
 - Dark player with cover art; the database key is remembered
