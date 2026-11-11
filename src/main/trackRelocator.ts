@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { glob } from 'glob';
 import FuzzySearch from 'fuzzy-search';
 import { Logger } from './logger';
 import { isStreamingLocation } from './brokenEntries';
+import { indexAudioFiles, type UnsearchedFolder } from './audioFileIndex';
 
 export interface MissingTrack {
   id: string;
@@ -45,6 +45,22 @@ interface FileIndex {
   files: string[];
   fileNames: Array<{ path: string; name: string }>;
   fuzzy: FuzzySearch<{ path: string; name: string }>;
+  unsearched: UnsearchedFolder[];
+}
+
+/** What a run's index covers: how many files, and which folders it could not look through. */
+export interface IndexSummary {
+  files: number;
+  unsearched: UnsearchedFolder[];
+}
+
+export interface CandidateSearchOptions {
+  /**
+   * Throw when the index cannot be built instead of answering "no candidates".
+   * The wizard reads "no candidate" as "the file is gone", so a failed search
+   * must never look like one.
+   */
+  strict?: boolean;
 }
 
 /** Is this location too damaged to name a file? */
@@ -96,8 +112,9 @@ export class TrackRelocator {
    * findRelocationCandidates call builds and reuses its own index too. Calling
    * this primes the index up front so the first track isn't slow.
    */
-  async beginRelocationRun(options: RelocationOptions): Promise<void> {
-    await this.getFileIndex(options);
+  async beginRelocationRun(options: RelocationOptions): Promise<IndexSummary> {
+    const index = await this.getFileIndex(options);
+    return { files: index.files.length, unsearched: index.unsearched };
   }
 
   /** Free the cached index so a large library's file list isn't retained. */
@@ -116,19 +133,13 @@ export class TrackRelocator {
       ? options.fileExtensions
       : this.audioExtensions;
 
-    const files: string[] = [];
-    for (const searchPath of options.searchPaths) {
-      if (!(await this.fileExists(searchPath))) {
-        this.logger.warning('TRACK_RELOCATOR_PATH_NOT_FOUND', { searchPath });
-        continue;
-      }
-      const globPattern = path.join(
-        searchPath,
-        options.includeSubdirectories ? '**' : '',
-        `*.{${extensions.map(ext => ext.replace('.', '')).join(',')}}`
-      );
-      const found = await glob(globPattern, { maxDepth: options.searchDepth, nocase: true });
-      files.push(...found);
+    const { files, unsearched } = await indexAudioFiles(options.searchPaths, {
+      extensions,
+      recursive: options.includeSubdirectories,
+      maxDepth: options.searchDepth,
+    });
+    for (const folder of unsearched) {
+      this.logger.warning('TRACK_RELOCATOR_PATH_NOT_SEARCHED', { ...folder });
     }
 
     const fileNames = files.map(file => ({
@@ -137,7 +148,7 @@ export class TrackRelocator {
     }));
     const fuzzy = new FuzzySearch(fileNames, ['name'], { caseSensitive: false, sort: true });
 
-    this.fileIndex = { key, files, fileNames, fuzzy };
+    this.fileIndex = { key, files, fileNames, fuzzy, unsearched };
     this.logger.info('TRACK_RELOCATOR_INDEX_BUILT', { files: files.length });
     return this.fileIndex;
   }
@@ -189,7 +200,8 @@ export class TrackRelocator {
 
   async findRelocationCandidates(
     track: MissingTrack,
-    options: RelocationOptions
+    options: RelocationOptions,
+    search: CandidateSearchOptions = {}
   ): Promise<RelocationCandidate[]> {
     const candidates: RelocationCandidate[] = [];
     // A damaged location gives a useless search term: a folder path yields the
@@ -288,6 +300,7 @@ export class TrackRelocator {
         trackId: track.id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+      if (search.strict) {throw error;}
     }
 
     // Sort candidates by score (descending) and remove duplicates
