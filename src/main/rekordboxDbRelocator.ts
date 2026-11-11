@@ -31,9 +31,46 @@ export interface RelocateOptions {
   isRegularFile?: (p: string) => boolean;
 }
 
-const realIsRegularFile = (p: string): boolean => {
+export const realIsRegularFile = (p: string): boolean => {
   try { return fs.statSync(p).isFile(); } catch { return false; }
 };
+
+export interface WritableDbOptions {
+  backupPath: string;
+  checkRunning?: () => boolean;
+}
+
+/**
+ * The guard every database write goes through: rekordbox must be closed, a
+ * backup path is mandatory, the backup is taken and verified before the file is
+ * opened for writing, and the handle is always closed.
+ */
+export function withWritableRekordboxDb<T>(
+  dbPath: string,
+  key: string,
+  options: WritableDbOptions,
+  work: (db: Db) => T
+): T {
+  const running = options.checkRunning ?? isRekordboxRunning;
+  if (running()) {
+    throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
+  }
+  if (!options.backupPath) {
+    throw new Error('A backup path is required; this never writes without one.');
+  }
+
+  // Back up before opening for writing, and verify the copy before going on.
+  backupDatabaseFile(dbPath, options.backupPath);
+
+  let db: Db | null = null;
+  try {
+    db = new Database(dbPath);
+    unlockDatabase(db, key);
+    return work(db);
+  } finally {
+    if (db) { db.close(); }
+  }
+}
 
 /**
  * Point tracks at their files again inside rekordbox's own database.
@@ -53,26 +90,10 @@ export function relocateTracksInDb(
   plans: RelocationPlan[],
   options: RelocateOptions
 ): RelocateOutcome {
-  const running = options.checkRunning ?? isRekordboxRunning;
-  if (running()) {
-    throw new Error('Close rekordbox first — it keeps the database open, and writing while it runs risks losing the change.');
-  }
-  if (!options.backupPath) {
-    throw new Error('A backup path is required; this never writes without one.');
-  }
-
-  // Back up before opening for writing, and verify the copy before going on.
-  backupDatabaseFile(dbPath, options.backupPath);
-
-  let db: Db | null = null;
-  try {
-    db = new Database(dbPath);
-    unlockDatabase(db, key);
+  return withWritableRekordboxDb(dbPath, key, options, (db) => {
     const outcome = applyRelocations(db, plans, options.isRegularFile ?? realIsRegularFile);
     return { ...outcome, backupPath: options.backupPath };
-  } finally {
-    if (db) { db.close(); }
-  }
+  });
 }
 
 /**
@@ -81,7 +102,7 @@ export function relocateTracksInDb(
  * `rb_local_usn`. Leaving a row's number behind the counter is how rekordbox
  * and its cloud sync tell what has changed, so both are kept in step here.
  */
-function nextUsn(db: Db): number | null {
+export function nextUsn(db: Db): number | null {
   try {
     const row = db.prepare(
       "SELECT int_1 AS n FROM agentRegistry WHERE registry_id = 'localUpdateCount'"

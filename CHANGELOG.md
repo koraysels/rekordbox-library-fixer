@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### 🎉 New Features
+- **Convert for older players**: a new Convert page lists every track your oldest player cannot load (lossless M4A/ALAC, FLAC, 32-bit or float WAV, anything above 48 kHz or 24-bit), with the reason for each, and converts the ones you pick to AIFF (default), WAV or MP3. The library entry is switched to the new file rather than duplicated, so cues, loops, hot cues, beatgrids, play counts and playlists stay attached; only the file columns change (path, file name, type, size, bit rate, bit depth, sample rate). A preview shows every file written and every entry changed first, and several entries on one file are switched together. Originals stay unless you choose to move them to the Trash, which happens only after the library write succeeded and no other entry uses the file. Works on `master.db` (Rekordbox closed, verified backup first) and on an XML library (with the caveat that an XML import adds a new track). Recorded in the Activity history. "Oldest player you play on" is a new setting.
+- **ffmpeg is downloaded on first use, not shipped**: the app asks first, then fetches a pinned, checksummed build for your platform into its data folder, so the installer and updates stay small. Licence: the builds are GPL; the Apple Silicon build also includes non-free components, which is why ffmpeg is downloaded to your machine and never distributed with the app.
+
+### 🐛 Fixes
+- **A WAV's length is right, and reading it is cheap**: the file's facts are read with a seeking parser, so a long WAV no longer looks a fraction of its real length, a 300 MB WAV no longer costs 300 MB of memory, and a WAV over 2 GiB is no longer called "not reachable". A file that is there but can't be parsed now says "couldn't read the file".
+
+Thanks to markst for issue #11 and the draft PR this grew from.
+
 ## [0.6.10] - 2026-11-07
 
 ### 🎉 New Features

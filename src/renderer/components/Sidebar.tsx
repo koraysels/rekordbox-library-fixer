@@ -9,6 +9,7 @@ import {
     History,
     Archive,
     Library,
+    RefreshCw,
     FolderOpen,
     X,
     HelpCircle
@@ -37,6 +38,13 @@ const navItems = [
         label: 'Track Relocation',
         icon: MapPin,
         description: 'Fix missing and moved tracks'
+    },
+    {
+        id: 'convert' as TabType,
+        path: '/convert',
+        label: 'Convert',
+        icon: RefreshCw,
+        description: 'Convert tracks your player cannot play'
     },
     {
         id: 'import' as TabType,

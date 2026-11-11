@@ -33,6 +33,9 @@ export interface DbTrack {
   size?: number;
   bpm?: number;
   rating?: number;
+  fileType?: number;
+  sampleRate?: number;
+  bitDepth?: number;
   dateAdded?: Date;
   cues: Array<{ name: string; type: 'CUE'; start: number; hotcue?: number }>;
   loops: Array<{ name: string; start: number; end: number }>;
@@ -80,6 +83,9 @@ interface ContentRow {
   ArtistName: string | null;
   AlbumName: string | null;
   GenreName: string | null;
+  FileType: number | null;
+  SampleRate: number | null;
+  BitDepth: number | null;
 }
 
 interface CueRow {
@@ -107,7 +113,7 @@ export function mapRowsToLibrary(db: Db, dbPath: string): DbLibrary {
 
   const contentRows = db.prepare(`
     SELECT c.ID, c.Title, c.FolderPath, c.Length, c.BitRate, c.FileSize,
-           c.BPM, c.Rating, c.created_at,
+           c.BPM, c.Rating, c.created_at, c.FileType, c.SampleRate, c.BitDepth,
            ar.Name AS ArtistName, al.Name AS AlbumName, g.Name AS GenreName
     FROM djmdContent c
     LEFT JOIN djmdArtist ar ON ar.ID = c.ArtistID AND ar.rb_local_deleted = 0
@@ -140,6 +146,9 @@ export function mapRowsToLibrary(db: Db, dbPath: string): DbLibrary {
       size: row.FileSize ?? undefined,
       bpm: row.BPM ? row.BPM / 100 : undefined,
       rating: row.Rating ?? undefined,
+      fileType: row.FileType || undefined,
+      sampleRate: row.SampleRate || undefined,
+      bitDepth: row.BitDepth || undefined,
       dateAdded: row.created_at ? new Date(row.created_at) : undefined,
       cues: marks
         .filter((m) => !isLoop(m))

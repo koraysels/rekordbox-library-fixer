@@ -14,7 +14,8 @@ interface AppContextType {
   libraryData: LibraryData | null;
   libraryPath: string;
   showNotification: (type: NotificationType, message: string, options?: { important?: boolean }) => void;
-  setLibraryData: (data: LibraryData) => void;
+  /** The state setter itself, so a late result can be applied to whatever is loaded by then. */
+  setLibraryData: React.Dispatch<React.SetStateAction<LibraryData | null>>;
   /** Open a library file by path, e.g. after restoring a backup. */
   onLoadLibrary?: (path: string) => void;
   onSelectLibrary?: () => void;
@@ -35,6 +36,7 @@ export const useAppContext = () => {
 const pathToTab: Record<string, TabType> = {
   '/': 'duplicates',
   '/relocate': 'relocate',
+  '/convert': 'convert',
   '/import': 'import',
   '/maintenance': 'maintenance',
   '/statistics': 'statistics',

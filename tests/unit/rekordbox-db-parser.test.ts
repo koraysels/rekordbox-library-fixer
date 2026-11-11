@@ -17,7 +17,8 @@ beforeEach(() => {
     CREATE TABLE djmdContent (
       ID TEXT PRIMARY KEY, Title TEXT, ArtistID TEXT, AlbumID TEXT, GenreID TEXT,
       FolderPath TEXT, Length INTEGER, BitRate INTEGER, FileSize INTEGER,
-      BPM INTEGER, Rating INTEGER, created_at TEXT, rb_local_deleted INTEGER DEFAULT 0);
+      BPM INTEGER, Rating INTEGER, created_at TEXT, rb_local_deleted INTEGER DEFAULT 0,
+      FileType INTEGER, SampleRate INTEGER, BitDepth INTEGER);
     CREATE TABLE djmdCue (
       ID TEXT PRIMARY KEY, ContentID TEXT, Kind INTEGER, InMsec INTEGER,
       OutMsec INTEGER, Comment TEXT, rb_local_deleted INTEGER DEFAULT 0);
@@ -33,9 +34,9 @@ beforeEach(() => {
     INSERT INTO djmdAlbum  VALUES ('al1','Morale',0);
     INSERT INTO djmdGenre  VALUES ('g1','Hip Hop',0);
     INSERT INTO djmdContent VALUES
-      ('t1','Bruxelles arrive','a1','al1','g1','/Music/bx.mp3',217,320,8000000,14000,4,'2020-10-03 12:14:15.969 +00:00',0);
+      ('t1','Bruxelles arrive','a1','al1','g1','/Music/bx.mp3',217,320,8000000,14000,4,'2020-10-03 12:14:15.969 +00:00',0,6,44100,24);
     INSERT INTO djmdContent VALUES
-      ('t2','Deleted','a1','al1','g1','/Music/gone.mp3',100,128,1000,8750,0,'2021-01-01 00:00:00 +00:00',1);
+      ('t2','Deleted','a1','al1','g1','/Music/gone.mp3',100,128,1000,8750,0,'2021-01-01 00:00:00 +00:00',1,NULL,NULL,NULL);
     INSERT INTO djmdCue VALUES ('c1','t1',0,15000,-1,'Intro',0);
     INSERT INTO djmdCue VALUES ('c2','t1',3,30000,45000,'Loop A',0);
     INSERT INTO djmdCue VALUES ('c3','t1',2,60000,-1,'Hot B',0);
@@ -64,6 +65,13 @@ describe('mapRowsToLibrary', () => {
     expect(t.bitrate).toBe(320);
     expect(t.size).toBe(8000000);
     expect(t.rating).toBe(4);
+  });
+
+  it('maps FileType, SampleRate and BitDepth from master.db rows', () => {
+    const t = mapRowsToLibrary(db, file).tracks.get('t1')!;
+    expect(t.fileType).toBe(6);
+    expect(t.sampleRate).toBe(44100);
+    expect(t.bitDepth).toBe(24);
   });
 
   it('scales BPM down by 100, as rekordbox stores it', () => {

@@ -25,6 +25,9 @@ export interface Track {
   size?: number;
   bitrate?: number;
   duration?: number;
+  /** rekordbox's FileType code (master.db only). */
+  fileType?: number;
+  bitDepth?: number;
   // Dates survive the XML as Date objects, but arrive from the renderer as
   // strings: everything crossing the bridge is serialised. Both are accepted
   // rather than cast at each use, which is what the `any`s here were hiding.

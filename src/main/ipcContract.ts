@@ -10,6 +10,13 @@
  * in the renderer's type, so the code that read it compiled and got undefined.
  */
 
+import type { AudioFacts, PlayerProfile, UnplayableReason } from './convert/playerProfiles';
+import type { OutputFacts, Readiness, TargetFormat } from './convert/conversionPlan';
+import type { SwitchSkip } from './convert/applyConversions';
+import type { FfmpegStatus } from './convert/ffmpegBinary';
+
+export type { TargetFormat, FfmpegStatus };
+
 /** Anything crossing the bridge is structured-cloned, so Dates arrive as strings. */
 export type Serialized<T> = T extends Date ? string
   : T extends Array<infer U> ? Array<Serialized<U>>
@@ -38,6 +45,8 @@ export interface TrackPayload {
   size?: number;
   bitrate?: number;
   duration?: number;
+  fileType?: number;
+  bitDepth?: number;
   rating?: number;
   dateAdded?: string | Date;
   dateModified?: string | Date;
@@ -165,3 +174,75 @@ export type UpdateStatusPayload =
   /** Found, but this copy cannot replace itself (opened from Downloads or a disk image). */
   | { state: 'manual'; version: string; url: string }
   | { state: 'error'; message: string };
+
+// ---- Format conversion ----
+
+export type PlayerProfileId = PlayerProfile['id'];
+
+/** One file the chosen player cannot play, with every library entry that points at it. */
+export interface ConvertCandidate {
+  trackIds: string[];
+  location: string;
+  name: string;
+  artist: string;
+  reasons: UnplayableReason[];
+  /** `durationSec` is there when the file itself was read. */
+  facts: (AudioFacts & { durationSec?: number }) | null;
+  /** The file had to be read and is not there: listed, never converted ("file not reachable"). */
+  unreachable?: true;
+  /** The file is there but its audio could not be read: listed, never converted ("couldn't read the file"). */
+  unreadable?: true;
+}
+
+export interface ConvertPreviewItem {
+  trackIds: string[];
+  from: string;
+  to: string;
+  readiness: Readiness;
+  out: OutputFacts;
+}
+
+export interface ConvertRunOptions {
+  libraryPath: string;
+  dbKey?: string;
+  profileId: PlayerProfileId;
+  target: TargetFormat;
+  /** Forced false for an XML library. */
+  trashOriginals: boolean;
+  items: ConvertPreviewItem[];
+}
+
+/** What the renderer sends; it may name the operation so it can cancel before the first event. */
+export type ConvertRunPayload = ConvertRunOptions & { operationId?: string };
+
+export interface ConvertProgress {
+  operationId: string;
+  type: 'start' | 'converting' | 'converted' | 'failed' | 'writing' | 'complete' | 'cancelled' | 'error';
+  current: number;
+  total: number;
+  name?: string;
+  message: string;
+  convertedCount: number;
+  failedCount: number;
+}
+
+export interface ConvertRunResult {
+  switched: number;
+  /** Exactly the entries the library write switched: nothing the run never reached, nothing it skipped. */
+  switchedItems: { trackIds: string[]; from: string; to: string }[];
+  failed: { from: string; error: string }[];
+  conflicts: string[];
+  trashed: number;
+  backupPath?: string;
+  cancelled: boolean;
+  /** The library write failed: nothing was switched and no original was trashed. */
+  error?: string;
+  /** Entries the write left alone, and why. */
+  skipped?: SwitchSkip[];
+  /** Originals that were switched away from but could not be moved to the Trash. */
+  notTrashed?: { from: string; error: string }[];
+}
+
+export interface FfmpegInstallProgress {
+  percent: number;
+}
