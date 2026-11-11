@@ -79,7 +79,7 @@ function applyRelocate(plan: RelocateStepPlan, ctx: WizardContext, deps: WizardD
  * Remove the planned entries — except any whose drive has been unplugged since
  * the plan. Checked twice: against the plan's location before the write, and
  * inside the write against the database's own location, where a file on an
- * unplugged drive counts as there.
+ * unplugged drive, or one the app is not allowed to look at, counts as there.
  */
 function applyRemove(plan: RemoveStepPlan, ctx: WizardContext, deps: WizardDeps): StepResult {
   const result = emptyResult(plan);
@@ -102,7 +102,8 @@ function applyRemove(plan: RemoveStepPlan, ctx: WizardContext, deps: WizardDeps)
   const outcome = deps.removeEntriesFromDb(ctx.dbPath, ctx.key, ids, {
     backupPath: backupFor(ctx, deps),
     checkRunning: deps.isRunning,
-    fileExists: (p) => deps.exists(p) || !mounted(p),
+    // Only a file known to be gone lets its entry go: one the app may not look at stays.
+    fileExists: (p) => !deps.isGone(p) || !mounted(p),
   });
   const kept = new Map(outcome.kept.map((k) => [k.trackId, k.reason]));
   for (const r of removing) {

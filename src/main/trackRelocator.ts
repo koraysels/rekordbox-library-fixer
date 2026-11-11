@@ -4,6 +4,7 @@ import FuzzySearch from 'fuzzy-search';
 import { Logger } from './logger';
 import { isStreamingLocation } from './brokenEntries';
 import { indexAudioFiles, type UnsearchedFolder } from './audioFileIndex';
+import { errorCode, isGoneError } from './fileState';
 
 export interface MissingTrack {
   id: string;
@@ -14,6 +15,12 @@ export interface MissingTrack {
   size?: number;
   duration?: number;
   dateAdded?: string;
+  /**
+   * Set when the file check failed for a reason other than "not there" — on a
+   * Mac, usually the app not being allowed into ~/Downloads, ~/Documents or a
+   * removable drive. The error code. Such a file may well exist.
+   */
+  unreadable?: string;
 }
 
 export interface RelocationCandidate {
@@ -167,9 +174,8 @@ export class TrackRelocator {
       if (isStreamingLocation(track.location)) { continue; }
 
       try {
-        // Check if file exists at original location
-        const exists = await this.fileExists(track.location);
-        if (!exists) {
+        const failure = await this.accessFailure(track.location);
+        if (failure !== null) {
           missingTracks.push({
             id,
             name: track.name || 'Unknown',
@@ -178,7 +184,8 @@ export class TrackRelocator {
             originalLocation: track.location,
             size: track.size,
             duration: track.duration,
-            dateAdded: track.dateAdded
+            dateAdded: track.dateAdded,
+            ...(isGoneError(failure) ? {} : { unreadable: errorCode(failure) }),
           });
         }
       } catch (error) {
@@ -436,6 +443,16 @@ export class TrackRelocator {
     }
 
     return matrix[str2.length][str1.length];
+  }
+
+  /** null when the file can be reached; otherwise why not. */
+  private async accessFailure(filePath: string): Promise<unknown> {
+    try {
+      await fs.promises.access(filePath);
+      return null;
+    } catch (e) {
+      return e ?? new Error('unknown');
+    }
   }
 
   private async fileExists(filePath: string): Promise<boolean> {

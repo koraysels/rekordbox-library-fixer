@@ -11,6 +11,7 @@ import type { DuplicateDetector } from '../duplicateDetector';
 import { applyGather } from './gatherApply';
 import { fileIdentity, sameContent } from './sameContent';
 import { isMountPoint } from './volumes';
+import { isGoneSync } from '../fileState';
 
 /**
  * Everything the wizard service reaches outside itself: the database, the disk,
@@ -35,6 +36,11 @@ export interface WizardDeps {
   /** Is rekordbox running? Asked before every write. */
   isRunning: () => boolean;
   exists: (p: string) => boolean;
+  /**
+   * Is the file known to be gone ("no such file")? False when the app is not
+   * allowed to look: such a file may exist, so its entry is never removed.
+   */
+  isGone: (p: string) => boolean;
   /** A volume root that is a real mount point, not an empty folder left by an unclean eject. */
   isMountPoint: (root: string) => boolean;
   isRegularFile: (p: string) => boolean;
@@ -80,6 +86,7 @@ export function realWizardDeps(
     runConversion,
     isRunning: () => isRekordboxRunning(),
     exists: fs.existsSync,
+    isGone: isGoneSync,
     isMountPoint,
     isRegularFile: realIsRegularFile,
     fileId: fileIdentity,

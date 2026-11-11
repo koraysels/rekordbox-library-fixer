@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { applyStep, planStep, runCheck, type WizardContext } from '../../src/main/wizard/wizardService';
+import { NO_ACCESS } from '../../src/main/wizard/removePlan';
 import type { WizardDeps } from '../../src/main/wizard/wizardDeps';
 import type { DbLibrary, DbTrack } from '../../src/main/rekordboxDbParser';
 import type { MissingTrack, RelocationCandidate, RelocationOptions } from '../../src/main/trackRelocator';
@@ -68,6 +69,7 @@ function fakeDeps(library: DbLibrary | (() => DbLibrary), present: string[], ove
     trash: vi.fn(async () => undefined),
     isRunning: () => false,
     exists,
+    isGone: (p: string) => !exists(p),
     isMountPoint: () => true,
     isRegularFile: exists,
     fileId: () => undefined,
@@ -164,6 +166,30 @@ describe('planStep', () => {
     expect(searched).toEqual(['2']);
     expect(plan.remove.map((r) => r.trackIds)).toEqual([['2']]);
     expect(plan.setAside.map((s) => s.trackIds)).toEqual([['1']]);
+  });
+
+  it('never removes an entry whose file the app may not look at, and does not search for it', async () => {
+    const lib = libraryOf(track('1', '/Users/k/Downloads/a.mp3'), track('2', '/Users/k/Gone/b.mp3'));
+    const base = fakeDeps(lib, [MUSIC]);
+    const deps = fakeDeps(lib, [MUSIC], {
+      relocator: {
+        ...base.relocator,
+        findMissingTracks: vi.fn(async () => [
+          { id: '1', name: 'Track 1', artist: 'Artist', originalLocation: '/Users/k/Downloads/a.mp3', unreadable: 'EPERM' },
+          { id: '2', name: 'Track 2', artist: 'Artist', originalLocation: '/Users/k/Gone/b.mp3' },
+        ] as MissingTrack[]),
+      },
+    });
+    const plan = await planStep('remove', ctxOf(), deps) as RemoveStepPlan;
+
+    expect(plan.remove.map((r) => r.trackIds)).toEqual([['2']]);
+    expect(plan.setAside).toEqual([expect.objectContaining({ trackIds: ['1'], why: NO_ACCESS })]);
+    const searched = vi.mocked(deps.relocator.findRelocationCandidates).mock.calls.map(([t]) => t.id);
+    expect(searched).toEqual(['2']);
+
+    // Nor is it counted as missing, or searched for by the relocate step.
+    const check = await runCheck(ctxOf(), deps);
+    expect(check.missing).toBe(1);
   });
 
   it('treats a drive whose /Volumes folder is only a leftover as unplugged', async () => {
@@ -281,6 +307,19 @@ describe('applyStep', () => {
     const result = await applyStep(plan, ctxOf(), deps);
     expect(deps.removeEntriesFromDb).not.toHaveBeenCalled();
     expect(result.details).toEqual([expect.objectContaining({ action: 'failed', error: 'Kept: drive DJ is not plugged in' })]);
+  });
+
+  it('removeStep.apply keeps an entry when it cannot tell whether the file is gone', async () => {
+    // The file does not show as there, but the check failed with "not allowed", not "no such file".
+    const deps = fakeDeps(libraryOf(), [], { isGone: () => false });
+    const plan: RemoveStepPlan = {
+      step: 'remove',
+      remove: [{ trackIds: ['1'], name: 'a', artist: 'x', location: '/Users/k/Downloads/a.mp3' }],
+      setAside: [],
+    };
+    await applyStep(plan, ctxOf(), deps);
+    const [, , , options] = vi.mocked(deps.removeEntriesFromDb).mock.calls[0];
+    expect(options.fileExists?.('/Users/k/Downloads/a.mp3')).toBe(true);
   });
 
   it('writes nothing when every entry to remove is on an unplugged drive', async () => {

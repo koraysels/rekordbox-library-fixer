@@ -53,11 +53,14 @@ function withoutStreaming(library: DbLibrary): DbTrack[] {
   return [...library.tracks.values()].filter((t) => t.location && !isStreamingLocation(t.location));
 }
 
-/** Missing files on plugged-in drives. A file on an unplugged drive is not lost, so it is not missing. */
+/**
+ * Missing files on plugged-in drives. A file on an unplugged drive is not lost,
+ * and neither is one the app is not allowed to look at: neither is missing.
+ */
 async function findMissing(library: DbLibrary, deps: WizardDeps): Promise<MissingTrack[]> {
   const mounted = mountedIn(deps);
   const missing = await deps.relocator.findMissingTracks(library.tracks);
-  return missing.filter((t) => !isStreamingLocation(t.originalLocation) && mounted(t.originalLocation));
+  return missing.filter((t) => !t.unreadable && !isStreamingLocation(t.originalLocation) && mounted(t.originalLocation));
 }
 
 async function findDuplicateSets(library: DbLibrary, ctx: WizardContext, deps: WizardDeps) {
@@ -209,12 +212,12 @@ export async function planStep(step: WizardStepId, ctx: WizardContext, deps: Wiz
       return planRelocations(missing, await searchCandidates(missing, step, ctx, deps));
     }
     case 'remove': {
-      // Every missing track, plugged in or not: one on an unplugged drive is listed
-      // to check, never removed.
+      // Every missing track, plugged in or not: one on an unplugged drive, or one
+      // the app may not look at, is listed to check, never removed.
       const all = (await deps.relocator.findMissingTracks(library.tracks))
         .filter((t) => !isStreamingLocation(t.originalLocation));
       const mounted = mountedIn(deps);
-      const searchable = all.filter((t) => mounted(t.originalLocation));
+      const searchable = all.filter((t) => !t.unreadable && mounted(t.originalLocation));
       const candidates = await searchCandidates(searchable, step, ctx, deps);
       return planRemovals(all, candidates, mounted, deps.platform);
     }
