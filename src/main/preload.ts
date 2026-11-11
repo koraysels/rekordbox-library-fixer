@@ -3,7 +3,7 @@ import type {
   TrackPayload, ScanOptionsPayload, ScanProgressPayload, DuplicateSet, MergePlanPayload,
   RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress, UpdateStatusPayload,
   ConvertCandidate, ConvertRunPayload, ConvertProgress, FfmpegInstallProgress,
-  PlayerProfileId, TargetFormat,
+  PlayerProfileId, TargetFormat, ConsolidatePayload, FilterMovePayload, ConsolidateRunResult, IpcResult,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -134,10 +134,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Consolidate Library
   consolidatePreview: (data: { tracks: TrackPayload[]; destination: string }) =>
     ipcRenderer.invoke('consolidate-preview', data),
-  consolidateLibrary: (data: {
-    operationId: string; tracks: TrackPayload[]; libraryPath: string;
-    options: Record<string, unknown>;
-  }) =>
+  consolidateLibrary: (data: ConsolidatePayload): Promise<IpcResult<ConsolidateRunResult>> =>
     ipcRenderer.invoke('consolidate-library', data),
   cancelConsolidate: (operationId: string) =>
     ipcRenderer.invoke('cancel-consolidate', operationId),
@@ -152,10 +149,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     tracks: TrackPayload[]; filters: FilterRulePayload[]; destination: string;
   }) =>
     ipcRenderer.invoke('filter-preview', data),
-  filterLibrary: (data: {
-    operationId: string; tracks: TrackPayload[]; libraryPath: string;
-    filters: FilterRulePayload[]; options: Record<string, unknown>;
-  }) =>
+  filterLibrary: (data: FilterMovePayload): Promise<IpcResult<ConsolidateRunResult>> =>
     ipcRenderer.invoke('filter-library', data),
   cancelFilter: (operationId: string) =>
     ipcRenderer.invoke('cancel-filter', operationId),

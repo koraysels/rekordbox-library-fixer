@@ -14,6 +14,8 @@ import type { AudioFacts, PlayerProfile, UnplayableReason } from './convert/play
 import type { OutputFacts, Readiness, TargetFormat } from './convert/conversionPlan';
 import type { SwitchSkip } from './convert/applyConversions';
 import type { FfmpegStatus } from './convert/ffmpegBinary';
+import type { ConsolidateOptions, ConsolidatePreview } from './libraryConsolidator';
+import type { ConsolidateRunResult } from './consolidateRun';
 
 export type { TargetFormat, FfmpegStatus };
 
@@ -160,6 +162,23 @@ export interface FilterRulePayload {
   op: 'contains' | 'equals' | 'gte' | 'lte';
   value: string;
 }
+
+/** Copy or move the library under one folder ('consolidate-library'). Nothing is ever overwritten. */
+export interface ConsolidatePayload {
+  operationId: string;
+  tracks: TrackPayload[];
+  libraryPath: string;
+  options: ConsolidateOptions;
+  /** Required for a database library, whose new locations are written into the database. */
+  dbKey?: string;
+}
+
+/** The same, for the part of the library that matches some rules ('filter-library'). */
+export interface FilterMovePayload extends ConsolidatePayload {
+  filters: FilterRulePayload[];
+}
+
+export type { ConsolidateOptions, ConsolidatePreview, ConsolidateRunResult };
 
 /** Unsubscribes an event listener registered through the bridge. */
 export type Unsubscribe = () => void;

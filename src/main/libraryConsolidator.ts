@@ -1,13 +1,58 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Track } from './rekordboxParser';
-import { isUniversalLossless, isFlac } from './audioQuality';
+import { referenceKey } from './convert/applyConversions';
+import { resolveClash } from './wizard/gatherPlan';
+import { fileIdentity, sameContent } from './wizard/sameContent';
+import { realIsRegularFile } from './rekordboxDbRelocator';
+import { isStreamingLocation } from './streamingLocation';
 
 export interface ConsolidateOptions {
   destination: string;
   mode: 'copy' | 'move';
-  conflictResolution: 'skip' | 'overwrite' | 'quality';
+  /** Accepted from older callers; there is no quality choice any more, since nothing is overwritten. */
   preferLossless?: boolean;
+}
+
+/** The file operations consolidating makes, injectable so a test can fail one. */
+export interface ConsolidateFs {
+  /** Anything at the path, a dangling symlink included. */
+  exists: (p: string) => boolean;
+  isRegularFile: (p: string) => boolean;
+  mkdir: (dir: string) => Promise<void>;
+  /** Called with `COPYFILE_EXCL`: a copy never replaces a file. */
+  copyFile: (from: string, to: string, mode: number) => Promise<void>;
+  rename: (from: string, to: string) => Promise<void>;
+  unlink: (p: string) => Promise<void>;
+  size: (p: string) => number;
+  sameContent: (a: string, b: string) => Promise<boolean>;
+  /** Which physical file a path names, so one file under two paths is not taken for its own copy. */
+  fileId: (p: string) => string | undefined;
+}
+
+const realFs: ConsolidateFs = {
+  exists: (p) => { try { fs.lstatSync(p); return true; } catch { return false; } },
+  isRegularFile: realIsRegularFile,
+  mkdir: async (dir) => { await fs.promises.mkdir(dir, { recursive: true }); },
+  copyFile: (from, to, mode) => fs.promises.copyFile(from, to, mode),
+  rename: (from, to) => fs.promises.rename(from, to),
+  unlink: (p) => fs.promises.unlink(p),
+  size: (p) => fs.statSync(p).size,
+  sameContent: (a, b) => sameContent(a, b),
+  fileId: fileIdentity,
+};
+
+/**
+ * A file put in place by a run. `moved` was renamed (the original is gone),
+ * `copied` is a new file beside the original, `reused` was already there,
+ * identical. `removeOriginal` marks an original a move still has to delete —
+ * only once the library points at the new place.
+ */
+export interface PlacedFile {
+  from: string;
+  to: string;
+  kind: 'moved' | 'copied' | 'reused';
+  removeOriginal: boolean;
 }
 
 export interface ConsolidateProgress {
@@ -25,6 +70,8 @@ export interface ConsolidateResult {
   failed: number;
   errors: { file: string; error: string }[];
   locationUpdates: Record<string, string>; // old path → new path
+  /** What was put where, so a failed library write can be undone. */
+  placed: PlacedFile[];
 }
 
 export interface ConsolidatePreview {
@@ -34,16 +81,37 @@ export interface ConsolidatePreview {
   totalSizeBytes: number;
 }
 
+const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+/**
+ * Gather a library under one destination, keeping its folder layout below the
+ * tracks' common root.
+ *
+ * Never overwrites: a destination already holding the same bytes is reused, a
+ * different file there gets ` (2)`, ` (3)`… — the wizard's gather rule
+ * (`resolveClash`). Files only: a location that names a folder is left alone.
+ * A move deletes an original it had to copy only after the library points at
+ * the copy (`removeOriginals`), and `putBack` undoes a run whose library write
+ * failed.
+ */
 export class LibraryConsolidator {
-  private findCommonRoot(locations: string[]): string {
-    if (locations.length === 0) return path.sep;
+  private readonly io: ConsolidateFs;
+
+  constructor(fsOps: Partial<ConsolidateFs> = {}) {
+    this.io = { ...realFs, ...fsOps };
+  }
+
+  private findCommonRoot(all: string[]): string {
+    // A streaming track's made-up location has no folder; it would pull the root up to nothing.
+    const locations = all.filter(loc => !isStreamingLocation(loc));
+    if (locations.length === 0) {return path.sep;}
     const parts = locations.map(loc => path.dirname(loc).split(path.sep));
     const first = parts[0];
     const common: string[] = [];
     for (let i = 0; i < first.length; i++) {
       if (parts.every(p => p[i] === first[i])) {
         common.push(first[i]);
-      } else break;
+      } else {break;}
     }
     const result = common.join(path.sep);
     return result || path.sep;
@@ -59,18 +127,6 @@ export class LibraryConsolidator {
     return path.join(destination, relative);
   }
 
-  // Quick quality score from extension + file size — no async metadata needed.
-  private qualityScore(location: string, preferLossless = false): number {
-    try {
-      const size = fs.statSync(location).size;
-      const losslessBonus =
-        isUniversalLossless(location) || (preferLossless && isFlac(location)) ? 1_000_000 : 0;
-      return losslessBonus + size / 1_000_000;
-    } catch {
-      return 0;
-    }
-  }
-
   preview(tracks: Track[], destination: string): ConsolidatePreview {
     const locations = tracks.map(t => t.location).filter(Boolean) as string[];
     const commonRoot = this.findCommonRoot(locations);
@@ -80,9 +136,9 @@ export class LibraryConsolidator {
     let totalSizeBytes = 0;
 
     for (const track of tracks) {
-      if (!track.location) continue;
+      if (!track.location) {continue;}
       if (!fs.existsSync(track.location)) { missing++; continue; }
-      if (track.size) totalSizeBytes += track.size;
+      if (track.size) {totalSizeBytes += track.size;}
       const dest = this.destPath(track.location, commonRoot, destination);
       if (fs.existsSync(dest) && path.resolve(track.location) !== path.resolve(dest)) {
         conflicts++;
@@ -92,29 +148,33 @@ export class LibraryConsolidator {
     return { total: locations.length, conflicts, missing, totalSizeBytes };
   }
 
-  consolidate(
+  async consolidate(
     tracks: Track[],
     options: ConsolidateOptions,
     onProgress: (p: ConsolidateProgress) => void,
     cancelToken: { cancelled: boolean }
-  ): ConsolidateResult {
+  ): Promise<ConsolidateResult> {
+    const io = this.io;
     const locations = tracks.map(t => t.location).filter(Boolean) as string[];
     const commonRoot = this.findCommonRoot(locations);
     const result: ConsolidateResult = {
       succeeded: 0, skipped: 0, failed: 0,
-      errors: [], locationUpdates: {},
+      errors: [], locationUpdates: {}, placed: [],
     };
 
     const eligible = tracks.filter(t => t.location);
     const total = eligible.length;
     let current = 0;
+    // Entries sharing one file: the file goes once, and every entry follows it.
+    const done = new Map<string, string>();
+    // Destinations handed out this run, so two sources never get one name.
+    const taken = new Set<string>();
 
     for (const track of eligible) {
-      if (cancelToken.cancelled) break;
+      if (cancelToken.cancelled) {break;}
 
       current++;
       const src = track.location as string;
-      const dest = this.destPath(src, commonRoot, options.destination);
 
       onProgress({
         current, total,
@@ -125,61 +185,124 @@ export class LibraryConsolidator {
       });
 
       try {
-        if (!fs.existsSync(src)) {
+        const already = done.get(referenceKey(src));
+        if (already !== undefined) {
+          result.skipped++;
+          if (referenceKey(already) !== referenceKey(src)) {result.locationUpdates[src] = already;}
+          continue;
+        }
+
+        // Missing, or a folder (rekordbox has entries whose location is one):
+        // moving a folder would carry a whole folder of music with it.
+        if (!io.isRegularFile(src)) {
           result.skipped++;
           continue;
         }
 
-        // Already at destination
-        if (path.resolve(src) === path.resolve(dest)) {
+        const dest = this.destPath(src, commonRoot, options.destination);
+        if (referenceKey(src) === referenceKey(dest)) {
           result.skipped++;
-          result.locationUpdates[src] = dest;
+          done.set(referenceKey(src), src);
           continue;
         }
 
-        if (fs.existsSync(dest)) {
-          if (options.conflictResolution === 'skip') {
-            result.skipped++;
-            result.locationUpdates[src] = dest;
-            continue;
-          }
-          if (options.conflictResolution === 'quality') {
-            if (this.qualityScore(dest, options.preferLossless) >= this.qualityScore(src, options.preferLossless)) {
-              result.skipped++;
-              result.locationUpdates[src] = dest;
-              continue;
-            }
-            // src wins — fall through to overwrite
-          }
+        const { to, reuseExisting } = await resolveClash(dest, src, taken, io);
+        taken.add(referenceKey(to));
+
+        if (reuseExisting && io.fileId(src) !== undefined && io.fileId(src) === io.fileId(to)) {
+          // The "identical file" is the source itself, reached through a link or an
+          // aliased folder: it is already in place, and a move must not delete it.
+          result.skipped++;
+          done.set(referenceKey(src), src);
+          continue;
         }
 
-        fs.mkdirSync(path.dirname(dest), { recursive: true });
-
-        if (options.mode === 'copy') {
-          fs.copyFileSync(src, dest);
-        } else {
-          // Try rename first (fast, same volume); fall back to copy+delete
-          try {
-            // Pre-delete dest so Windows doesn't throw EEXIST on rename
-            if (fs.existsSync(dest)) fs.unlinkSync(dest);
-            fs.renameSync(src, dest);
-          } catch {
-            fs.copyFileSync(src, dest);
-            fs.unlinkSync(src);
-          }
+        if (reuseExisting) {
+          result.skipped++;
+          result.locationUpdates[src] = to;
+          result.placed.push({ from: src, to, kind: 'reused', removeOriginal: options.mode === 'move' });
+          done.set(referenceKey(src), to);
+          continue;
         }
 
+        await io.mkdir(path.dirname(to));
+        const kind = await this.place(src, to, options.mode);
+        result.placed.push({ from: src, to, kind, removeOriginal: options.mode === 'move' && kind === 'copied' });
         result.succeeded++;
-        result.locationUpdates[src] = dest;
+        result.locationUpdates[src] = to;
+        done.set(referenceKey(src), to);
       } catch (err) {
         result.failed++;
-        result.errors.push({
-          file: src,
-          error: err instanceof Error ? err.message : 'Unknown error',
-        });
+        result.errors.push({ file: src, error: errorText(err) });
       }
     }
 
     return result;
+  }
+
+  /** Put one file in place, never over another. Copy mode copies; move renames, or copies across drives. */
+  private async place(src: string, to: string, mode: ConsolidateOptions['mode']): Promise<'moved' | 'copied'> {
+    const io = this.io;
+    // Checked again right before: something may have appeared since the name was chosen.
+    if (io.exists(to)) {throw new Error(`Something is already at ${to}; it was left alone`);}
+    if (mode === 'move') {
+      try {
+        await io.rename(src, to);
+        return 'moved';
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EXDEV') {throw e;}
+      }
+    }
+    try {
+      await io.copyFile(src, to, fs.constants.COPYFILE_EXCL);
+    } catch (e) {
+      // EEXIST: a file that is not ours. Anything else may have left a partial copy of ours.
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') {await io.unlink(to).catch(() => undefined);}
+      throw e;
+    }
+    const want = io.size(src);
+    const got = io.size(to);
+    if (got !== want) {
+      await io.unlink(to).catch(() => undefined);
+      throw new Error(`The copy is ${got} bytes but the original is ${want}`);
+    }
+    return 'copied';
+  }
+
+  /**
+   * Undo a run whose library write failed, newest first: renames go back, copies
+   * are deleted while their original is still there. A reused file was there
+   * before and is never touched. Returns what could not be put back.
+   */
+  async putBack(placed: PlacedFile[]): Promise<{ file: string; error: string }[]> {
+    const io = this.io;
+    const stuck: { file: string; error: string }[] = [];
+    for (const p of [...placed].reverse()) {
+      try {
+        if (p.kind === 'moved') {
+          if (io.exists(p.from)) {throw new Error(`something is now at ${p.from}`);}
+          await io.rename(p.to, p.from);
+        } else if (p.kind === 'copied') {
+          if (!io.exists(p.from)) {throw new Error(`the original at ${p.from} is gone, so the copy was kept`);}
+          await io.unlink(p.to);
+        }
+      } catch (e) {
+        stuck.push({ file: p.to, error: `Could not be put back: ${errorText(e)}` });
+      }
+    }
+    return stuck;
+  }
+
+  /** Delete originals a move copied or reused. Only call after the library points at the new place. */
+  async removeOriginals(paths: string[]): Promise<{ file: string; error: string }[]> {
+    const failures: { file: string; error: string }[] = [];
+    for (const p of paths) {
+      try { await this.io.unlink(p); } catch (e) { failures.push({ file: p, error: errorText(e) }); }
+    }
+    return failures;
+  }
+
+  isRegularFile(p: string): boolean {
+    return this.io.isRegularFile(p);
   }
 }

@@ -242,13 +242,13 @@ declare global {
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
       // Filter & Move/Copy APIs
       filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;
-      filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) => Promise<any>;
+      filterLibrary: (data: FilterMovePayload) => Promise<IpcResult<ConsolidateRunResult>>;
       cancelFilter?: (operationId: string) => Promise<any>;
       onFilterProgress?: (callback: (progress: any) => void) => () => void;
 
       // Consolidate Library APIs
       consolidatePreview: (data: { tracks: any[]; destination: string }) => Promise<any>;
-      consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;
+      consolidateLibrary: (data: ConsolidatePayload) => Promise<IpcResult<ConsolidateRunResult>>;
       cancelConsolidate?: (operationId: string) => Promise<any>;
       onConsolidateProgress?: (callback: (progress: any) => void) => () => void;
       // Format conversion APIs
@@ -274,5 +274,6 @@ declare global {
 import type {
   UpdateStatusPayload, IpcResult, ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunPayload,
   ConvertRunResult, FfmpegInstallProgress, FfmpegStatus, PlayerProfileId, TargetFormat,
+  ConsolidatePayload, FilterMovePayload, ConsolidateRunResult,
 } from '../../main/ipcContract';
 export type UpdateStatus = UpdateStatusPayload;

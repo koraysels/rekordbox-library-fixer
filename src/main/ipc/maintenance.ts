@@ -1,9 +1,10 @@
 import { ipcMain } from 'electron';
-import { runtime, safeConsole } from '../runtime';
+import { runtime } from '../runtime';
 import { findBrokenEntries, diagnoseLocation, isStreamingLocation } from '../brokenEntries';
 import { removeEntriesFromDb } from '../rekordboxDbWriter';
 import { assertWritableLibraryPath } from '../librarySource';
-import type { TrackPayload } from '../ipcContract';
+import type { ConsolidatePayload, FilterMovePayload, FilterRulePayload, TrackPayload } from '../ipcContract';
+import { runConsolidate } from '../consolidateRun';
 
 // ─── Consolidate Library ──────────────────────────────────────────────────────
 
@@ -11,11 +12,7 @@ const consolidateCancelTokens = new Map<string, { cancelled: boolean }>();
 
 // ─── Filter & Move/Copy ───────────────────────────────────────────────────────
 
-type FilterRule = {
-  field: 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
-  op: 'contains' | 'equals' | 'gte' | 'lte';
-  value: string;
-};
+type FilterRule = FilterRulePayload;
 
 function applyFilters(tracks: TrackPayload[], rules: FilterRule[]): TrackPayload[] {
   return tracks.filter(t => rules.every(r => {
@@ -140,57 +137,16 @@ export function registerMaintenanceIpc(): void {
     }
   });
 
-  ipcMain.handle('consolidate-library', async (event, {
-    operationId, tracks, libraryPath, options
-  }: {
-    operationId: string;
-    tracks: TrackPayload[];
-    libraryPath: string;
-    options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
-  }) => {
+  ipcMain.handle('consolidate-library', async (event, { operationId, ...payload }: ConsolidatePayload) => {
     const cancelToken = { cancelled: false };
     consolidateCancelTokens.set(operationId, cancelToken);
-
     try {
-      const result = runtime().libraryConsolidator.consolidate(
-        tracks,
-        options,
-        (progress) => {
-          event.sender.send('consolidate-progress', { operationId, ...progress });
-        },
-        cancelToken
-      );
-
-      // Update XML locations if any files moved successfully
-      if (Object.keys(result.locationUpdates).length > 0 && libraryPath) {
-        try {
-          const fs = require('fs');
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const backupPath = `${libraryPath}.backup.${timestamp}`;
-          fs.copyFileSync(libraryPath, backupPath);
-
-          const library = await runtime().rekordboxParser.parseLibrary(libraryPath);
-          const locToId = new Map(
-            [...library.tracks.entries()].map(([id, t]) => [t.location, id])
-          );
-          for (const [oldLoc, newLoc] of Object.entries(result.locationUpdates)) {
-            const id = locToId.get(oldLoc);
-            if (id) {
-              const track = library.tracks.get(id);
-              if (track) {
-                track.location = newLoc;
-                locToId.set(newLoc, id);
-                locToId.delete(oldLoc);
-              }
-            }
-          }
-          await runtime().rekordboxParser.saveLibrary(library, libraryPath);
-        } catch (xmlErr) {
-          safeConsole.error('Failed to update XML after consolidation:', xmlErr);
-        }
-      }
-
-      return { success: true, data: result };
+      return await runConsolidate(payload, {
+        consolidator: runtime().libraryConsolidator,
+        onProgress: (progress) => { event.sender.send('consolidate-progress', { operationId, ...progress }); },
+        cancelToken,
+        xml: runtime().rekordboxParser,
+      });
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Consolidation failed' };
     } finally {
@@ -218,48 +174,16 @@ export function registerMaintenanceIpc(): void {
     }
   });
 
-  ipcMain.handle('filter-library', async (event, {
-    operationId, tracks, libraryPath, filters, options,
-  }: {
-    operationId: string;
-    tracks: TrackPayload[];
-    libraryPath: string;
-    filters: FilterRule[];
-    options: { destination: string; mode: 'copy' | 'move'; conflictResolution: 'skip' | 'overwrite' | 'quality'; preferLossless?: boolean };
-  }) => {
+  ipcMain.handle('filter-library', async (event, { operationId, filters, tracks, ...payload }: FilterMovePayload) => {
     const cancelToken = { cancelled: false };
     filterCancelTokens.set(operationId, cancelToken);
-
     try {
-      const filtered = applyFilters(tracks, filters);
-      const result = runtime().libraryConsolidator.consolidate(
-        filtered,
-        options,
-        (progress) => { event.sender.send('filter-progress', { operationId, ...progress }); },
-        cancelToken
-      );
-
-      if (Object.keys(result.locationUpdates).length > 0 && libraryPath) {
-        try {
-          const fs = require('fs');
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          fs.copyFileSync(libraryPath, `${libraryPath}.backup.${timestamp}`);
-          const library = await runtime().rekordboxParser.parseLibrary(libraryPath);
-          const locToId = new Map([...library.tracks.entries()].map(([id, t]) => [t.location, id]));
-          for (const [oldLoc, newLoc] of Object.entries(result.locationUpdates)) {
-            const id = locToId.get(oldLoc);
-            if (id) {
-              const track = library.tracks.get(id);
-              if (track) { track.location = newLoc; locToId.set(newLoc, id); locToId.delete(oldLoc); }
-            }
-          }
-          await runtime().rekordboxParser.saveLibrary(library, libraryPath);
-        } catch (xmlErr) {
-          safeConsole.error('Failed to update XML after filter-move:', xmlErr);
-        }
-      }
-
-      return { success: true, data: result };
+      return await runConsolidate({ ...payload, tracks: applyFilters(tracks, filters) }, {
+        consolidator: runtime().libraryConsolidator,
+        onProgress: (progress) => { event.sender.send('filter-progress', { operationId, ...progress }); },
+        cancelToken,
+        xml: runtime().rekordboxParser,
+      });
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Filter operation failed' };
     } finally {

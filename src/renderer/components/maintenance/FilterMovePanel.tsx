@@ -2,7 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Plus, Trash2 } from 'lucide-react';
 import { formatFileSize } from '../../utils';
 import type { TrackPayload } from '../../../main/ipcContract';
-import type { ConflictResolution, Mode, Phase, Progress, Result } from './shared';
+import type { LibraryData } from '../../types';
+import { CLASH_NOTE, dbKeyFor, readLibraryAgain, type Mode, type Phase, type Progress, type Result } from './shared';
 
 // ── Filter & Move types ──────────────────────────────────────────────────────
 type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
@@ -29,6 +30,8 @@ interface FilterMovePanelProps {
   tracks: TrackPayload[];
   libraryPath: string;
   hasLibrary: boolean;
+  /** The library as it is after a run changed it. */
+  onLibraryChanged?: (data: LibraryData) => void;
 }
 
 /**
@@ -36,12 +39,11 @@ interface FilterMovePanelProps {
  * 128 BPM, everything rated four and up — and copy or move just that.
  */
 export const FilterMovePanel: React.FC<FilterMovePanelProps> = ({
-  tracks, libraryPath, hasLibrary,
+  tracks, libraryPath, hasLibrary, onLibraryChanged,
 }) => {
   const [fRules, setFRules] = useState<FilterRule[]>([newRule()]);
   const [fDest, setFDest] = useState('');
   const [fMode, setFMode] = useState<Mode>('copy');
-  const [fConflict, setFConflict] = useState<ConflictResolution>('skip');
   const [fPhase, setFPhase] = useState<Phase>('idle');
   const [fPreview, setFPreview] = useState<{ matchedTracks: number; total: number; conflicts: number; missing: number; totalSizeBytes: number } | null>(null);
   const [fProgress, setFProgress] = useState<Progress | null>(null);
@@ -99,17 +101,21 @@ export const FilterMovePanel: React.FC<FilterMovePanelProps> = ({
     try {
       const res = await window.electronAPI.filterLibrary({
         operationId: opId, tracks, libraryPath: libraryPath ?? '',
-        filters: fValidRules, options: { destination: fDest, mode: fMode, conflictResolution: fConflict },
+        filters: fValidRules, options: { destination: fDest, mode: fMode }, dbKey: dbKeyFor(libraryPath),
       });
-      if (res.success) {
+      if (res.success && res.data) {
         setFResult(res.data);
         setFPhase(fCancelledRef.current ? 'cancelled' : 'done');
+        if (res.data.entriesUpdated > 0) {
+          const fresh = await readLibraryAgain(libraryPath);
+          if (fresh) {onLibraryChanged?.(fresh);}
+        }
       } else if (!fCancelledRef.current) {
         setFError(res.error ?? 'Operation failed');
         setFPhase('idle');
       }
     } catch { if (!fCancelledRef.current) { setFError('Operation failed'); setFPhase('idle'); } }
-  }, [fDest, hasLibrary, tracks, libraryPath, fValidRules, fMode, fConflict]);
+  }, [fDest, hasLibrary, tracks, libraryPath, fValidRules, fMode, onLibraryChanged]);
 
   const fCancel = useCallback(async () => {
     fCancelledRef.current = true;
@@ -197,26 +203,14 @@ export const FilterMovePanel: React.FC<FilterMovePanelProps> = ({
             </div>
           </fieldset>
 
-          {/* Conflict resolution */}
-          <fieldset>
-            <legend className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">When file already exists at destination</legend>
-            <div className="flex gap-4">
-              {[{ value: 'skip', label: 'Skip' }, { value: 'overwrite', label: 'Overwrite' }, { value: 'quality', label: 'Keep higher quality' }].map(opt => (
-                <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="filter-conflict" value={opt.value} checked={fConflict === opt.value}
-                    onChange={() => { setFConflict(opt.value as ConflictResolution); fReset(); }} className="text-te-orange" />
-                  <span className="text-sm text-te-grey-800">{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <p className="text-xs text-te-grey-500 font-te-mono">{CLASH_NOTE}</p>
 
           {/* Preview result */}
           {fPreview && fPhase === 'previewed' && (
             <div className="bg-te-grey-100 rounded-te p-te-sm text-sm font-te-mono space-y-1">
               <div className="font-semibold text-te-grey-700">Preview</div>
               <div>{fPreview.matchedTracks} of {fPreview.total} tracks match — {formatFileSize(fPreview.totalSizeBytes)}</div>
-              {fPreview.conflicts > 0 && <div className="text-te-amber-600">{fPreview.conflicts} conflicts at destination</div>}
+              {fPreview.conflicts > 0 && <div className="text-te-amber-600">{fPreview.conflicts} already at the destination — reused if identical, otherwise saved as &quot;(2)&quot;</div>}
               {fPreview.missing > 0 && <div className="text-te-grey-400">{fPreview.missing} source files not found (skipped)</div>}
             </div>
           )}
