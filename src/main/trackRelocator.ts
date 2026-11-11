@@ -225,15 +225,14 @@ export class TrackRelocator {
     try {
       const { files, fileNames, fuzzy } = await this.getFileIndex(options);
 
-      // 1. Exact filename match
-      const exactMatch = files.find(file => {
-        const fileName = path.basename(file, path.extname(file));
-        return fileName.toLowerCase() === originalFileName.toLowerCase();
-      });
-
-      if (exactMatch) {
+      // 1. Exact filename match — every one of them. Several files with the
+      // track's name (`Intro.mp3` in three album folders) is not a match but a
+      // choice, and a caller can only see that if all of them are listed.
+      const wanted = originalFileName.toLowerCase();
+      for (const file of files) {
+        if (path.basename(file, path.extname(file)).toLowerCase() !== wanted) {continue;}
         candidates.push({
-          path: exactMatch,
+          path: file,
           score: 100,
           matchType: 'exact',
           confidence: 0.95

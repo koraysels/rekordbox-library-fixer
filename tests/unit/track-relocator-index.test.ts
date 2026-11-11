@@ -131,6 +131,17 @@ describe('TrackRelocator index coverage', () => {
     expect(summary.files).toBe(4);
   });
 
+  it('lists every file with the track\'s exact name, not just the first', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'A'));
+    fs.mkdirSync(path.join(tmpDir, 'B'));
+    fs.writeFileSync(path.join(tmpDir, 'A', 'Intro.mp3'), 'x');
+    fs.writeFileSync(path.join(tmpDir, 'B', 'Intro.flac'), 'x');
+    const r = new TrackRelocator();
+    const exact = (await r.findRelocationCandidates(track('1', 'Intro'), makeOptions()))
+      .filter((c) => c.matchType === 'exact');
+    expect(exact.map((c) => path.relative(tmpDir, c.path)).sort()).toEqual([path.join('A', 'Intro.mp3'), path.join('B', 'Intro.flac')]);
+  });
+
   it('reports a search folder that is not there', async () => {
     const gone = path.join(tmpDir, 'nope');
     const r = new TrackRelocator();
