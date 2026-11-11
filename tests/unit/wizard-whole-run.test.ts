@@ -3,9 +3,11 @@
  * in a temp folder, the real relocator, duplicate detector, writers and parser.
  * Only the Trash (a logger) and the rekordbox-running check are stand-ins.
  *
- * Runs check → relocate → remove → duplicates, then plans gather and convert
- * without applying them, and reads the database back: cues and loops of every
- * surviving track unchanged, playlists of merged entries pointing at the keeper.
+ * Runs check → relocate → remove → duplicates → gather, applying each, then
+ * plans convert without applying it (a real conversion needs ffmpeg and real
+ * audio; its database switch is tested in apply-conversions.test.ts). Reads the
+ * database back: cues and loops of every surviving track unchanged, playlists
+ * of merged entries pointing at the keeper, the gathered entry at its new file.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 vi.unmock('fs');
@@ -205,6 +207,15 @@ describe('the whole wizard on a copy', () => {
     expect(gather.moves.map((m) => [m.trackIds, m.to])).toEqual([[['out'], path.join(music, 'Promos', 'Outside.mp3')]]);
     expect(gather.unplugged).toEqual([{ drive: UNPLUGGED, count: 1 }]);
     expect(gather.refusal).toBeUndefined();
+    const outside = path.join(root, 'Elsewhere', 'Promos', 'Outside.mp3');
+    const gathered = await applyStep(gather, ctx(), d);
+    expect(gathered.error).toBeUndefined();
+    expect(gathered).toMatchObject({ changed: 1, cancelled: false });
+    expect(fs.existsSync(gathered.backupPath!)).toBe(true);
+    // Same drive: a rename, so nothing goes to the Trash.
+    expect(fs.existsSync(path.join(music, 'Promos', 'Outside.mp3'))).toBe(true);
+    expect(fs.existsSync(outside)).toBe(false);
+    expect(trashed).toEqual([path.join(music, 'B', 'Twin.mp3')]);
 
     const convert = await planStep('convert', ctx(), d) as ConvertStepPlan;
     expect(convert.items.length + convert.setAside.length).toBe(1);
@@ -215,9 +226,14 @@ describe('the whole wizard on a copy', () => {
     for (const [id, counts] of cueCounts(after)) {expect(counts).toEqual(before.get(id));}
     expect(after.tracks.get('moved')!.location).toBe(path.join(music, 'Moved', 'Found Song.mp3'));
     expect(after.tracks.get('unplugged')!.location).toBe(`${UNPLUGGED}/Set/Lost Elsewhere.mp3`);
+    expect(after.tracks.get('out')!.location).toBe(path.join(music, 'Promos', 'Outside.mp3'));
 
     // Playlists of merged entries now hold the keepers; the removed entry left its playlist.
     expect(playlistTracks(after.playlists, 'Warmup')).toEqual(['moved', 'd1']);
     expect(playlistTracks(after.playlists, 'Peak').sort()).toEqual(['d1', 'out', 'tw1']);
+
+    // Checked again, what was fixed is gone from the summary.
+    const recheck = await runCheck(ctx(), d);
+    expect(recheck).toMatchObject({ missing: 0, duplicates: 0, outsideFolder: 0 });
   });
 });
