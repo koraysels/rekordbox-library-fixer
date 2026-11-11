@@ -8,9 +8,22 @@ import { WizardFrame, ErrorLine } from './WizardFrame';
 
 interface FoundLibrary { kind: 'database' | 'xml'; path: string; label: string; size: number; modified: string }
 
+/**
+ * A database waiting for its key. Held by the wizard page, not here: opening
+ * a database swaps this screen for the loading spinner, so state kept in it
+ * would be gone by the time the load reports that the key did not work.
+ */
+export interface KeyRequest {
+  dbPath: string;
+  /** The key that was tried and did not open it; absent when there was none to try. */
+  failedKey?: string;
+}
+
 interface Props {
   /** A rekordbox database is open. */
   hasDatabase: boolean;
+  keyRequest: KeyRequest | null;
+  onKeyRequest: (request: KeyRequest | null) => void;
   onLoadFromDb?: (dbPath?: string) => Promise<boolean> | void;
   onLoadLibrary?: (path: string) => void;
   onSelectLibrary?: () => void;
@@ -21,19 +34,20 @@ interface Props {
  * does not open it, the oldest player, and the music folder. Each answer is
  * kept in settings, so the wizard comes back here only for what is missing.
  */
-export const SetupScreen: React.FC<Props> = ({ hasDatabase, onLoadFromDb, onLoadLibrary, onSelectLibrary }) => {
+export const SetupScreen: React.FC<Props> = ({ hasDatabase, ...databaseProps }) => {
   const [askedPlayer, setAskedPlayer] = useState(false);
   if (!hasDatabase) {
-    return <DatabaseStep onLoadFromDb={onLoadFromDb} onLoadLibrary={onLoadLibrary} onSelectLibrary={onSelectLibrary} />;
+    return <DatabaseStep {...databaseProps} />;
   }
   if (!askedPlayer) {return <PlayerStep onNext={() => setAskedPlayer(true)} />;}
   return <FolderStep />;
 };
 
-const DatabaseStep: React.FC<Omit<Props, 'hasDatabase'>> = ({ onLoadFromDb, onLoadLibrary, onSelectLibrary }) => {
+const DatabaseStep: React.FC<Omit<Props, 'hasDatabase'>> = ({
+  keyRequest, onKeyRequest, onLoadFromDb, onLoadLibrary, onSelectLibrary,
+}) => {
   const key = useSettingsStore((s) => s.rekordboxDbKey);
   const [found, setFound] = useState<FoundLibrary[] | null>(null);
-  const [needsKey, setNeedsKey] = useState<{ dbPath: string; failed: boolean } | null>(null);
   const [opening, setOpening] = useState(false);
 
   useEffect(() => {
@@ -45,27 +59,29 @@ const DatabaseStep: React.FC<Omit<Props, 'hasDatabase'>> = ({ onLoadFromDb, onLo
   }, []);
 
   /** Try the key the app has (bundled or saved); ask for one only when that does not open it. */
+  // The load usually unmounts this step; the answer goes to the page, which outlives it.
   const open = async (dbPath: string) => {
-    if (!looksLikeDbKey(useSettingsStore.getState().rekordboxDbKey)) {
-      setNeedsKey({ dbPath, failed: false });
+    const tried = useSettingsStore.getState().rekordboxDbKey;
+    if (!looksLikeDbKey(tried)) {
+      onKeyRequest({ dbPath });
       return;
     }
     setOpening(true);
     try {
       const opened = await onLoadFromDb?.(dbPath);
-      if (opened === false) {setNeedsKey({ dbPath, failed: true });}
+      onKeyRequest(opened === false ? { dbPath, failedKey: tried } : null);
     } finally {
       setOpening(false);
     }
   };
 
-  if (needsKey) {
+  if (keyRequest) {
     return (
       <KeyStep
-        failed={needsKey.failed && key === useSettingsStore.getState().rekordboxDbKey}
+        failed={keyRequest.failedKey !== undefined && key === keyRequest.failedKey}
         opening={opening}
-        onOpen={() => void open(needsKey.dbPath)}
-        onBack={() => setNeedsKey(null)}
+        onOpen={() => void open(keyRequest.dbPath)}
+        onBack={() => onKeyRequest(null)}
       />
     );
   }

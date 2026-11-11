@@ -10,7 +10,7 @@ import { describePlan, stepTitle } from '../../wizard/stepText';
 import { isDatabasePath, wizardScreen, type WizardPhase } from '../../wizard/wizardScreen';
 import { PLAYER_PROFILES } from '../../../main/convert/playerProfiles';
 import type { StepPlan, StepResult, WizardStepId } from '../../../main/wizard/types';
-import { SetupScreen } from './SetupScreen';
+import { SetupScreen, type KeyRequest } from './SetupScreen';
 import { XmlLibraryScreen } from './XmlLibraryScreen';
 import { CloseRekordboxScreen } from './CloseRekordboxScreen';
 import { SummaryScreen } from './SummaryScreen';
@@ -41,6 +41,8 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
 
   const [running, setRunning] = useState<boolean | null>(null);
   const [choosingDatabase, setChoosingDatabase] = useState(false);
+  /** Kept here because loading a database unmounts the setup screen that asked. */
+  const [keyRequest, setKeyRequest] = useState<KeyRequest | null>(null);
   const [phase, setPhase] = useState<WizardPhase>('summary');
   /** A check made in this visit; a saved one must be checked again before fixing. */
   const [fresh, setFresh] = useState(false);
@@ -62,6 +64,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   // Another library is another run.
   useEffect(() => {
     setChoosingDatabase(false);
+    setKeyRequest(null);
     setPhase('summary');
     setFresh(false);
     setSkipped([]);
@@ -171,6 +174,8 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
       return (
         <SetupScreen
           hasDatabase={!!libraryData && isDatabasePath(libraryPath)}
+          keyRequest={keyRequest}
+          onKeyRequest={setKeyRequest}
           onLoadFromDb={onLoadFromDb}
           onLoadLibrary={onLoadLibrary}
           onSelectLibrary={onSelectLibrary}

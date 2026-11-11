@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { StepPlan, StepResult, WizardCheck } from '../../src/main/wizard/types';
@@ -46,6 +47,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   context.libraryPath = '/lib/master.db';
   context.libraryData = { tracks: new Map(), playlists: [] };
+  context.onLoadFromDb = vi.fn();
   wizard.error = null;
   running.mockResolvedValue({ running: false });
   Object.assign(window.electronAPI, {
@@ -68,6 +70,40 @@ describe('WizardPage', () => {
     expect(await screen.findByText(/works on the rekordbox database/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Go to Advanced' }));
     expect(useSettingsStore.getState().appMode).toBe('advanced');
+  });
+
+  it('a database that does not open with the key asks for the key, though loading replaced the screen meanwhile', async () => {
+    context.libraryPath = '';
+    context.libraryData = null;
+    useSettingsStore.setState({ rekordboxDbKey: 'a'.repeat(64) });
+    (window.electronAPI.scanForLibraries as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { kind: 'database', path: '/rb/master.db', label: 'rekordbox 7', size: 1, modified: '2026-11-11' },
+    ]);
+    let setLoading: (v: boolean) => void = () => undefined;
+    // As useLibrary does: loading on, the library cleared, then off with the load refused.
+    context.onLoadFromDb = vi.fn(async () => {
+      setLoading(true);
+      await new Promise((r) => setTimeout(r, 0));
+      setLoading(false);
+      return false;
+    });
+    const Harness = () => {
+      const [loading, set] = React.useState(false);
+      setLoading = set;
+      return <WizardPage isLoading={loading} />;
+    };
+    render(<Harness />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Open this library' }));
+    expect(await screen.findByRole('heading', { name: 'Your database needs its key' })).toBeInTheDocument();
+    expect(screen.getByText(/did not open with the key/)).toBeInTheDocument();
+    expect(context.onLoadFromDb).toHaveBeenCalledWith('/rb/master.db');
+
+    // A different key is a new attempt: the failure line goes until it fails too.
+    fireEvent.change(screen.getByLabelText('Database key'), { target: { value: 'b'.repeat(64) } });
+    expect(screen.queryByText(/did not open with the key/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Open database' }));
+    expect(await screen.findByText(/did not open with the key/)).toBeInTheDocument();
+    expect(context.onLoadFromDb).toHaveBeenCalledTimes(2);
   });
 
   it('rekordbox running shows the close screen', async () => {
