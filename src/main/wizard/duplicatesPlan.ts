@@ -16,6 +16,14 @@ const DURATION_TOLERANCE_SEC = 1;
 export interface DuplicatesPlanDeps {
   sameContent: (a: string, b: string) => Promise<boolean>;
   exists: (p: string) => boolean;
+  /**
+   * Which physical file a path names (`fileIdentity` in `sameContent.ts`), or
+   * undefined when unknown. Required, not optional: two spellings of one file
+   * (a symlinked folder, `/Volumes/Macintosh HD/...` for `/...`) are different
+   * strings, and without this the plan would compare the file with itself, call
+   * it a copy, and list the kept entry's own audio for the Trash.
+   */
+  fileId: (p: string) => string | undefined;
   durationOf?: (t: DbTrack) => number | undefined;
 }
 
@@ -71,11 +79,31 @@ const setAsideOf = (tracks: DbTrack[], why: string): SetAsideItem => ({
   why,
 });
 
-/** One track per distinct file (by `referenceKey`), in set order. */
-function distinctFiles(tracks: DbTrack[]): DbTrack[] {
+/**
+ * A key per physical file: its identity when the filesystem tells it, otherwise
+ * the path as `referenceKey` spells it. Memoised — one stat per path per plan.
+ */
+function fileKeyer(fileId: DuplicatesPlanDeps['fileId']): (p: string) => string {
+  const cache = new Map<string, string>();
+  return (p) => {
+    let key = cache.get(p);
+    if (key === undefined) {
+      const id = fileId(p);
+      key = id !== undefined ? `id:${id}` : `path:${referenceKey(p)}`;
+      cache.set(p, key);
+    }
+    return key;
+  };
+}
+
+/** The last path segment, compared the way `referenceKey` compares paths. */
+const baseKey = (p: string) => referenceKey(p.split(/[\\/]/).pop() ?? p);
+
+/** One track per distinct physical file, in set order. */
+function distinctFiles(tracks: DbTrack[], fileKey: (p: string) => string): DbTrack[] {
   const seen = new Map<string, DbTrack>();
   for (const t of tracks) {
-    const key = referenceKey(t.location);
+    const key = fileKey(t.location);
     if (!seen.has(key)) {seen.set(key, t);}
   }
   return [...seen.values()];
@@ -106,12 +134,14 @@ async function sameRecording(files: DbTrack[], deps: DuplicatesPlanDeps): Promis
  * The duplicates the wizard merges on one confirm, and the sets it leaves to the user.
  *
  * Sure means: every file in the set is there, and either the entries all point at
- * one file, or the files are byte-for-byte identical. Anything else is set aside.
+ * one file (one path, or several spellings `fileId` shows are one file), or the
+ * files are byte-for-byte identical. Anything else is set aside.
  * Streaming entries and entries already gone from the library are left out of a
  * set, and no entry takes part in two merges.
  *
  * A file goes in `trashPaths` only when no entry left after every merge still uses
- * it, and only when the content comparison already proved it a regular file.
+ * it — by path, or as the same physical file under another spelling — and only
+ * when the content comparison already proved it a regular file.
  */
 export async function planDuplicates(
   sets: DuplicateSet[],
@@ -121,6 +151,7 @@ export async function planDuplicates(
   deps: DuplicatesPlanDeps,
 ): Promise<DuplicatesStepPlan> {
   const slots = playlistSlots(playlists);
+  const fileKey = fileKeyer(deps.fileId);
   const claimed = new Set<string>();
   const provenFiles = new Set<string>();
   const sure: DbTrack[][] = [];
@@ -136,7 +167,7 @@ export async function planDuplicates(
     }
     if (members.length < 2) {continue;}
 
-    const files = distinctFiles(members);
+    const files = distinctFiles(members, fileKey);
     if (files.some((f) => !deps.exists(f.location))) {
       setAside.push(setAsideOf(members, FILE_MISSING));
       continue;
@@ -146,7 +177,7 @@ export async function planDuplicates(
         setAside.push(setAsideOf(members, NOT_CERTAIN));
         continue;
       }
-      for (const f of files) {provenFiles.add(referenceKey(f.location));}
+      for (const f of files) {provenFiles.add(fileKey(f.location));}
     }
     for (const t of members) {claimed.add(t.id);}
     sure.push(members);
@@ -166,7 +197,25 @@ export async function planDuplicates(
   }
   // A file listed by one merge is not listed again by another: trashing it twice fails.
   const listed = new Set<string>();
-  const isProvenFile = (p: string) => provenFiles.has(referenceKey(p)) && !listed.has(referenceKey(p));
+  const isProvenFile = (p: string) => provenFiles.has(fileKey(p)) && !listed.has(fileKey(p));
+
+  // `computeDeletablePaths` compares path strings, so it cannot see a kept entry
+  // reaching the same file by another spelling. Check identities too: against
+  // every keeper, and against remaining entries with the same file name — a
+  // folder alias keeps the name, and stat-ing only those keeps this cheap.
+  const remainingByName = new Map<string, string[]>();
+  for (const loc of remaining) {
+    if (!loc || isStreamingLocation(loc)) {continue;}
+    const name = baseKey(loc);
+    const list = remainingByName.get(name);
+    if (list) {list.push(loc);} else {remainingByName.set(name, [loc]);}
+  }
+  const keeperLocations = merges.map(({ keeper }) => keeper.location);
+  const stillUsedElsewhere = (p: string): boolean => {
+    const key = fileKey(p);
+    const others = [...keeperLocations, ...(remainingByName.get(baseKey(p)) ?? [])];
+    return others.some((o) => fileKey(o) === key);
+  };
 
   return {
     step: 'duplicates',
@@ -175,8 +224,12 @@ export async function planDuplicates(
         members.filter((t) => t.id !== keeper.id).map((t) => t.location),
         remaining,
         isProvenFile,
-      );
-      for (const p of trashPaths) {listed.add(referenceKey(p));}
+      ).filter((p) => {
+        // Two spellings of one file within a merge are listed once, like two merges.
+        if (listed.has(fileKey(p)) || stillUsedElsewhere(p)) {return false;}
+        listed.add(fileKey(p));
+        return true;
+      });
       return { keepId: keeper.id, removeIds, keepName: keeper.name, artist: keeper.artist, trashPaths };
     }),
     setAside,

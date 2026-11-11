@@ -58,3 +58,21 @@ export async function sameContent(a: string, b: string, io: ContentIo = realIo):
     await fb?.close().catch(() => undefined);
   }
 }
+
+/**
+ * Which physical file a path names, as `dev:ino`, following symlinks — or
+ * undefined when that cannot be told (missing, unreadable, or a filesystem that
+ * reports no inode). Two different spellings of one file — a symlinked folder, a
+ * firmlink, macOS's `/Volumes/Macintosh HD` alias of `/` — compare equal here
+ * when they never would as path strings. Inodes are read as bigints: NTFS and
+ * ReFS file ids do not fit a double.
+ */
+export function fileIdentity(p: string): string | undefined {
+  try {
+    const st = fs.statSync(p, { bigint: true });
+    if (!st.isFile() || st.ino === 0n) {return undefined;}
+    return `${st.dev}:${st.ino}`;
+  } catch {
+    return undefined;
+  }
+}

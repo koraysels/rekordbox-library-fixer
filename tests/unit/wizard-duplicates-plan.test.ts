@@ -23,6 +23,7 @@ const library = (...ts: DbTrack[]) => new Map(ts.map((t) => [t.id, t]));
 const deps = (overrides: Partial<Parameters<typeof planDuplicates>[4]> = {}) => ({
   sameContent: async () => true,
   exists: () => true,
+  fileId: () => undefined,
   ...overrides,
 });
 
@@ -204,6 +205,60 @@ describe('planDuplicates', () => {
     const plan = await planDuplicates([setOf(a, b), setOf(c, d)], library(a, b, c, d), [], MUSIC, deps());
     expect(plan.merges.map((m) => m.keepId)).toEqual(['1', '4']);
     expect(plan.merges.flatMap((m) => m.trashPaths)).toEqual(['/y/a.mp3']);
+  });
+
+  describe('two spellings of one physical file', () => {
+    // macOS ships /Volumes/Macintosh HD -> /, so these two paths are one file.
+    const ALIAS = '/Volumes/Macintosh HD';
+    const inodes: Record<string, string> = {
+      '/Users/dj/Music/a.mp3': '1:100',
+      [`${ALIAS}/Users/dj/Music/a.mp3`]: '1:100',
+      '/Users/dj/Copies/a.mp3': '1:200',
+      [`${ALIAS}/Users/dj/Copies/a.mp3`]: '1:200',
+    };
+    const fileId = (p: string) => inodes[p];
+
+    it('merges them as one file, without comparing it with itself, and trashes nothing', async () => {
+      const a = track('1', '/Users/dj/Music/a.mp3');
+      const b = track('2', `${ALIAS}/Users/dj/Music/a.mp3`);
+      let compared = 0;
+      const plan = await planDuplicates([setOf(a, b)], library(a, b), [], MUSIC,
+        deps({ fileId, sameContent: async () => { compared++; return true; } }));
+      expect(compared).toBe(0);
+      expect(plan.merges).toEqual([
+        { keepId: '1', removeIds: ['2'], keepName: 'Song 1', artist: 'Artist', trashPaths: [] },
+      ]);
+    });
+
+    it('does not trash a copy a third entry still reaches by another spelling', async () => {
+      const keep = track('1', '/Users/dj/Music/a.mp3', { cues: hotcues(2) });
+      const lose = track('2', '/Users/dj/Copies/a.mp3');
+      const third = track('3', `${ALIAS}/Users/dj/Copies/a.mp3`, { name: 'Elsewhere' });
+      const plan = await planDuplicates([setOf(keep, lose)], library(keep, lose, third), [], MUSIC,
+        deps({ fileId }));
+      expect(plan.merges[0].removeIds).toEqual(['2']);
+      expect(plan.merges[0].trashPaths).toEqual([]);
+    });
+
+    it('lists a removed copy once when two removed entries spell it differently', async () => {
+      const keep = track('1', '/Users/dj/Music/a.mp3', { cues: hotcues(2) });
+      const lose = track('2', '/Users/dj/Copies/a.mp3');
+      const loseAlias = track('3', `${ALIAS}/Users/dj/Copies/a.mp3`);
+      const plan = await planDuplicates([setOf(keep, lose, loseAlias)], library(keep, lose, loseAlias), [], MUSIC,
+        deps({ fileId }));
+      expect(plan.merges[0].removeIds).toEqual(['2', '3']);
+      expect(plan.merges[0].trashPaths).toEqual(['/Users/dj/Copies/a.mp3']);
+    });
+
+    it('never trashes the kept file when the keeper is reached by the alias', async () => {
+      const keep = track('1', `${ALIAS}/Users/dj/Music/a.mp3`, { cues: hotcues(2) });
+      const lose = track('2', '/Users/dj/Music/a.mp3');
+      const copy = track('3', '/Users/dj/Copies/a.mp3');
+      const plan = await planDuplicates([setOf(lose, copy, keep)], library(keep, lose, copy), [], MUSIC,
+        deps({ fileId }));
+      expect(plan.merges[0].keepId).toBe('1');
+      expect(plan.merges[0].trashPaths).toEqual(['/Users/dj/Copies/a.mp3']);
+    });
   });
 
   it('uses durationOf when given', async () => {

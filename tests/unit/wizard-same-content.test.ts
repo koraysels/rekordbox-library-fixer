@@ -3,7 +3,7 @@ vi.unmock('fs');
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { sameContent, CHUNK_BYTES } from '../../src/main/wizard/sameContent';
+import { sameContent, fileIdentity, CHUNK_BYTES } from '../../src/main/wizard/sameContent';
 
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wizard-same-content-')); });
@@ -51,5 +51,29 @@ describe('sameContent', () => {
     const a = write('a.mp3', Buffer.alloc(0));
     const b = write('b.mp3', Buffer.alloc(0));
     expect(await sameContent(a, b)).toBe(true);
+  });
+});
+
+describe('fileIdentity', () => {
+  it('is the same for a file and its path through a symlinked folder', () => {
+    const real = path.join(dir, 'real');
+    fs.mkdirSync(real);
+    const a = path.join(real, 'a.mp3');
+    fs.writeFileSync(a, pattern(10));
+    fs.symlinkSync(real, path.join(dir, 'alias'), 'dir');
+    const viaAlias = path.join(dir, 'alias', 'a.mp3');
+    expect(fileIdentity(a)).toBeDefined();
+    expect(fileIdentity(viaAlias)).toBe(fileIdentity(a));
+  });
+
+  it('differs for two files with identical bytes', () => {
+    const a = write('a.mp3', pattern(10));
+    const b = write('b.mp3', pattern(10));
+    expect(fileIdentity(a)).not.toBe(fileIdentity(b));
+  });
+
+  it('is undefined for a missing path or a folder', () => {
+    expect(fileIdentity(path.join(dir, 'nope.mp3'))).toBeUndefined();
+    expect(fileIdentity(dir)).toBeUndefined();
   });
 });
