@@ -85,8 +85,12 @@ collection has to go through the database.
   time `build:main` runs `write-bundled-key.mjs`, which takes `REKORDBOX_DB_KEY` from the environment or
   a gitignored `.env` and writes `dist/main/bundled-key.json` — or removes it when there is no valid
   key, so a build without `.env` still works. Release builds get `.env` from the `REKORDBOX_DB_KEY`
-  GitHub Actions secret. `get-saved-db-key` returns a key the user saved, else the bundled one. The
-  paste screen is the fallback, for a build without a key or a rekordbox update that changes it: it
+  GitHub Actions secret. `get-saved-db-key` returns a key the user saved, else the bundled one;
+  `save-db-key` never saves the bundled key (it drops a saved copy of it instead), so the saved file only
+  holds a pasted key and a new release's bundled key is not pinned out. `loadFromDb` (`useLibrary.ts`)
+  tries the bundled key (`get-bundled-db-key`) once when the key in settings does not open the database,
+  and keeps whichever worked. The paste screen is the fallback, for a build without a key or a rekordbox
+  update that changes it: it
   shows the one-line command for the host platform that prints the key locally via the open-source
   pyrekordbox package, and a pasted key is checked for shape (64 hex characters) before it is used. The command reaches `BLOB` through `Rekordbox6Database`'s own
   module rather than a module path: pyrekordbox 0.5 renamed `db6` to `masterdb`.
@@ -123,22 +127,36 @@ collection has to go through the database.
   `src/renderer/wizard/` and `src/renderer/components/wizard/`; spec
   `docs/superpowers/specs/2026-11-11-wizard-mode-design.md`): the default screen. `appMode`
   (`'wizard' | 'advanced'`, settings store) picks it or today's pages; `musicFolder` is a setting both
-  use. Database only — an XML library gets a screen pointing at the database or Advanced. One check
+  use: shown and changed in Settings next to the oldest player (`MusicFolderSetting`) and on the wizard's
+  summary, and searched first by the wizard and the Relocate page alike (`withMusicFolderFirst` in
+  `src/main/searchPaths.ts`). Database only — an XML library gets a screen pointing at the database or Advanced. One check
   (`runCheck`), then per step a plan (`planStep`) and an apply (`applyStep`), in the order relocate →
   remove → duplicates → gather → convert; a step with nothing to do is skipped. Each step is a pure
   planner (`relocatePlan`, `removePlan`, `duplicatesPlan`, `gatherPlan`) plus a main-process apply
   (`applySteps.ts`, `gatherApply.ts`), free of Electron and React; everything outside the service comes
   in through `WizardDeps` (`wizardDeps.ts`), so tests fake it whole. Every check and plan re-reads the
-  database, so each step works from the library the previous one left. Each apply is one verified backup
+  database, so each step works from the library the previous one left; after a step that wrote, the
+  page checks again (`recheck`, which keeps finished steps) before planning the next, so the numbers
+  follow the library and a step the last one made necessary joins the run (`stepsForRun`). A plan that
+  carries a refusal (music folder unplugged, no ffmpeg build) is shown, never skipped unseen. Each apply is one verified backup
   and one write through the existing writers, refused while rekordbox runs (`Close rekordbox to
   continue`), and one Activity-history entry (`wizardHistory.ts`). Sure cases are fixed with one
   confirm; the rest are set aside in "Check these yourself", linked to the matching Advanced page.
   The last check per library is kept (`wizardStore.ts`, key `rekordbox-wizard`); continuing always
   checks again. No undo: backups are in History, trashed files in the Trash.
 
-  Rules the code depends on: relocation applies a match of 0.9 or more; remove drops only an entry with
-  no candidate at any confidence, on a mounted drive (`volumes.ts`: the volume root exists), re-checked
-  at apply; an entry on an unplugged drive is never removed, moved or counted as missing; duplicates
+  Rules the code depends on: relocation applies a match of 0.9 or more, and only one-to-one — a track
+  with several sure candidates (same name in several folders), or two missing files heading for one
+  target, is set aside; missing means the file check failed with ENOENT/ENOTDIR (`fileState.ts`) — a
+  file the app may not read (macOS privacy protection, EPERM/EACCES) is set aside with a "give it
+  access" note, never removed; remove drops only an entry with no candidate at any confidence from a
+  search that covered everything — every search folder on a mounted drive, listed in full (the index,
+  `audioFileIndex.ts`, walks from each folder's own root, every level deep for the wizard, and reports
+  any folder it could not list), music found at all, and a failed search fails the plan — otherwise
+  every entry is set aside naming what was not searched; on a mounted drive (`volumes.ts`: the volume
+  root exists and, on macOS and Linux, is a mount point — an unclean eject can leave an empty
+  `/Volumes/<name>`), re-checked at apply; an entry on an unplugged drive is never removed, moved or
+  counted as missing; duplicates
   are sure only for entries on one file (by `dev:ino`, so two spellings are one file) or files equal in
   size, length within 1 s and byte content (`sameContent` streams, never loads a file), the keeper has
   the most cues + playlist slots, then quality, then lives in the music folder; extra files are trashed
@@ -409,8 +427,11 @@ src/renderer/
 The main process mirrors this for conversion: `src/main/convert/` (player profiles, plan, run, file
 conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`; and for
 the wizard: `src/main/wizard/` (volumes, the four planners, `sameContent`, gather apply, the service
-and its deps) with its IPC in `src/main/ipc/wizard.ts`. `tests/unit/wizard-whole-run.test.ts` runs
-every step on an encrypted temp database and checks cues, loops and playlists survive.
+and its deps) with its IPC in `src/main/ipc/wizard.ts`. `tests/unit/wizard-whole-run.test.ts` applies
+relocate, remove, duplicates and gather on an encrypted temp database and checks cues, loops and
+playlists survive; convert is only planned there (a real conversion needs ffmpeg and real audio — its
+database switch is tested in `apply-conversions.test.ts`). `tests/unit/wizard-remove-search.test.ts`
+runs the remove step against the real search: a bracketed music folder, a file far below it, cwd `/`.
 
 Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/`,
 `scan/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
