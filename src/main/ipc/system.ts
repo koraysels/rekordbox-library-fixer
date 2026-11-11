@@ -3,6 +3,7 @@ import { ipcMain, dialog, shell, Notification, app } from 'electron';
 import { runtime, safeConsole, getMainWindow, sendToWindow } from '../runtime';
 import { readTrackArtwork } from '../trackArtwork';
 import { readSavedDbKey, writeSavedDbKey } from '../savedDbKey';
+import { readBundledKey, BUNDLED_KEY_DIR } from '../bundledKey';
 
 /**
  * Talking to the desktop: notifications, file dialogs, revealing a
@@ -57,7 +58,9 @@ export function registerSystemIpc(): void {
     }
   });
 
-  ipcMain.handle('get-saved-db-key', async () => readSavedDbKey(app.getPath('userData')));
+  // A key the user pasted wins; otherwise the one bundled with the build, if any.
+  ipcMain.handle('get-saved-db-key', async () =>
+    readSavedDbKey(app.getPath('userData')) || readBundledKey(BUNDLED_KEY_DIR));
   ipcMain.handle('save-db-key', async (_e, key: string) => ({ success: writeSavedDbKey(app.getPath('userData'), key) }));
 
   ipcMain.handle('get-track-artwork', async (_e, filePath: string) => readTrackArtwork(filePath));

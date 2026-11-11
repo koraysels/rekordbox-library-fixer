@@ -12,8 +12,13 @@ const SHAPE = /^[0-9a-f]{64}$/i;
  * key again. This copy lives outside that storage and refills it.
  */
 export function readSavedDbKey(dir: string): string {
+  return readKeyFile(path.join(dir, FILE));
+}
+
+/** A `{"key": "<64 hex>"}` file's key, or '' when it is missing, damaged or not a key. */
+export function readKeyFile(file: string): string {
   try {
-    const { key } = JSON.parse(fs.readFileSync(path.join(dir, FILE), 'utf8'));
+    const { key } = JSON.parse(fs.readFileSync(file, 'utf8'));
     return typeof key === 'string' && SHAPE.test(key) ? key : '';
   } catch {
     return '';

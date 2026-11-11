@@ -13,7 +13,7 @@
     "build": "pnpm typecheck && pnpm build:vite && pnpm build:main",
     "build:check": "pnpm lint:check && pnpm build",
     "build:vite": "vite build",
-    "build:main": "tsc -p tsconfig.main.json",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/write-bundled-key.mjs",
     "dist": "pnpm clean:release && pnpm build && electron-builder",
     "dist:mac": "pnpm clean:release && pnpm build && electron-builder --mac",
     "dist:win": "pnpm clean:release && pnpm build && electron-builder --win",

@@ -67,8 +67,9 @@ collection has to go through the database.
   value marks a loop. `master.db` lives in the unversioned `Pioneer/rekordbox` directory on
   Rekordbox 7 — under `~/Library` on macOS and `%APPDATA%` on Windows, never the Windows home
   folder. `databaseCandidates` in `libraryScanner.ts` is the one list of places to look; the
-  locator, the home-screen scan and the backup scan all use it. The SQLCipher key is never hardcoded; the user pastes it on the load screen and
-  it persists in the settings store.
+  locator, the home-screen scan and the backup scan all use it. The SQLCipher key is never in the
+  repository: a release build bundles it (see "The database key" below), and the user can paste it on
+  the load screen; it persists in the settings store.
 - **The IPC contract** (`src/main/ipcContract.ts`): one set of payload and result types,
   imported by `preload.ts`, the handlers and the renderer's `window.electronAPI` declaration.
   Both sides used to declare their own shapes, so a field the main process stopped sending
@@ -79,10 +80,15 @@ collection has to go through the database.
   with its `-wal` and then checks the copy against the source size before opening the database for
   writing. A truncated backup — a full disk, a drive that disconnected mid-copy — is worse than no
   backup, because it invites the user to trust it and only fails when it is needed.
-- **The database key** (`src/renderer/utils/keyExtractionCommand.ts`): never hardcoded, never
-  shipped. The load screen shows the one-line command for the host platform that prints the key
-  locally via the open-source pyrekordbox package, and a pasted key is checked for shape (64 hex
-  characters) before it is used. The command reaches `BLOB` through `Rekordbox6Database`'s own
+- **The database key** (`src/main/bundledKey.ts`, `scripts/write-bundled-key.mjs`,
+  `src/renderer/utils/keyExtractionCommand.ts`): never committed, never hardcoded in source. At build
+  time `build:main` runs `write-bundled-key.mjs`, which takes `REKORDBOX_DB_KEY` from the environment or
+  a gitignored `.env` and writes `dist/main/bundled-key.json` — or removes it when there is no valid
+  key, so a build without `.env` still works. Release builds get `.env` from the `REKORDBOX_DB_KEY`
+  GitHub Actions secret. `get-saved-db-key` returns a key the user saved, else the bundled one. The
+  paste screen is the fallback, for a build without a key or a rekordbox update that changes it: it
+  shows the one-line command for the host platform that prints the key locally via the open-source
+  pyrekordbox package, and a pasted key is checked for shape (64 hex characters) before it is used. The command reaches `BLOB` through `Rekordbox6Database`'s own
   module rather than a module path: pyrekordbox 0.5 renamed `db6` to `masterdb`.
 - **Write guard** (`src/main/librarySource.ts`): every *XML* write path refuses a `.db` path.
   The XML writer writes to `libraryPath`, so a database-backed library would otherwise have

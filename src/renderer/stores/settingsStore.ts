@@ -12,9 +12,15 @@ interface SettingsState {
   relocationOptions: RelocationOptions;
   /** The oldest player the DJ plays on; what the Convert page checks files against. */
   oldestPlayer: PlayerProfile['id'];
+  /** The one folder the DJ keeps music in; the wizard gathers into it, relocation searches it first. */
+  musicFolder: string;
+  /** Which face of the app shows: the fix-my-library wizard or today's pages. */
+  appMode: 'wizard' | 'advanced';
 
   // Actions
   setOldestPlayer: (id: PlayerProfile['id']) => void;
+  setMusicFolder: (path: string) => void;
+  setAppMode: (mode: 'wizard' | 'advanced') => void;
   setScanOptions: (options: ScanOptions) => void;
   setResolutionStrategy: (strategy: ResolutionStrategy) => void;
   setRekordboxDbKey: (key: string) => void;
@@ -43,6 +49,8 @@ export const useSettingsStore = create<SettingsState>()(
       resolutionStrategy: 'keep-highest-quality',
       rekordboxDbKey: '',
       oldestPlayer: DEFAULT_PLAYER,
+      musicFolder: '',
+      appMode: 'wizard',
       relocationOptions: {
         searchPaths: [],
         searchDepth: 8,
@@ -65,6 +73,10 @@ export const useSettingsStore = create<SettingsState>()(
       setRekordboxDbKey: (key) => set({ rekordboxDbKey: key }),
 
       setOldestPlayer: (id) => set({ oldestPlayer: id }),
+
+      setMusicFolder: (path) => set({ musicFolder: path.trim() }),
+
+      setAppMode: (mode) => set({ appMode: mode }),
 
       updateScanOption: (key, value) => {
         console.log(`🔧 Zustand: Updating scan option ${key}:`, value);
