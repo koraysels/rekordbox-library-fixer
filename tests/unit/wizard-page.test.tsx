@@ -279,6 +279,30 @@ describe('WizardPage', () => {
     expect(useWizardStore.getState().byLibrary['/lib/master.db'].done).toContain('relocate');
   });
 
+  it('a gather refused because the music folder\'s drive is unplugged says so, and is not marked done', async () => {
+    const gatherCheck: WizardCheck = { ...check, missing: 0, outsideFolder: 3 };
+    wizard.check.mockImplementation(async () => {
+      useWizardStore.getState().setCheck('/lib/master.db', gatherCheck);
+      return gatherCheck;
+    });
+    wizard.plan.mockResolvedValue({
+      step: 'gather', moves: [], unplugged: [], bytesCrossDrive: 0, freeBytes: 0,
+      refusal: 'Plug in SSD — your music folder is on it',
+    } satisfies StepPlan);
+    render(<WizardPage isLoading={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check my library' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start fixing' }));
+
+    expect(await screen.findByText('Plug in SSD — your music folder is on it')).toBeInTheDocument();
+    expect(screen.getByText("This step can't run right now.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull();
+    expect(useWizardStore.getState().byLibrary['/lib/master.db'].done).not.toContain('gather');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip this step' }));
+    expect(await screen.findByText('Sync your USB sticks from rekordbox so they get these changes.')).toBeInTheDocument();
+    expect(useWizardStore.getState().byLibrary['/lib/master.db'].done).not.toContain('gather');
+  });
+
   it('when every step is done it says to sync the USB sticks', async () => {
     // Both steps empty: relocate and remove.
     wizard.plan.mockImplementation(async (step: string) => (

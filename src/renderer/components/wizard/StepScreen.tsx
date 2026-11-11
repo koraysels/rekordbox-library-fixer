@@ -32,9 +32,17 @@ export const StepScreen: React.FC<StepScreenProps> = ({
 }) => {
   const text = describePlan(plan, playerName);
   const empty = isEmptyPlan(plan);
+  // Nothing planned because the step cannot run: say why, and let it be skipped, not finished.
+  const blockedEmpty = empty && !!text.blocked;
   const advanced = ADVANCED_ROUTE[plan.step];
 
-  const actions = busy ? undefined : empty ? (
+  let lead: React.ReactNode = text.lead;
+  if (blockedEmpty) {lead = "This step can't run right now.";}
+  else if (empty) {lead = 'Nothing here can be fixed without you. These are listed so you can look at them.';}
+
+  const actions = busy ? undefined : blockedEmpty ? (
+    <button type="button" className="btn-primary" onClick={onSkip}>Skip this step</button>
+  ) : empty ? (
     <button type="button" className="btn-primary" onClick={onContinue}>Continue</button>
   ) : (
     <>
@@ -49,7 +57,7 @@ export const StepScreen: React.FC<StepScreenProps> = ({
     <WizardFrame
       title={text.title}
       position={position}
-      lead={empty ? 'Nothing here can be fixed without you. These are listed so you can look at them.' : text.lead}
+      lead={lead}
       actions={actions}
     >
       {!empty && <ItemList items={text.items} label="What will change" />}

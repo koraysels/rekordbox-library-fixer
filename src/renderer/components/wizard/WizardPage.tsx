@@ -105,7 +105,10 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     void wizard.plan(nextStep).then((p) => {
       planningFor.current = null;
       if (!p) {setPlanFailed(nextStep);return;}
-      if (isEmptyPlan(p) && describePlan(p, playerName).setAside.length === 0) {
+      // Skipped unseen only when there is nothing to do, nothing to look at, and
+      // no reason it could not run: a refusal (music folder unplugged) is shown.
+      const text = describePlan(p, playerName);
+      if (isEmptyPlan(p) && text.setAside.length === 0 && !text.blocked) {
         markDone(libraryPath, nextStep);
         return;
       }
