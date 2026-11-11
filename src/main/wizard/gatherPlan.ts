@@ -51,6 +51,11 @@ export async function resolveClash(
 
 export interface GatherPlanDeps extends ClashDeps {
   platform: NodeJS.Platform;
+  /**
+   * A plain file, not a folder. rekordbox libraries hold entries whose location is
+   * a folder or a truncated path; gathering one would move a whole folder of music.
+   */
+  isRegularFile: (p: string) => boolean;
   fileSize: (p: string) => number;
   freeBytes: (dir: string) => number;
   /**
@@ -77,7 +82,8 @@ function driveLabel(p: string, platform: NodeJS.Platform): string {
  * Which tracks the gather step moves into the music folder, and where to.
  *
  * Left out: streaming tracks, tracks already inside the folder, and files that are
- * not there on a plugged-in drive (relocation's business). A track on an unplugged
+ * not there on a plugged-in drive (relocation's business) — a location that names
+ * a folder counts as not there. A track on an unplugged
  * drive is never moved; it is counted under its drive so the user can plug it in.
  * Entries sharing one file move together as one move. A move crosses drives when
  * the file's volume is not the music folder's; those are copied, so they need
@@ -119,7 +125,8 @@ export async function planGather(
       unplugged.set(drive, (unplugged.get(drive) ?? 0) + 1);
       continue;
     }
-    if (!deps.exists(loc)) {continue;}
+    // A folder, or anything else that is not a plain file, is left out like a missing one.
+    if (!deps.exists(loc) || !deps.isRegularFile(loc)) {continue;}
     const key = fileKey(loc);
     const group = groups.get(key);
     if (group) {group.push(t);} else {groups.set(key, [t]);}

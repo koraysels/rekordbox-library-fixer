@@ -81,6 +81,9 @@ async function copyInto(move: GatherMove, io: GatherFs): Promise<void> {
 
 /** Put one file in place. Throws, with nothing left behind, when it cannot. */
 async function place(move: GatherMove, io: GatherFs): Promise<Placed['kind']> {
+  // A folder (an entry whose location is a folder or a truncated path) is never
+  // renamed or copied: that would carry a whole folder of music with it.
+  if (!io.isRegularFile(move.from)) {throw new Error(`${move.from} is not a file; it was left alone`);}
   if (move.reuseExisting) {
     if (!(await io.sameContent(move.from, move.to))) {
       throw new Error(`The file at ${move.to} is no longer the same as this one`);

@@ -17,6 +17,7 @@ function disk(files: Record<string, number>, mounted: string[] = ['/', '/Volumes
   return {
     platform: 'darwin' as NodeJS.Platform,
     exists: (p: string) => existing.has(p),
+    isRegularFile: (p: string) => Object.prototype.hasOwnProperty.call(files, p),
     sameContent: vi.fn(async () => false),
     fileSize: (p: string) => files[p] ?? 0,
     freeBytes: () => 100 * GiB,
@@ -132,6 +133,16 @@ describe('planGather', () => {
     );
     expect(plan.moves).toEqual([]);
     expect(plan.unplugged).toEqual([]);
+  });
+
+  it('leaves out an entry whose location is a folder', async () => {
+    const folder = '/Users/k/Downloads/Promos';
+    const file = '/Users/k/Downloads/Promos/a.mp3';
+    // The folder exists on disk but is not a plain file.
+    const d = { ...disk({ [file]: 10 }, ['/', '/Volumes/SSD', folder]) };
+    const plan = await planGather(library(track('1', folder), track('2', file)), MUSIC, d);
+    expect(plan.moves.map((m) => m.from)).toEqual([file]);
+    expect(plan.moves.flatMap((m) => m.trackIds)).toEqual(['2']);
   });
 
   it('refuses up front when the music folder\'s drive lacks the room', async () => {

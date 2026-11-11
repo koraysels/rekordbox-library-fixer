@@ -278,6 +278,34 @@ describe('applyGather', () => {
     expect(result.changed).toBe(0);
   });
 
+  it('never moves a folder whose path an entry holds, and still moves the files inside it', async () => {
+    const folder = path.join(root, 'Downloads', 'Promos');
+    const inner = write(path.join(folder, 'a.mp3'), 'AAA');
+    const folderTo = path.join(music, 'Downloads', 'Promos');
+    const crossTo = path.join(music, 'Other', 'Promos');
+    const innerTo = path.join(music, 'Promos', 'a.mp3');
+    makeDb([['t1', folder], ['t2', folder], ['t3', inner]]);
+    const c = ctx();
+
+    const result = await applyGather(planOf(
+      move({ trackIds: ['t1'], from: folder, to: folderTo }),
+      move({ trackIds: ['t2'], from: folder, to: crossTo, crossDrive: true }),
+      move({ trackIds: ['t3'], from: inner, to: innerTo }),
+    ), c);
+
+    expect(fs.statSync(folder).isDirectory()).toBe(true);
+    expect(fs.existsSync(folderTo)).toBe(false);
+    expect(fs.existsSync(crossTo)).toBe(false);
+    expect(locationOf('t1').p).toBe(folder);
+    expect(locationOf('t2').p).toBe(folder);
+    expect(result.details.filter((d) => d.action === 'failed').map((d) => d.from)).toEqual([folder, folder]);
+    // The file inside the folder was not dragged along and still moves on its own.
+    expect(read(innerTo)).toBe('AAA');
+    expect(locationOf('t3').p).toBe(innerTo);
+    expect(result.changed).toBe(1);
+    expect(c.trash).not.toHaveBeenCalled();
+  });
+
   it('reports progress per file', async () => {
     const a = write(path.join(root, 'Downloads', 'Promos', 'a.mp3'), 'AAA');
     makeDb([['t1', a]]);
