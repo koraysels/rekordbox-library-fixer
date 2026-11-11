@@ -19,6 +19,16 @@ export function stepsFor(check: WizardCheck): WizardStepId[] {
 }
 
 /**
+ * The steps of a run under way: the ones the latest check calls for, plus the
+ * ones already finished or passed over, so the count and the position stay put
+ * while the check is made again between steps. A step a previous step made
+ * necessary (relocated tracks that now sit outside the music folder) joins in.
+ */
+export function stepsForRun(check: WizardCheck, behind: WizardStepId[]): WizardStepId[] {
+  return STEP_ORDER.filter((step) => behind.includes(step) || NEEDED[step](check));
+}
+
+/**
  * Nothing to apply. A set-aside list may still be there: the step is then shown
  * only as "check these yourself", with a Continue button and no write.
  */

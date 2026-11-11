@@ -9,6 +9,8 @@ interface WizardState {
   byLibrary: Record<string, SavedWizardRun>;
   /** A new check starts over: no step counts as done against it. */
   setCheck: (libraryPath: string, check: WizardCheck) => void;
+  /** The check made again between steps: the numbers change, the steps already finished stay finished. */
+  updateCheck: (libraryPath: string, check: WizardCheck) => void;
   markDone: (libraryPath: string, step: WizardStepId) => void;
   reset: (libraryPath: string) => void;
 }
@@ -23,6 +25,9 @@ export const useWizardStore = create<WizardState>()(
       byLibrary: {},
       setCheck: (libraryPath, check) => set((s) => ({
         byLibrary: { ...s.byLibrary, [libraryPath]: { check, done: [] } },
+      })),
+      updateCheck: (libraryPath, check) => set((s) => ({
+        byLibrary: { ...s.byLibrary, [libraryPath]: { check, done: s.byLibrary[libraryPath]?.done ?? [] } },
       })),
       markDone: (libraryPath, step) => set((s) => {
         const run = s.byLibrary[libraryPath];

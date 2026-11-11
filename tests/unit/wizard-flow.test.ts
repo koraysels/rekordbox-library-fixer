@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { isEmptyPlan, stepsFor } from '@renderer/wizard/wizardFlow';
+import { isEmptyPlan, stepsFor, stepsForRun } from '@renderer/wizard/wizardFlow';
 import type { StepPlan, WizardCheck } from '../../src/main/wizard/types';
 
 const check = (over: Partial<WizardCheck> = {}): WizardCheck => ({
@@ -16,6 +16,18 @@ const check = (over: Partial<WizardCheck> = {}): WizardCheck => ({
 const ref = { trackIds: ['1'], name: 'Track', artist: 'Artist', location: '/a/track.mp3' };
 const aside = { ...ref, why: 'Not sure' };
 const ffmpeg = { installed: true } as never;
+
+describe('stepsForRun', () => {
+  it('keeps the steps already behind, and adds one a previous step made necessary', () => {
+    // Relocate pointed tracks outside the music folder: gather joins the run.
+    expect(stepsForRun(check({ missing: 1, outsideFolder: 4 }), ['relocate'])).toEqual(['relocate', 'remove', 'gather']);
+  });
+
+  it('drops a step the latest check no longer calls for, unless it is behind', () => {
+    expect(stepsForRun(check({ duplicates: 0 }), ['relocate', 'remove'])).toEqual(['relocate', 'remove']);
+    expect(stepsForRun(check(), [])).toEqual([]);
+  });
+});
 
 describe('stepsFor', () => {
   it('a clean library has no steps', () => {

@@ -5,7 +5,7 @@ import { useAppContext } from '../../AppWithRouter';
 import { useWizard } from '../../hooks/useWizard';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useWizardStore } from '../../wizard/wizardStore';
-import { isEmptyPlan, stepsFor } from '../../wizard/wizardFlow';
+import { isEmptyPlan, stepsForRun } from '../../wizard/wizardFlow';
 import { describePlan, stepTitle } from '../../wizard/stepText';
 import { isDatabasePath, wizardScreen, type WizardPhase } from '../../wizard/wizardScreen';
 import { PLAYER_PROFILES } from '../../../main/convert/playerProfiles';
@@ -23,6 +23,7 @@ import { WizardFrame, WorkingPanel, ErrorLine } from './WizardFrame';
 /** The main process refuses a write while rekordbox runs; that sends the wizard back to the close screen. */
 const refusedBecauseRunning = (r: StepResult) => !!r.error && /^close rekordbox/i.test(r.error);
 const happened = (r: StepResult) => r.changed > 0 || !!r.backupPath || r.details.length > 0;
+const wrote = (r: StepResult) => r.changed > 0 || !!r.backupPath;
 
 /**
  * The wizard's sequencer: which screen shows, and what moves it on. Every
@@ -54,6 +55,8 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   const [stepNote, setStepNote] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [results, setResults] = useState<StepResult[]>([]);
+  /** Applying a step, or checking again after one: no next step is planned meanwhile. */
+  const [settling, setSettling] = useState(false);
   const planningFor = useRef<WizardStepId | null>(null);
 
   const askRunning = useCallback(() => {
@@ -76,7 +79,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     setResults([]);
   }, [libraryPath]);
 
-  const steps = saved ? stepsFor(saved.check) : [];
+  const steps = saved ? stepsForRun(saved.check, [...saved.done, ...skipped]) : [];
   const nextStep = phase === 'steps'
     ? steps.find((s) => !saved?.done.includes(s) && !skipped.includes(s))
     : undefined;
@@ -95,7 +98,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   // Plan the next step once its screen is due. The main process reads the
   // library afresh, so the plan reflects what the previous step wrote.
   useEffect(() => {
-    if (screen !== 'step' || !nextStep) {return;}
+    if (screen !== 'step' || !nextStep || settling) {return;}
     if (plan?.step === nextStep || planningFor.current === nextStep || planFailed === nextStep) {return;}
     planningFor.current = nextStep;
     setPlan(null);
@@ -108,7 +111,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
       }
       setPlan(p);
     });
-  }, [screen, nextStep, plan, planFailed, wizard, markDone, libraryPath, playerName]);
+  }, [screen, nextStep, settling, plan, planFailed, wizard, markDone, libraryPath, playerName]);
 
   const runCheck = async () => {
     const result = await wizard.check();
@@ -145,21 +148,29 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   const apply = async (p: StepPlan) => {
     setConsent(false);
     setStepNote(null);
-    const result = await wizard.apply(p);
-    if (!result) {return;}
-    if (happened(result)) {setResults((r) => [...r, result]);}
-    if (refusedBecauseRunning(result) && !happened(result)) {
-      setRunning(true);
-      return;
+    setSettling(true);
+    try {
+      const result = await wizard.apply(p);
+      if (!result) {return;}
+      if (happened(result)) {setResults((r) => [...r, result]);}
+      if (refusedBecauseRunning(result) && !happened(result)) {
+        setRunning(true);
+        return;
+      }
+      // The library changed: check again, so the numbers follow it and a step
+      // this one made necessary joins the run. A failed check leaves the old one.
+      if (wrote(result)) {await wizard.recheck();}
+      if (!result.error && !result.cancelled) {
+        // The hook marked it done; the next step plans from the reloaded library.
+        setPlan(null);
+        return;
+      }
+      setStepNote(result.error ?? 'Stopped. What was already done is kept.');
+      // Part of it may have been written: plan the step again from the library as it is now.
+      if (happened(result)) {setPlan(null);}
+    } finally {
+      setSettling(false);
     }
-    if (!result.error && !result.cancelled) {
-      // The hook marked it done; the next step plans from the reloaded library.
-      setPlan(null);
-      return;
-    }
-    setStepNote(result.error ?? 'Stopped. What was already done is kept.');
-    // Part of it may have been written: plan the step again from the library as it is now.
-    if (happened(result)) {setPlan(null);}
   };
 
   const confirm = (p: StepPlan) => {

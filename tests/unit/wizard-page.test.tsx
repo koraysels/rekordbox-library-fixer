@@ -17,6 +17,7 @@ vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigate }));
 
 const wizard = {
   check: vi.fn(),
+  recheck: vi.fn(),
   plan: vi.fn(),
   apply: vi.fn(),
   cancel: vi.fn(),
@@ -61,6 +62,7 @@ beforeEach(() => {
     useWizardStore.getState().setCheck('/lib/master.db', check);
     return check;
   });
+  wizard.recheck.mockImplementation(async () => check);
 });
 
 describe('WizardPage', () => {
@@ -201,6 +203,65 @@ describe('WizardPage', () => {
     expect(wizard.plan).toHaveBeenCalledWith('relocate');
     fireEvent.click(await screen.findByRole('button', { name: 'Relocate 1 track' }));
     await waitFor(() => expect(wizard.apply).toHaveBeenCalledWith(relocatePlan));
+  });
+
+  it('checks again after a step that wrote, and runs a step that one made necessary', async () => {
+    // The first check: two missing, nothing outside the music folder.
+    const after: WizardCheck = { ...check, missing: 0, outsideFolder: 1 };
+    const gatherPlan: StepPlan = {
+      step: 'gather',
+      moves: [{ trackIds: ['1'], name: 'Track', from: '/Elsewhere/a.mp3', to: '/Music/Elsewhere/a.mp3', crossDrive: false, reuseExisting: false, bytes: 1 }],
+      unplugged: [], bytesCrossDrive: 0, freeBytes: 0,
+    };
+    wizard.plan.mockImplementation(async (step: string) => (
+      step === 'relocate' ? relocatePlan
+        : step === 'remove' ? { step: 'remove', remove: [], setAside: [] }
+          : gatherPlan
+    ));
+    wizard.apply.mockImplementation(async (p: StepPlan) => {
+      useWizardStore.getState().markDone('/lib/master.db', p.step);
+      return { step: p.step, changed: 1, backupPath: '/bk', details: [], cancelled: false } satisfies StepResult;
+    });
+    let finishRecheck: () => void = () => undefined;
+    wizard.recheck.mockImplementation(() => new Promise((resolve) => {
+      finishRecheck = () => {
+        useWizardStore.getState().updateCheck('/lib/master.db', after);
+        resolve(after);
+      };
+    }));
+
+    render(<WizardPage isLoading={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check my library' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start fixing' }));
+    const relocate = await screen.findByRole('button', { name: 'Relocate 1 track' });
+    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
+    fireEvent.click(relocate);
+
+    // Nothing is planned while the check runs again.
+    await waitFor(() => expect(wizard.recheck).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(wizard.plan.mock.calls.map(([s]) => s)).toEqual(['relocate']);
+    finishRecheck();
+
+    // The relocated track sits outside the music folder: gather is now part of the run,
+    // and remove, with nothing missing any more, is not.
+    expect(await screen.findByRole('button', { name: 'Move 1 file' })).toBeInTheDocument();
+    expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
+    expect(wizard.recheck).toHaveBeenCalledTimes(1);
+    expect(useWizardStore.getState().byLibrary['/lib/master.db'].check).toEqual(after);
+    const planned = wizard.plan.mock.calls.map(([s]) => s);
+    expect(planned).toEqual(['relocate', 'gather']);
+  });
+
+  it('does not check again after a step that wrote nothing', async () => {
+    wizard.plan.mockResolvedValue(relocatePlan);
+    wizard.apply.mockResolvedValue({ step: 'relocate', changed: 0, details: [], cancelled: false, error: 'Something failed' } satisfies StepResult);
+    render(<WizardPage isLoading={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check my library' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start fixing' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Relocate 1 track' }));
+    expect(await screen.findByText('Something failed')).toBeInTheDocument();
+    expect(wizard.recheck).not.toHaveBeenCalled();
   });
 
   it('a step with nothing to do and nothing set aside is skipped without a screen', async () => {

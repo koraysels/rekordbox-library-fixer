@@ -49,6 +49,16 @@ describe('useWizard', () => {
     expect(useWizardStore.getState().byLibrary['/lib/master.db']).toEqual({ check, done: [] });
   });
 
+  it('recheck updates the numbers but keeps the finished steps', async () => {
+    useWizardStore.getState().setCheck('/lib/master.db', check);
+    useWizardStore.getState().markDone('/lib/master.db', 'relocate');
+    const after: WizardCheck = { ...check, missing: 0, outsideFolder: 5 };
+    api.wizardCheck.mockResolvedValue({ success: true, data: after });
+    const { result } = renderHook(() => useWizard());
+    await act(async () => { await result.current.recheck(); });
+    expect(useWizardStore.getState().byLibrary['/lib/master.db']).toEqual({ check: after, done: ['relocate'] });
+  });
+
   it('a successful apply records history, marks the step done, then reloads', async () => {
     useWizardStore.getState().setCheck('/lib/master.db', check);
     const step: StepResult = { step: 'relocate', changed: 3, backupPath: '/bk', details: [], cancelled: false };

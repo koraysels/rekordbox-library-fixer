@@ -25,6 +25,7 @@ export function useWizard() {
   const profileId = useSettingsStore((s) => s.oldestPlayer);
   const searchPaths = useSettingsStore((s) => s.relocationOptions.searchPaths);
   const setCheck = useWizardStore((s) => s.setCheck);
+  const updateCheck = useWizardStore((s) => s.updateCheck);
   const markDone = useWizardStore((s) => s.markDone);
 
   const [progress, setProgress] = useState<WizardProgress | null>(null);
@@ -79,6 +80,17 @@ export function useWizard() {
     return result;
   }, [request, run, setCheck]);
 
+  /**
+   * Check again between steps, so the summary's numbers follow the library and
+   * a step the last one made necessary is picked up. Finished steps stay finished.
+   */
+  const recheck = useCallback(async (): Promise<WizardCheck | null> => {
+    const req = request('recheck');
+    const result = await run(req, () => window.electronAPI.wizardCheck(req));
+    if (result) {updateCheck(req.dbPath, result);}
+    return result;
+  }, [request, run, updateCheck]);
+
   const plan = useCallback(async (step: WizardStepId): Promise<StepPlan | null> => {
     const req = request(`plan-${step}`);
     return run(req, () => window.electronAPI.wizardPlanStep({ ...req, step }));
@@ -111,5 +123,5 @@ export function useWizard() {
     if (id) {await window.electronAPI.cancelWizard(id);}
   }, []);
 
-  return { check, plan, apply, cancel, progress, busy, error };
+  return { check, recheck, plan, apply, cancel, progress, busy, error };
 }
