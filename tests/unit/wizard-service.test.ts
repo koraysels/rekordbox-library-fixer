@@ -28,7 +28,6 @@ const ctxOf = (over: Partial<WizardContext> = {}): WizardContext => ({
   musicFolder: MUSIC,
   profileId: 'cdj2000' as WizardContext['profileId'],
   searchPaths: ['/Users/k/Downloads'],
-  searchDepth: 6,
   signal: new AbortController().signal,
   onProgress: () => undefined,
   ...over,
@@ -50,7 +49,7 @@ function fakeDeps(library: DbLibrary | (() => DbLibrary), present: string[], ove
     platform: 'darwin',
     parseDb: vi.fn(async () => read()),
     relocator: {
-      beginRelocationRun: vi.fn(async () => undefined),
+      beginRelocationRun: vi.fn(async () => ({ files: 1, unsearched: [] })),
       endRelocationRun: vi.fn(),
       findMissingTracks: vi.fn(async (tracks: Map<string, DbTrack>) => [...tracks.values()]
         .filter((t) => !t.location.startsWith('tidal:') && !exists(t.location))
@@ -149,7 +148,9 @@ describe('planStep', () => {
     expect(deps.parseDb).toHaveBeenCalledWith('/db/master.db', 'k'.repeat(64));
     const options = vi.mocked(deps.relocator.beginRelocationRun).mock.calls[0][0] as RelocationOptions;
     expect(options.searchPaths).toEqual([MUSIC, '/Users/k/Downloads']);
-    expect(options.searchDepth).toBe(6);
+    // Every level below each folder, counted from the folder itself.
+    expect(options.searchDepth).toBe(Number.POSITIVE_INFINITY);
+    expect(vi.mocked(deps.relocator.findRelocationCandidates).mock.calls[0][2]).toEqual({ strict: true });
     expect(plan.apply).toEqual([{
       trackIds: ['1'], name: 'Track 1', artist: 'Artist', location: '/Users/k/Gone/a.mp3',
       to: `${MUSIC}/a.mp3`, confidence: 0.95,
@@ -166,6 +167,34 @@ describe('planStep', () => {
     expect(searched).toEqual(['2']);
     expect(plan.remove.map((r) => r.trackIds)).toEqual([['2']]);
     expect(plan.setAside.map((s) => s.trackIds)).toEqual([['1']]);
+  });
+
+  it.each([
+    ['a search folder on an unplugged drive', ['/Volumes/Old/Music'], { files: 10, unsearched: [] }, /Volumes\/Old\/Music \(drive Old is not plugged in\)/],
+    ['a search folder that could not be read', [], { files: 10, unsearched: [{ path: `${MUSIC}/Locked`, reason: 'unreadable' as const }] }, /Locked \(could not be read\)/],
+    ['a search folder that is not there', [], { files: 10, unsearched: [{ path: '/Users/k/Downloads', reason: 'missing' as const }] }, /Downloads \(not there\)/],
+    ['an index with no music in it at all', [], { files: 0, unsearched: [] }, /no music files were found/],
+  ])('removes nothing when the search missed %s', async (_what, extraPaths, summary, why) => {
+    const lib = libraryOf(track('1', '/Users/k/Gone/a.mp3'));
+    const base = fakeDeps(lib, [MUSIC]);
+    const deps = fakeDeps(lib, [MUSIC], {
+      relocator: { ...base.relocator, beginRelocationRun: vi.fn(async () => summary) },
+    });
+    const plan = await planStep('remove', ctxOf({ searchPaths: ['/Users/k/Downloads', ...extraPaths] }), deps) as RemoveStepPlan;
+
+    expect(plan.remove).toEqual([]);
+    expect(plan.setAside).toHaveLength(1);
+    expect(plan.setAside[0].why).toMatch(why);
+  });
+
+  it('turns a failed search into a failed plan, not into removals', async () => {
+    const lib = libraryOf(track('1', '/Users/k/Gone/a.mp3'));
+    const base = fakeDeps(lib, [MUSIC]);
+    const deps = fakeDeps(lib, [MUSIC], {
+      relocator: { ...base.relocator, findRelocationCandidates: vi.fn(async () => { throw new Error('index failed'); }) },
+    });
+    await expect(planStep('remove', ctxOf(), deps)).rejects.toThrow('index failed');
+    expect(deps.relocator.endRelocationRun).toHaveBeenCalled();
   });
 
   it('never removes an entry whose file the app may not look at, and does not search for it', async () => {

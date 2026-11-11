@@ -12,7 +12,7 @@ const mounted = () => true;
 
 describe('planRemovals', () => {
   it('removes an entry with no candidate on a mounted drive', () => {
-    const plan = planRemovals([track('1')], new Map(), mounted, 'darwin');
+    const plan = planRemovals([track('1')], new Map([['1', []]]), mounted, 'darwin');
     expect(plan.step).toBe('remove');
     expect(plan.remove).toEqual([
       { trackIds: ['1'], name: 'Track 1', artist: 'Artist', location: '/Music/1.mp3' },
@@ -20,9 +20,17 @@ describe('planRemovals', () => {
     expect(plan.setAside).toEqual([]);
   });
 
-  it('treats an empty candidate list as no candidate', () => {
-    const plan = planRemovals([track('1')], new Map([['1', []]]), mounted, 'darwin');
-    expect(plan.remove).toHaveLength(1);
+  it('never removes an entry that was not searched for', () => {
+    const plan = planRemovals([track('1')], new Map(), mounted, 'darwin');
+    expect(plan.remove).toEqual([]);
+    expect(plan.setAside).toEqual([expect.objectContaining({ trackIds: ['1'], why: 'Not searched for' })]);
+  });
+
+  it('removes nothing when the search could not look everywhere', () => {
+    const why = 'Not removed: the search could not look in /Volumes/Old (drive Old is not plugged in).';
+    const plan = planRemovals([track('1'), track('2')], new Map([['1', []], ['2', []]]), mounted, 'darwin', why);
+    expect(plan.remove).toEqual([]);
+    expect(plan.setAside.map((s) => [s.trackIds[0], s.why])).toEqual([['1', why], ['2', why]]);
   });
 
   it('never removes an entry on an unplugged drive', () => {

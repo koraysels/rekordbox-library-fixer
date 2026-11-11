@@ -10,15 +10,19 @@ export const NO_ACCESS =
 
 /**
  * The entries the wizard removes: still missing after relocation, on a drive
- * that is plugged in, and with no relocation candidate at any confidence. An
- * entry on an unplugged drive is never removed — its file is not lost — and one
- * with even a weak guess is left for the user to look at.
+ * that is plugged in, and with no relocation candidate at any confidence from a
+ * search that covered every folder. An entry on an unplugged drive is never
+ * removed — its file is not lost — and one with even a weak guess is left for
+ * the user to look at. When the search could not look everywhere
+ * (`incomplete`, the reason in words), "no candidate" proves nothing, and every
+ * entry is left for the user.
  */
 export function planRemovals(
   missing: MissingTrack[],
   candidates: Map<string, RelocationCandidate[]>,
   isMounted: (p: string) => boolean,
   platform: NodeJS.Platform = process.platform,
+  incomplete?: string,
 ): RemoveStepPlan {
   const plan: RemoveStepPlan = { step: 'remove', remove: [], setAside: [] };
   for (const track of missing) {
@@ -39,6 +43,10 @@ export function planRemovals(
         why: 'Might be found by hand',
         bestGuess: { path: best.path, confidence: best.confidence },
       });
+      continue;
+    }
+    if (incomplete || !candidates.has(track.id)) {
+      plan.setAside.push({ ...refOf(track), why: incomplete ?? 'Not searched for' });
       continue;
     }
     plan.remove.push(refOf(track));

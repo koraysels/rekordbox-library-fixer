@@ -24,7 +24,6 @@ export function useWizard() {
   const musicFolder = useSettingsStore((s) => s.musicFolder);
   const profileId = useSettingsStore((s) => s.oldestPlayer);
   const searchPaths = useSettingsStore((s) => s.relocationOptions.searchPaths);
-  const searchDepth = useSettingsStore((s) => s.relocationOptions.searchDepth);
   const setCheck = useWizardStore((s) => s.setCheck);
   const markDone = useWizardStore((s) => s.markDone);
 
@@ -45,8 +44,7 @@ export function useWizard() {
     musicFolder,
     profileId,
     searchPaths,
-    searchDepth,
-  }), [libraryPath, key, musicFolder, profileId, searchPaths, searchDepth]);
+  }), [libraryPath, key, musicFolder, profileId, searchPaths]);
 
   /** Run one bridge call as the current operation; a failure lands in `error` and returns null. */
   const run = useCallback(async <T>(

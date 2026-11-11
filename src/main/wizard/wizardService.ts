@@ -8,11 +8,11 @@
  */
 import type { Track } from '../rekordboxParser';
 import type { DbLibrary, DbTrack } from '../rekordboxDbParser';
-import type { MissingTrack, RelocationCandidate, RelocationOptions } from '../trackRelocator';
+import type { IndexSummary, MissingTrack, RelocationCandidate, RelocationOptions } from '../trackRelocator';
 import type { ConvertCandidate, TrackPayload } from '../ipcContract';
 import { referenceKey } from '../convert/applyConversions';
 import { isStreamingLocation } from '../streamingLocation';
-import { isInsideFolder, isVolumeMounted, volumeRoot } from './volumes';
+import { driveName, isInsideFolder, isVolumeMounted, volumeRoot } from './volumes';
 import { planRelocations } from './relocatePlan';
 import { planRemovals } from './removePlan';
 import { planDuplicates } from './duplicatesPlan';
@@ -134,42 +134,79 @@ export function wizardSearchPaths(musicFolder: string, searchPaths: string[]): s
   return out;
 }
 
+interface CandidateSearch {
+  candidates: Map<string, RelocationCandidate[]>;
+  /**
+   * Why the search may have missed a file, in words; absent when every search
+   * folder was looked through. "No candidate" means "gone" only without it.
+   */
+  incomplete?: string;
+}
+
 /**
- * Relocation candidates for every missing track. A cancelled search throws
- * rather than return a partial map: to the remove step, a track not searched
- * would look like a track with no candidate, and be removed.
+ * What kept the search from covering everything: a search folder on an
+ * unplugged drive, one that is not there or could not be read (or a folder
+ * inside one), or no music found at all.
+ */
+function searchGaps(searchPaths: string[], summary: IndexSummary, deps: WizardDeps): string | undefined {
+  const gaps: string[] = [];
+  for (const p of searchPaths) {
+    if (!mountedIn(deps)(p)) {gaps.push(`${p} (drive ${driveName(p, deps.platform)} is not plugged in)`);}
+  }
+  for (const u of summary.unsearched) {
+    if (gaps.some((g) => g.startsWith(`${u.path} (`))) {continue;}
+    gaps.push(u.reason === 'missing' ? `${u.path} (not there)` : `${u.path} (could not be read)`);
+  }
+  if (gaps.length > 0) {
+    const shown = gaps.slice(0, 3).join(', ');
+    const more = gaps.length > 3 ? ` and ${gaps.length - 3} more` : '';
+    return `Not removed: the search could not look in ${shown}${more}. Plug in the drive or give the app access, then check again.`;
+  }
+  if (summary.files === 0) {
+    return 'Not removed: no music files were found in your music folder or search folders, so the search could not have found this one.';
+  }
+  return undefined;
+}
+
+/**
+ * Relocation candidates for every missing track. A cancelled or failed search
+ * throws rather than return a partial map: to the remove step, a track not
+ * searched would look like a track with no candidate, and be removed. Every
+ * level below each folder is searched.
  */
 async function searchCandidates(
   missing: MissingTrack[],
   step: WizardStepId,
   ctx: WizardContext,
   deps: WizardDeps,
-): Promise<Map<string, RelocationCandidate[]>> {
+): Promise<CandidateSearch> {
   const candidates = new Map<string, RelocationCandidate[]>();
-  if (missing.length === 0) {return candidates;}
+  if (missing.length === 0) {return { candidates };}
   if (!ctx.musicFolder || !deps.exists(ctx.musicFolder)) {throw new Error(NEEDS_MUSIC_FOLDER);}
 
   const options: RelocationOptions = {
     searchPaths: wizardSearchPaths(ctx.musicFolder, ctx.searchPaths),
-    searchDepth: ctx.searchDepth,
+    searchDepth: Number.POSITIVE_INFINITY,
     matchThreshold: SEARCH_MATCH_THRESHOLD,
     includeSubdirectories: true,
     fileExtensions: SEARCH_EXTENSIONS,
   };
   progress(ctx, step, 0, missing.length, 'Indexing your music folders…');
+  let incomplete: string | undefined;
   try {
-    await deps.relocator.beginRelocationRun(options);
+    const summary = await deps.relocator.beginRelocationRun(options);
+    incomplete = searchGaps(options.searchPaths, summary, deps);
     for (let i = 0; i < missing.length; i++) {
       throwIfCancelled(ctx.signal);
       const track = missing[i];
       progress(ctx, step, i + 1, missing.length, `Searching for ${track.name}`);
-      candidates.set(track.id, await deps.relocator.findRelocationCandidates(track, options));
+      candidates.set(track.id, await deps.relocator.findRelocationCandidates(track, options, { strict: true }));
     }
     throwIfCancelled(ctx.signal);
   } finally {
     deps.relocator.endRelocationRun();
   }
-  return candidates;
+  return { candidates, incomplete };
 }
 
 const setAsideOf = (c: ConvertCandidate, why: string): SetAsideItem => ({
@@ -209,7 +246,7 @@ export async function planStep(step: WizardStepId, ctx: WizardContext, deps: Wiz
   switch (step) {
     case 'relocate': {
       const missing = await findMissing(library, deps);
-      return planRelocations(missing, await searchCandidates(missing, step, ctx, deps));
+      return planRelocations(missing, (await searchCandidates(missing, step, ctx, deps)).candidates);
     }
     case 'remove': {
       // Every missing track, plugged in or not: one on an unplugged drive, or one
@@ -218,8 +255,8 @@ export async function planStep(step: WizardStepId, ctx: WizardContext, deps: Wiz
         .filter((t) => !isStreamingLocation(t.originalLocation));
       const mounted = mountedIn(deps);
       const searchable = all.filter((t) => !t.unreadable && mounted(t.originalLocation));
-      const candidates = await searchCandidates(searchable, step, ctx, deps);
-      return planRemovals(all, candidates, mounted, deps.platform);
+      const { candidates, incomplete } = await searchCandidates(searchable, step, ctx, deps);
+      return planRemovals(all, candidates, mounted, deps.platform, incomplete);
     }
     case 'duplicates': {
       progress(ctx, step, 0, 1, 'Looking for duplicates…');

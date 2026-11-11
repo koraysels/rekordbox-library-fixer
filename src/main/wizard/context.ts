@@ -18,7 +18,6 @@ export interface WizardContext {
   profileId: PlayerProfileId;
   /** The Relocate page's search folders; the music folder is always searched first. */
   searchPaths: string[];
-  searchDepth: number;
   signal: AbortSignal;
   onProgress: (p: WizardProgress) => void;
 }

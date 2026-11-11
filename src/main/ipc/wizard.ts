@@ -43,7 +43,6 @@ async function withRun<T>(
       musicFolder: request.musicFolder,
       profileId: request.profileId,
       searchPaths: request.searchPaths ?? [],
-      searchDepth: request.searchDepth,
       signal: controller.signal,
       onProgress: (p) => sendToWindow('wizard-progress', p),
     };

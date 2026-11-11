@@ -282,7 +282,6 @@ export interface WizardRequest {
   profileId: PlayerProfileId;
   /** The Relocate page's search folders; the music folder is searched first regardless. */
   searchPaths: string[];
-  searchDepth: number;
 }
 
 /** 'wizard-plan-step': what one step would do, from the library as it is now. */

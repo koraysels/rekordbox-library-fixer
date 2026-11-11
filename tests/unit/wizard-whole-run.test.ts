@@ -140,7 +140,6 @@ function ctx(): WizardContext {
     musicFolder: music,
     profileId: 'cdj2000',
     searchPaths: [],
-    searchDepth: 8,
     signal: new AbortController().signal,
     onProgress: () => undefined,
   };
