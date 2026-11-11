@@ -120,12 +120,16 @@ function buildLibrary() {
 }
 
 function deps(): WizardDeps {
-  return realWizardDeps({
-    relocator: new TrackRelocator(),
-    detector: new DuplicateDetector(),
-    trash: async (p) => { trashed.push(p); },
-    ffmpegStatus: () => ({ state: 'missing', sizeBytes: 0 }),
-  });
+  return {
+    ...realWizardDeps({
+      relocator: new TrackRelocator(),
+      detector: new DuplicateDetector(),
+      trash: async (p) => { trashed.push(p); },
+      ffmpegStatus: () => ({ state: 'missing', sizeBytes: 0 }),
+    }),
+    // Never the real process check: rekordbox open on the test machine would refuse every write.
+    isRunning: () => false,
+  };
 }
 
 function ctx(): WizardContext {
