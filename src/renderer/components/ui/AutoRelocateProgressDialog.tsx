@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Loader2, StopCircle } from 'lucide-react';
+import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import { capLogs } from '../../utils/capLogs';
 import { SearchDepthControl } from './SearchDepthControl';
 
@@ -113,23 +114,28 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
     onClose();
   };
 
-  if (!isOpen) {return null;}
-
   const progressPercentage = progress ? Math.round((progress.current / progress.total) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[600px] max-h-[80vh] flex flex-col border-2 border-te-grey-700">
-        {/* Header */}
+    <Dialog
+      open={isOpen}
+      closeOnOutsidePress={false}
+      onOpenChange={(open) => {
+        if (open) {return;}
+        if (isComplete) {handleClose();} else {onHide();}
+      }}
+    >
+      <DialogBackdrop className="bg-black/50" />
+      <DialogContent className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[600px] max-h-[80vh] flex flex-col border-2 border-te-grey-700">
         <div className="p-4 border-b-2 border-te-grey-700 flex justify-between items-center bg-te-grey-900">
-          <h2 className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">Auto-Relocating Tracks</h2>
+          <DialogTitle className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">Auto-Relocating Tracks</DialogTitle>
           {isComplete && (
-            <button
-              onClick={handleClose}
+            <DialogClose
+              aria-label="Close"
               className="text-te-grey-400 hover:text-te-cream transition-colors"
             >
-              <X className="w-5 h-5" />
-            </button>
+              <X className="w-5 h-5" aria-hidden="true" />
+            </DialogClose>
           )}
         </div>
 
@@ -248,15 +254,14 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
               )}
             </button>
           ) : (
-            <button
-              onClick={handleClose}
+            <DialogClose
               className="px-4 py-2 bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border-2 border-te-orange transition-colors font-te-mono text-sm"
             >
               Close
-            </button>
+            </DialogClose>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

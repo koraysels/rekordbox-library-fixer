@@ -450,6 +450,11 @@ is the signal that something in it wants to move out.
 
 - Development mode loads from `http://localhost:3000` - ensure Electron listens on same port as Vite
 - Production builds load from `dist/renderer/index.html`
+- ui-sdk (`@ui-sdk/react`, imported per component like `@ui-sdk/react/dialog`) supplies keyboard, focus and ARIA
+  for modals and the settings side sheet. Its `--ui-*` tokens (TE palette, light only) and the resets that keep
+  `web.css`'s default look out sit at the end of `src/renderer/index.css`; parts are styled with Tailwind classes.
+  The settings side sheet is a Dialog, not a Drawer: the Drawer's pointer driver lets a mouse drag move the sheet.
+  Tests need the jsdom stubs at the top of `tests/setup.ts`.
 - TE theme with Tailwind CSS and orange accent (`te-orange`)
 - Uses strict TypeScript configuration
 - Path resolution configured for clean imports

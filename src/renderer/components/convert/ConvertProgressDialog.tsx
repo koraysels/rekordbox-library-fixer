@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2, StopCircle } from 'lucide-react';
+import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import type { ConvertProgress } from '../../../main/ipcContract';
 
 interface Props {
@@ -13,19 +14,19 @@ interface Props {
 /** Shown while a run is going. It closes itself when the run ends; Hide keeps the run and shows a strip on the page. */
 export const ConvertProgressDialog: React.FC<Props> = ({ isOpen, progress, installPercent, onHide, onCancel }) => {
   const [cancelling, setCancelling] = React.useState(false);
-  if (!isOpen) { return null; }
   const installing = installPercent !== null;
   const percent = installing
     ? Math.round(installPercent)
     : progress && progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-label="Converting tracks">
-      <div className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[520px] max-w-[92vw] border-2 border-te-grey-700">
+    <Dialog open={isOpen} closeOnOutsidePress={false} onOpenChange={(open) => { if (!open) {onHide();} }}>
+      <DialogBackdrop className="bg-black/50" />
+      <DialogContent className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[520px] max-w-[92vw] border-2 border-te-grey-700">
         <div className="p-4 border-b-2 border-te-grey-700 bg-te-grey-900">
-          <h2 className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">
+          <DialogTitle className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">
             {installing ? 'Downloading ffmpeg' : 'Converting Tracks'}
-          </h2>
+          </DialogTitle>
         </div>
         <div className="p-6 space-y-3">
           <div className="flex justify-between text-sm text-te-grey-400 font-te-mono">
@@ -64,7 +65,7 @@ export const ConvertProgressDialog: React.FC<Props> = ({ isOpen, progress, insta
             {cancelling ? 'Cancelling…' : 'Cancel'}
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

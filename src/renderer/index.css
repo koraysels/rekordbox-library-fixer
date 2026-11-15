@@ -221,3 +221,71 @@
 .no-drag a {
   -webkit-app-region: no-drag;
 }
+
+/* ui-sdk theme. Unnested rules in `components` outrank web.css (nested as components.ui-sdk) and lose to utilities;
+   the resets use :where() so classes like .btn-secondary in this same layer still win. */
+@layer components {
+  :root {
+    color-scheme: light;
+    --ui-background: #FAF6F2;
+    --ui-foreground: #1A1A1A;
+    --ui-muted: #E8E8E8;
+    --ui-muted-foreground: #4A4A4A;
+    --ui-border: #D1D1D1;
+    /* te-grey-400 is about 2.2:1 on cream, below the 3:1 a control edge needs. */
+    --ui-input: #7A7A7A;
+    --ui-primary: #FF6B35;
+    --ui-primary-foreground: #FAF6F2;
+    --ui-destructive: #E53E3E;
+    --ui-ring: #FF6B35;
+    --ui-ring-border: #FF6B35;
+    --ui-overlay: rgb(0 0 0 / 0.5);
+    --ui-radius: 4px;
+    --ui-font-sans: 'Space Mono', monospace;
+    --ui-font-mono: 'Space Mono', monospace;
+  }
+
+  :where([data-slot]):focus-visible {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+
+  :where([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+    display: block;
+    gap: 0;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  :where([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  :where([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
+    margin: 0;
+    color: inherit;
+  }
+
+  :where([data-slot="dialog-close"], [data-slot="alert-dialog-close"]) {
+    display: inline-block;
+    gap: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    white-space: normal;
+    cursor: default;
+    user-select: auto;
+  }
+}

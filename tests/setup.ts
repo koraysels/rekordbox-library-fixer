@@ -3,6 +3,27 @@ import fs from 'fs';
 import path from 'path';
 import '@testing-library/jest-dom';
 
+declare global {
+  var __UI_SDK_STRICT__: boolean | undefined;
+}
+globalThis.__UI_SDK_STRICT__ = true;
+
+// jsdom gaps ui-sdk popups rely on; assigned, not ??=, because jsdom has some without the parts that matter.
+HTMLElement.prototype.showPopover = function () {};
+HTMLElement.prototype.hidePopover = function () {};
+Element.prototype.getAnimations = () => [];
+Element.prototype.scrollIntoView = function () {};
+Element.prototype.checkVisibility = () => true;
+Element.prototype.getClientRects = () => [] as unknown as DOMRectList;
+document.elementFromPoint = () => null;
+document.elementsFromPoint = () => [];
+CSS.supports = () => false;
+document.head.append(
+  Object.assign(document.createElement('style'), {
+    textContent: '[popover] { display: block !important }',
+  })
+);
+
 // Mock fs promises for tests
 vi.mock('fs/promises', () => ({
   default: {

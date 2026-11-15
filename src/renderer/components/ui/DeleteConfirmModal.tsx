@@ -1,5 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Trash2, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogBackdrop,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+} from '@ui-sdk/react/alert-dialog';
 
 interface DeleteConfirmModalProps {
   libraryPath?: string;
@@ -8,10 +16,23 @@ interface DeleteConfirmModalProps {
   onCancel: () => void;
 }
 
+const stepButton = 'px-4 py-2 bg-te-red-500 hover:bg-te-red-600 text-white rounded-te text-sm font-medium transition-colors';
+
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePaths, libraryPath, onConfirm, onCancel }) => {
+  const [open, setOpen] = useState(true);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [typed, setTyped] = useState('');
   const [copied, setCopied] = useState(false);
+  const confirmed = useRef(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileCount = `${filePaths.length} file${filePaths.length !== 1 ? 's' : ''}`;
+
+  // The button that advanced the step is gone, so focus would fall out of the dialog.
+  useEffect(() => {
+    if (step === 2) {cancelRef.current?.focus();}
+    if (step === 3) {inputRef.current?.focus();}
+  }, [step]);
 
   const copyDeleteWord = async () => {
     try {
@@ -24,28 +45,42 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePath
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-te shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+    <AlertDialog
+      open={open}
+      onOpenChange={(next, details) => {
+        confirmed.current = details.returnValue === 'confirm';
+        setOpen(next);
+      }}
+      // The parent unmounts this on either answer; waiting for the close lets focus go back first.
+      onOpenChangeComplete={(isOpen) => {
+        if (isOpen) {return;}
+        if (confirmed.current) {onConfirm();} else {onCancel();}
+      }}
+    >
+      <AlertDialogBackdrop className="bg-black/60" />
+      <AlertDialogContent
+        initialFocus={() => cancelRef.current}
+        className="bg-white rounded-te shadow-xl w-[calc(100%-2rem)] max-w-lg overflow-hidden"
+      >
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 bg-te-red-50 border-b border-te-red-200">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-te-red-500" />
-            <span className="font-semibold text-te-red-500 font-te-mono text-sm uppercase tracking-wider">
+            <AlertTriangle className="w-5 h-5 text-te-red-500" aria-hidden="true" />
+            <AlertDialogTitle className="font-semibold text-te-red-500 font-te-mono text-sm uppercase tracking-wider">
               Permanent deletion — step {step} of 3
-            </span>
+            </AlertDialogTitle>
           </div>
-          <button onClick={onCancel} className="text-te-grey-400 hover:text-te-grey-700">
-            <X className="w-4 h-4" />
-          </button>
+          <AlertDialogClose aria-label="Close" className="text-te-grey-400 hover:text-te-grey-700">
+            <X className="w-4 h-4" aria-hidden="true" />
+          </AlertDialogClose>
         </div>
 
         <div className="px-5 py-5">
 
           {step === 1 && (
-            <>
+            <AlertDialogDescription render={<div />}>
               <p className="text-te-grey-800 font-semibold mb-2">
-                You are about to permanently delete {filePaths.length} file{filePaths.length !== 1 ? 's' : ''} from disk.
+                You are about to permanently delete {fileCount} from disk.
               </p>
               <p className="text-sm text-te-grey-600 font-te-mono mb-4">
                 This removes the actual audio files — WAV, FLAC, AIFF, MP3 — from your hard drive.
@@ -54,37 +89,25 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePath
               <div className="bg-te-red-50 border border-te-red-200 rounded-te p-3 text-sm text-te-red-500 font-te-mono mb-5">
                 A backup of your XML was created. The audio files themselves have no backup.
               </div>
-              <div className="flex gap-3 justify-end">
-                <button onClick={onCancel} className="btn-secondary">Cancel</button>
-                <button onClick={() => setStep(2)} className="px-4 py-2 bg-te-red-500 hover:bg-te-red-600 text-white rounded-te text-sm font-medium transition-colors">
-                  I understand — show me the files
-                </button>
-              </div>
-            </>
+            </AlertDialogDescription>
           )}
 
           {step === 2 && (
             <>
-              <p className="text-sm text-te-grey-700 font-te-mono mb-3">
+              <AlertDialogDescription className="text-sm text-te-grey-700 font-te-mono mb-3">
                 These {filePaths.length} files will be deleted from disk:
-              </p>
+              </AlertDialogDescription>
               <div className="bg-te-grey-100 rounded-te border border-te-grey-200 max-h-52 overflow-y-auto p-3 mb-5">
-                {filePaths.map((p, i) => (
-                  <div key={i} className="text-xs font-te-mono text-te-grey-700 py-0.5 break-all">{p}</div>
+                {filePaths.map((p) => (
+                  <div key={p} className="text-xs font-te-mono text-te-grey-700 py-0.5 break-all">{p}</div>
                 ))}
-              </div>
-              <div className="flex gap-3 justify-end">
-                <button onClick={onCancel} className="btn-secondary">Cancel</button>
-                <button onClick={() => setStep(3)} className="px-4 py-2 bg-te-red-500 hover:bg-te-red-600 text-white rounded-te text-sm font-medium transition-colors">
-                  Confirmed — final step
-                </button>
               </div>
             </>
           )}
 
           {step === 3 && (
             <>
-              <p className="text-sm text-te-grey-700 font-te-mono mb-3">
+              <AlertDialogDescription className="text-sm text-te-grey-700 font-te-mono mb-3">
                 {libraryPath && (
                   <span className="block te-label text-[10px] normal-case mb-2">
                     Library: <span className="te-path text-te-grey-700">{libraryPath}</span>
@@ -100,32 +123,46 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ filePath
                   DELETE
                 </button>{' '}
                 {copied && <span className="text-te-green-600 not-italic">(copied)</span>}{' '}
-                to permanently remove {filePaths.length} file{filePaths.length !== 1 ? 's' : ''} from disk.
-              </p>
+                to permanently remove {fileCount} from disk.
+              </AlertDialogDescription>
               <input
+                ref={inputRef}
                 type="text"
                 value={typed}
                 onChange={e => setTyped(e.target.value)}
                 placeholder="Type DELETE"
-                autoFocus
+                aria-label="Type DELETE to confirm"
                 className="w-full border border-te-grey-300 rounded-te px-3 py-2 text-sm font-te-mono bg-te-cream focus:outline-none focus:border-te-red-500 mb-5"
               />
-              <div className="flex gap-3 justify-end">
-                <button onClick={onCancel} className="btn-secondary">Cancel</button>
-                <button
-                  onClick={onConfirm}
-                  disabled={typed !== 'DELETE'}
-                  className="flex items-center gap-2 px-4 py-2 bg-te-red-500 hover:bg-te-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-te text-sm font-medium transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete {filePaths.length} file{filePaths.length !== 1 ? 's' : ''}
-                </button>
-              </div>
             </>
           )}
 
+          <div className="flex gap-3 justify-end">
+            <AlertDialogClose ref={cancelRef} className="btn-secondary">Cancel</AlertDialogClose>
+            {step === 1 && (
+              <button key="step-1" type="button" onClick={() => setStep(2)} className={stepButton}>
+                I understand — show me the files
+              </button>
+            )}
+            {step === 2 && (
+              <button key="step-2" type="button" onClick={() => setStep(3)} className={stepButton}>
+                Confirmed — final step
+              </button>
+            )}
+            {step === 3 && (
+              <AlertDialogClose
+                value="confirm"
+                disabled={typed !== 'DELETE'}
+                className="flex items-center gap-2 px-4 py-2 bg-te-red-500 hover:bg-te-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-te text-sm font-medium transition-colors"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                Delete {fileCount}
+              </AlertDialogClose>
+            )}
+          </div>
+
         </div>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

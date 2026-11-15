@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { X, ExternalLink, Coffee } from 'lucide-react';
+import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import { useAppStore } from '../../stores/appStore';
 import iconUrl from '../../assets/icon-48.png';
 
@@ -18,11 +19,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, loadVersion]);
 
-  if (!isOpen) {return null;}
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-md w-full mx-4">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) {onClose();} }}>
+      <DialogBackdrop className="bg-black/50" />
+      <DialogContent className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-md w-[calc(100%-2rem)]">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
@@ -31,14 +31,14 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               alt="Rekordbox Library Fixer"
               className="w-8 h-8 bg-white rounded-lg p-1 shadow-sm"
             />
-            <h2 className="text-xl font-bold text-te-cream font-te-display">About</h2>
+            <DialogTitle className="text-xl font-bold text-te-cream font-te-display">About</DialogTitle>
           </div>
-          <button
-            onClick={onClose}
+          <DialogClose
+            aria-label="Close"
             className="text-te-grey-400 hover:text-te-cream transition-colors"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <X className="w-5 h-5" aria-hidden="true" />
+          </DialogClose>
         </div>
 
         {/* Content */}
@@ -96,14 +96,13 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
         {/* Close button */}
         <div className="mt-6 text-center">
-          <button
-            onClick={onClose}
+          <DialogClose
             className="px-6 py-2 bg-te-orange hover:bg-te-orange/90 text-te-cream rounded-te border-2 border-te-orange transition-colors font-te-mono text-sm"
           >
             Close
-          </button>
+          </DialogClose>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
