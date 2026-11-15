@@ -456,12 +456,12 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**Next**
+**v0.8.0** *(current)*
 - A fix-my-library wizard as the default screen: check, then relocate, remove, merge, gather and convert, one confirm per step
 - The database key is built into release builds; pasting it is the fallback
 - Consolidate writes to the database and never overwrites a file
 
-**v0.7.0** *(current)*
+**v0.7.0**
 - A Convert page turns tracks your oldest player can't load into ones it can, keeping cues, beatgrids and playlists
 
 **v0.6.10**
