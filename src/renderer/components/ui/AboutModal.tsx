@@ -20,7 +20,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
   }, [isOpen, loadVersion]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) {onClose();} }}>
+    <Dialog open={isOpen} closeOnOutsidePress={false} onOpenChange={(open) => { if (!open) {onClose();} }}>
       <DialogBackdrop className="bg-black/50" />
       <DialogContent className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-md w-[calc(100%-2rem)]">
         {/* Header */}

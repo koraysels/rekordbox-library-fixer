@@ -64,7 +64,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
   const step = tutorialSteps[currentStep];
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) {handleClose();} }}>
+    <Dialog open={isOpen} closeOnOutsidePress={false} onOpenChange={(open) => { if (!open) {handleClose();} }}>
       <DialogBackdrop className="bg-black/50" />
       <DialogContent className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-2xl w-[calc(100%-2rem)] max-h-[90vh] flex flex-col">
         {/* Header */}
