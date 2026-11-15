@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { app, BrowserWindow, shell, Menu, protocol, net } from 'electron';
+import { app, BrowserWindow, shell, Menu, protocol, net, session } from 'electron';
 import { pathToFileURL } from 'url';
 import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { mainLogger as appLogger } from './appLogger';
@@ -307,6 +307,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Chromium writes localStorage to disk lazily; a quit right after a change
+// (the Wizard / Advanced switch, a setting) could otherwise lose it.
+app.on('before-quit', () => {
+  session.defaultSession?.flushStorageData();
 });
 
 app.on('activate', () => {
