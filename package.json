@@ -84,6 +84,8 @@
   "dependencies": {
     "@radix-ui/react-popover": "^1.1.15",
     "@tanstack/react-router": "^1.170.11",
+    "@ui-sdk/core": "0.1.0-beta.3",
+    "@ui-sdk/react": "0.1.0-beta.3",
     "better-sqlite3-multiple-ciphers": "^13.0.3",
     "crypto-js": "^4.2.0",
     "dexie": "^4.4.3",
