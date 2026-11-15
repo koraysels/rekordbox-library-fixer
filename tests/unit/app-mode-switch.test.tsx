@@ -43,10 +43,14 @@ beforeEach(() => {
 });
 
 describe('the mode switch', () => {
-  it('wizard mode shows the wizard full-window, without the sidebar', () => {
+  it('wizard mode shows the wizard inside the frame, the sidebar listing its steps', () => {
     render(<AppWithRouter />);
     expect(screen.getByText('wizard page')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Wizard steps' })).toBeInTheDocument();
+    expect(screen.getByText('Merge duplicates')).toBeInTheDocument();
     expect(screen.queryByText('Duplicate Detection')).toBeNull();
+    // The library box stays, as in Advanced.
+    expect(screen.getAllByText('master.db').length).toBeGreaterThan(0);
   });
 
   it('the Advanced switch shows the sidebar and the pages, and is remembered', () => {
@@ -56,6 +60,7 @@ describe('the mode switch', () => {
     expect(screen.getByText('Duplicate Detection')).toBeInTheDocument();
     expect(screen.getByText('advanced page')).toBeInTheDocument();
     expect(screen.queryByText('wizard page')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Wizard steps' })).toBeNull();
   });
 
   it('the sidebar switches back to the wizard', () => {

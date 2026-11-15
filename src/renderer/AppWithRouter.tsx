@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLibrary, useNotifications } from './hooks';
 import { useRouteData } from './hooks/useRouteData';
 import { NotificationToast, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler, MiniPlayer } from './components/ui';
-import { Library, SlidersHorizontal } from 'lucide-react';
+import { Library } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
 import { WizardPage } from './components/wizard/WizardPage';
 import { useSettingsStore } from './stores/settingsStore';
@@ -139,33 +139,6 @@ const AppWithRouter: React.FC = () => {
     </>
   );
 
-  // The wizard is the whole window: no sidebar, no routes, one thing per screen.
-  if (appMode === 'wizard') {
-    return (
-      <div className="h-screen bg-te-grey-100 flex flex-col overflow-hidden font-te-sans">
-        <div className="h-10 bg-te-grey-700 app-drag-region flex-shrink-0 flex items-center justify-end px-3">
-          <button
-            type="button"
-            onClick={() => setAppMode('advanced')}
-            title="Show every tool, page by page"
-            className="no-drag flex items-center gap-1.5 px-2 py-1 rounded-te text-xs font-te-mono uppercase tracking-wider text-te-grey-300 hover:text-te-orange transition-colors"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            Advanced
-          </button>
-        </div>
-        <NotificationToast notifications={notifications} onDismiss={dismissNotification} />
-        <div className="flex-1 overflow-hidden">
-          <AppContext.Provider value={appContext}>
-            <WizardPage isLoading={isLoading} />
-          </AppContext.Provider>
-        </div>
-        <AppFooter libraryData={libraryData} />
-        {modals}
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-te-grey-100 flex flex-col overflow-hidden font-te-sans">
       {/* Title Bar for Window Controls */}
@@ -181,7 +154,8 @@ const AppWithRouter: React.FC = () => {
         onSelectLibrary={selectLibrary}
         onUnloadLibrary={clearStoredData}
         onShowTutorial={() => setShowTutorial(true)}
-        onShowWizard={() => setAppMode('wizard')}
+        appMode={appMode}
+        onSwitchMode={() => setAppMode(appMode === 'wizard' ? 'advanced' : 'wizard')}
       />
 
       {/* Main Content Area */}
@@ -191,7 +165,12 @@ const AppWithRouter: React.FC = () => {
 
         {/* Content with route-based rendering */}
         <div className="flex-1 pt-3 pb-3 overflow-hidden">
-        {isLoading ? (
+        {appMode === 'wizard' ? (
+          // The wizard opens its own library and says when it is loading.
+          <AppContext.Provider value={appContext}>
+            <WizardPage isLoading={isLoading} />
+          </AppContext.Provider>
+        ) : isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-te-grey-500">
             <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
             <p className="text-sm font-te-mono">Parsing library…</p>

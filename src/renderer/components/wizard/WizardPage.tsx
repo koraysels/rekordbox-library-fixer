@@ -8,6 +8,7 @@ import { useWizardStore } from '../../wizard/wizardStore';
 import { isEmptyPlan, stepsForRun } from '../../wizard/wizardFlow';
 import { describePlan, stepTitle } from '../../wizard/stepText';
 import { isDatabasePath, wizardScreen, type WizardPhase } from '../../wizard/wizardScreen';
+import { useWizardProgressStore, wizardSidebarItems } from '../../wizard/wizardProgress';
 import { PLAYER_PROFILES } from '../../../main/convert/playerProfiles';
 import type { StepPlan, StepResult, WizardStepId } from '../../../main/wizard/types';
 import { SetupScreen, type KeyRequest } from './SetupScreen';
@@ -115,6 +116,26 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
       setPlan(p);
     });
   }, [screen, nextStep, settling, plan, planFailed, wizard, markDone, libraryPath, playerName]);
+
+  // The sidebar lists every step and marks this one.
+  const setProgressItems = useWizardProgressStore((s) => s.setItems);
+  const setupDone = !!libraryData && isDatabasePath(libraryPath) && !!musicFolder;
+  const doneKey = saved?.done.join(',') ?? '';
+  const runKey = steps.join(',');
+  const skippedKey = skipped.join(',');
+  useEffect(() => {
+    setProgressItems(wizardSidebarItems({
+      screen,
+      phase,
+      setupDone,
+      check: saved?.check,
+      runSteps: runKey ? (runKey.split(',') as WizardStepId[]) : [],
+      done: doneKey ? (doneKey.split(',') as WizardStepId[]) : [],
+      skipped: skippedKey ? (skippedKey.split(',') as WizardStepId[]) : [],
+      nextStep,
+    }));
+  }, [setProgressItems, screen, phase, setupDone, saved?.check, runKey, doneKey, skippedKey, nextStep]);
+  useEffect(() => () => setProgressItems(null), [setProgressItems]);
 
   const runCheck = async () => {
     const result = await wizard.check();

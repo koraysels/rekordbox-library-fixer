@@ -126,7 +126,9 @@ collection has to go through the database.
 - **Fix-my-library wizard** (`src/main/wizard/`, IPC in `src/main/ipc/wizard.ts`, renderer in
   `src/renderer/wizard/` and `src/renderer/components/wizard/`; spec
   `docs/superpowers/specs/2026-11-11-wizard-mode-design.md`): the default screen. `appMode`
-  (`'wizard' | 'advanced'`, settings store) picks it or today's pages; `musicFolder` is a setting both
+  (`'wizard' | 'advanced'`, settings store) picks it or today's pages, both in the same frame: in wizard
+  mode the sidebar lists the steps and marks the current one, and the Wizard / Advanced button sits under
+  the logo in both; `musicFolder` is a setting both
   use: shown and changed in Settings next to the oldest player (`MusicFolderSetting`) and on the wizard's
   summary, and searched first by the wizard and the Relocate page alike (`withMusicFolderFirst` in
   `src/main/searchPaths.ts`). Database only — an XML library gets a screen pointing at the database or Advanced. One check
@@ -402,6 +404,7 @@ src/renderer/
 ├── wizard/                        # The wizard apart from React
 │   ├── wizardFlow.ts              # Which steps a check calls for; empty plans
 │   ├── wizardScreen.ts            # Which screen shows (setup, close, summary…)
+│   ├── wizardProgress.ts          # The sidebar's step list: done, current, skipped
 │   ├── stepText.ts                # What each step's screen says
 │   ├── wizardStore.ts             # Last check and finished steps, per library
 │   └── wizardHistory.ts           # The Activity-history entry for a step

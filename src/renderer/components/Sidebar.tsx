@@ -13,10 +13,12 @@ import {
     FolderOpen,
     X,
     HelpCircle,
-    Wand2
+    Wand2,
+    SlidersHorizontal
 } from 'lucide-react';
 import {motion} from 'framer-motion';
 import type {TabType, LibraryData} from '../types';
+import {WizardStepList} from './wizard/WizardStepList';
 
 const navItems = [
     {
@@ -92,8 +94,10 @@ interface SidebarProps {
     onSelectLibrary: () => void;
     onUnloadLibrary?: () => void;
     onShowTutorial?: () => void;
-    /** Back to the wizard, which fixes the library step by step. */
-    onShowWizard?: () => void;
+    /** Wizard: the step list instead of the pages. */
+    appMode?: 'wizard' | 'advanced';
+    /** The Wizard / Advanced button under the logo, the same spot in both modes. */
+    onSwitchMode?: () => void;
 }
 
 export function Sidebar({
@@ -103,8 +107,11 @@ export function Sidebar({
                             onSelectLibrary,
                             onUnloadLibrary,
                             onShowTutorial,
-                            onShowWizard
+                            appMode = 'advanced',
+                            onSwitchMode
                         }: SidebarProps) {
+    const wizard = appMode === 'wizard';
+    const ModeIcon = wizard ? SlidersHorizontal : Wand2;
     return (
         <nav className="w-64 bg-te-grey-200 border-r-2 border-te-grey-300 flex flex-col pb-6">
             {/* App Header - Minimalist TE Style */}
@@ -122,23 +129,24 @@ export function Sidebar({
                         <p className="text-xs text-te-grey-500 font-te-mono tracking-wider">LIBRARY FIXER</p>
                     </div>
                 </div>
-                {onShowWizard && (
+                {onSwitchMode && (
                     <button
                         type="button"
-                        onClick={onShowWizard}
-                        title="Fix the whole library step by step"
+                        onClick={onSwitchMode}
+                        title={wizard ? 'Show every tool, page by page' : 'Fix the whole library step by step'}
                         className="mt-te-md w-full flex items-center justify-center gap-te-sm p-te-sm rounded-te border-2 border-te-grey-300
                      bg-te-cream text-te-grey-700 hover:border-te-orange hover:text-te-orange transition-colors
                      font-te-mono text-xs font-medium uppercase tracking-wider"
                     >
-                        <Wand2 className="w-4 h-4"/>
-                        Wizard
+                        <ModeIcon className="w-4 h-4"/>
+                        {wizard ? 'Advanced' : 'Wizard'}
                     </button>
                 )}
             </div>
 
             {/* Navigation Links - TE Minimal Style */}
-            <div className="flex-1 p-te-lg">
+            <div className="flex-1 p-te-lg overflow-y-auto">
+                {wizard ? <WizardStepList/> : (
                 <ul className="space-y-te-sm">
                     {navItems.map((item) => {
                         // History and Backups must stay reachable without a
@@ -202,6 +210,7 @@ export function Sidebar({
                         );
                     })}
                 </ul>
+                )}
             </div>
 
             {/* Quick Actions - TE Style */}
