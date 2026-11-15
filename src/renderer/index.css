@@ -317,6 +317,30 @@
     user-select: auto;
   }
 
+  :where([data-slot="number-input-decrement"], [data-slot="number-input-increment"]) {
+    width: auto;
+    height: auto;
+    border-radius: var(--ui-radius);
+    background: transparent;
+    color: inherit;
+  }
+
+  :where([data-slot="number-input-control"]) {
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    background: transparent;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  [data-slot="slider-thumb"]:has(:focus-visible) {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+
   .te-popup-arrow {
     width: 10px;
     height: 10px;
