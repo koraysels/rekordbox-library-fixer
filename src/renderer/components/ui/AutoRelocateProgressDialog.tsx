@@ -3,6 +3,7 @@ import { X, AlertCircle, CheckCircle, Loader2, StopCircle } from 'lucide-react';
 import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import { capLogs } from '../../utils/capLogs';
 import { SearchDepthControl } from './SearchDepthControl';
+import { ProgressBar } from './ProgressBar';
 
 interface ProgressInfo {
   operationId?: string;
@@ -147,12 +148,7 @@ export const AutoRelocateProgressDialog: React.FC<AutoRelocateProgressDialogProp
               <span>{progress?.current || 0} / {progress?.total || 0} tracks</span>
               <span>{progressPercentage}%</span>
             </div>
-            <div className="w-full bg-te-grey-700 rounded-full h-3 overflow-hidden border border-te-grey-600">
-              <div
-                className="bg-te-orange h-full transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
+            <ProgressBar label="Relocating tracks" value={progress?.current ?? 0} max={progress?.total ?? 0} unit="tracks" size="lg" tone="dark" />
           </div>
 
           {/* Current Status */}

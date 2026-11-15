@@ -2,6 +2,7 @@ import React from 'react';
 import { Loader2 } from 'lucide-react';
 import type { WizardProgress } from '../../../main/ipcContract';
 import type { StepListItem } from '../../wizard/stepText';
+import { ProgressBar } from '../ui/ProgressBar';
 
 /**
  * The one layout every wizard screen shares: a calm centred column, one
@@ -47,9 +48,7 @@ export const WorkingPanel: React.FC<{
         {percent !== null && <span className="text-xs font-te-mono text-te-grey-500">{progress?.current} / {progress?.total}</span>}
       </div>
       {percent !== null && (
-        <div className="w-full bg-te-grey-200 rounded-full h-2 overflow-hidden">
-          <div className="bg-te-orange h-full transition-all duration-300" style={{ width: `${percent}%` }} />
-        </div>
+        <ProgressBar label={fallback.replace(/…$/, '')} value={progress?.current ?? 0} max={progress?.total ?? 0} />
       )}
       {onCancel && (
         <div>

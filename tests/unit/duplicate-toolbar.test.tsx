@@ -37,6 +37,13 @@ const show = (over: any = {}) => {
 };
 
 describe('DuplicateToolbar', () => {
+  it('names the scan bar and reads how far it is', () => {
+    show({ busy: true, scanProgress: { current: 10, total: 40, setsFound: 2 } });
+    const bar = screen.getByRole('progressbar', { name: 'Scanning library' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('10 of 40 tracks');
+    expect(screen.getByText(/10 \/ 40 tracks/)).toBeTruthy();
+  });
+
   it('offers a scan', () => {
     const props = show();
     fireEvent.click(screen.getByRole('button', { name: 'Scan for Duplicates' }));

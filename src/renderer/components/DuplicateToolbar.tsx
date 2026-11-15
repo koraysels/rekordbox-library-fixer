@@ -1,6 +1,6 @@
 import React from 'react';
 import { Search, Trash2, Sparkles, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { PopoverButton } from './ui';
+import { PopoverButton, ProgressBar } from './ui';
 
 interface DuplicateToolbarProps {
   duplicates: any[];
@@ -64,12 +64,14 @@ export const DuplicateToolbar: React.FC<DuplicateToolbarProps> = ({
           <div className="flex-1 min-w-0">
             {scanProgress && scanProgress.total > 0 && (
               <>
-                <div className="w-full bg-te-grey-300 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-te-orange h-full transition-all duration-200"
-                    style={{ width: `${Math.round((scanProgress.current / scanProgress.total) * 100)}%` }}
-                  />
-                </div>
+                <ProgressBar
+                  label="Scanning library"
+                  value={scanProgress.current}
+                  max={scanProgress.total}
+                  unit="tracks"
+                  size="sm"
+                  tone="mid"
+                />
                 <p className="text-[11px] font-te-mono text-te-grey-600 mt-1 truncate normal-case">
                   {scanProgress.current} / {scanProgress.total} tracks · {scanProgress.setsFound} sets found
                   {scanProgress.trackName ? ` · ${scanProgress.trackName}` : ''}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Loader2, StopCircle } from 'lucide-react';
 import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import type { ConvertProgress } from '../../../main/ipcContract';
+import { ProgressBar } from '../ui/ProgressBar';
 
 interface Props {
   isOpen: boolean;
@@ -33,9 +34,9 @@ export const ConvertProgressDialog: React.FC<Props> = ({ isOpen, progress, insta
             <span>{installing ? 'ffmpeg' : `${progress?.current ?? 0} / ${progress?.total ?? 0} files`}</span>
             <span>{percent}%</span>
           </div>
-          <div className="w-full bg-te-grey-700 rounded-full h-3 overflow-hidden border border-te-grey-600">
-            <div className="bg-te-orange h-full transition-all duration-300" style={{ width: `${percent}%` }} />
-          </div>
+          {installing
+            ? <ProgressBar label="Downloading ffmpeg" value={percent} size="lg" tone="dark" />
+            : <ProgressBar label="Converting tracks" value={progress?.current ?? 0} max={progress?.total ?? 0} unit="files" size="lg" tone="dark" />}
           <div className="p-3 bg-te-grey-700 rounded-te border border-te-grey-600 flex items-center gap-2">
             <Loader2 className="w-4 h-4 text-te-orange animate-spin flex-shrink-0" />
             <span className="text-sm text-te-cream font-te-mono normal-case break-all">

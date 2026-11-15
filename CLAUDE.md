@@ -201,7 +201,7 @@ collection has to go through the database.
   (`src/renderer/audio/aiffToWav.ts`). Player state in `src/renderer/stores/playerStore.ts`
   (volume persisted, key `rekordbox-player`); element commands via
   `src/renderer/audio/audioController.ts`.
-- **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, and other UI elements
+- **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, ProgressBar (ui-sdk Progress: a named progressbar) and other UI elements
 - **Utility Functions**: Centralized formatters for file size, duration, dates, and other data
 - **Custom Hooks**: File operations and other reusable business logic
 - Path aliases configured: `@/`, `@renderer/`, `@main/`, `@shared/`

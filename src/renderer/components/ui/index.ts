@@ -22,3 +22,5 @@ export { PlayButton } from './PlayButton';
 export { DuplicateHelp } from './DuplicateHelp';
 export { SearchDepthControl } from './SearchDepthControl';
 export { MusicFolderSetting, useChooseMusicFolder } from './MusicFolderSetting';
+export { ProgressBar } from './ProgressBar';
+export type { ProgressBarProps } from './ProgressBar';

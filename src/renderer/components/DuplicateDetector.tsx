@@ -22,6 +22,7 @@ import { countPlaylistMembership } from '../utils/playlistMembership';
 import { classifyDuplicateSet } from '../utils/classifyDuplicateSet';
 import { isStreamingTrack } from '../utils/streamingSource';
 import { pruneStaleSets } from '../utils/pruneStaleSets';
+import { ProgressBar } from './ui/ProgressBar';
 
 const DuplicateDetector: React.FC = () => {
   const { libraryData, libraryPath, showNotification, setLibraryData } = useAppContext();
@@ -419,12 +420,14 @@ const DuplicateDetector: React.FC = () => {
               <h3 className="te-title mb-2">Scanning your library…</h3>
               {scanProgress && scanProgress.total > 0 && (
                 <>
-                  <div className="w-full bg-te-grey-300 rounded-full h-2 overflow-hidden my-3">
-                    <div
-                      className="bg-te-orange h-full transition-all duration-200"
-                      style={{ width: `${Math.round((scanProgress.current / scanProgress.total) * 100)}%` }}
-                    />
-                  </div>
+                  <ProgressBar
+                    label="Scanning library"
+                    value={scanProgress.current}
+                    max={scanProgress.total}
+                    unit="tracks"
+                    tone="mid"
+                    className="my-3"
+                  />
                   <p className="text-xs font-te-mono text-te-grey-600">
                     {scanProgress.current} / {scanProgress.total} tracks • {scanProgress.setsFound} sets found
                   </p>

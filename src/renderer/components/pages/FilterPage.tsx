@@ -5,6 +5,7 @@ import { useAppContext } from '../../AppWithRouter';
 import { formatFileSize } from '../../utils';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { FilterField, FilterOp, FilterRule } from '../../types';
+import { ProgressBar } from '../ui/ProgressBar';
 
 type Mode = 'copy' | 'move';
 type Phase = 'idle' | 'previewing' | 'previewed' | 'running' | 'done' | 'cancelled';
@@ -153,9 +154,6 @@ export const FilterPage: React.FC = () => {
     setPhase('cancelled');
   }, []);
 
-  const pct = progress && progress.total > 0
-    ? Math.round((progress.current / progress.total) * 100) : 0;
-
   return (
     <div className="p-te-lg h-full overflow-auto">
       <PageHeader title="Filter & Move" icon={Filter} />
@@ -276,9 +274,12 @@ export const FilterPage: React.FC = () => {
                   <span className="truncate max-w-xs">{progress.currentFile}</span>
                   <span>{progress.current} / {progress.total}</span>
                 </div>
-                <div className="w-full bg-te-grey-200 rounded-full h-2">
-                  <div className="bg-te-orange h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                </div>
+                <ProgressBar
+                  label={mode === 'copy' ? 'Copying files' : 'Moving files'}
+                  value={progress.current}
+                  max={progress.total}
+                  unit="files"
+                />
                 <div className="flex gap-4 text-xs font-te-mono text-te-grey-500">
                   <span className="text-green-600">{progress.succeeded} {mode === 'copy' ? 'copied' : 'moved'}</span>
                   <span className="text-te-grey-400">{progress.skipped} skipped</span>
