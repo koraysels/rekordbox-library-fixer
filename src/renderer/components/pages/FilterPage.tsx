@@ -3,10 +3,10 @@ import { Filter, FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward, Plu
 import { PageHeader } from '../ui';
 import { useAppContext } from '../../AppWithRouter';
 import { formatFileSize } from '../../utils';
+import { useSettingsStore } from '../../stores/settingsStore';
 import type { FilterField, FilterOp, FilterRule } from '../../types';
 
 type Mode = 'copy' | 'move';
-type ConflictResolution = 'skip' | 'overwrite' | 'quality';
 type Phase = 'idle' | 'previewing' | 'previewed' | 'running' | 'done' | 'cancelled';
 
 interface Preview {
@@ -62,7 +62,6 @@ export const FilterPage: React.FC = () => {
   const [rules, setRules] = useState<FilterRule[]>([newRule()]);
   const [destination, setDestination] = useState('');
   const [mode, setMode] = useState<Mode>('copy');
-  const [conflictResolution, setConflictResolution] = useState<ConflictResolution>('skip');
   const [phase, setPhase] = useState<Phase>('idle');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -133,9 +132,10 @@ export const FilterPage: React.FC = () => {
       const res = await window.electronAPI.filterLibrary({
         operationId, tracks, libraryPath: libraryPath ?? '',
         filters: validRules,
-        options: { destination, mode, conflictResolution },
+        options: { destination, mode },
+        dbKey: /\.db$/i.test(libraryPath ?? '') ? useSettingsStore.getState().rekordboxDbKey : undefined,
       });
-      if (res.success) {
+      if (res.success && res.data) {
         setResult(res.data);
         setPhase(cancelledRef.current ? 'cancelled' : 'done');
       } else if (!cancelledRef.current) {
@@ -145,7 +145,7 @@ export const FilterPage: React.FC = () => {
     } catch {
       if (!cancelledRef.current) { setError('Operation failed'); setPhase('idle'); }
     }
-  }, [destination, hasLibrary, tracks, libraryPath, validRules, mode, conflictResolution]);
+  }, [destination, hasLibrary, tracks, libraryPath, validRules, mode]);
 
   const cancel = useCallback(async () => {
     cancelledRef.current = true;
@@ -254,26 +254,6 @@ export const FilterPage: React.FC = () => {
                     <span className="text-xs text-te-grey-400">
                       {m === 'copy' ? '(safe — originals kept)' : '(frees space — originals deleted)'}
                     </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            {/* Conflict resolution */}
-            <fieldset>
-              <legend className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">When file already exists at destination</legend>
-              <div className="flex gap-4">
-                {[
-                  { value: 'skip', label: 'Skip' },
-                  { value: 'overwrite', label: 'Overwrite' },
-                  { value: 'quality', label: 'Keep higher quality' },
-                ].map(opt => (
-                  <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="filter-conflict" value={opt.value}
-                      checked={conflictResolution === opt.value}
-                      onChange={() => { setConflictResolution(opt.value as ConflictResolution); reset(); }}
-                      className="text-te-orange" />
-                    <span className="text-sm text-te-grey-800">{opt.label}</span>
                   </label>
                 ))}
               </div>

@@ -13,7 +13,7 @@ import { FilterMovePanel } from '../maintenance/FilterMovePanel';
  * bar, with the second tool's state distinguished only by an "f" prefix.
  */
 export const MaintenancePage: React.FC = () => {
-  const { libraryData, libraryPath } = useAppContext();
+  const { libraryData, libraryPath, setLibraryData } = useAppContext();
   const tracks = libraryData ? Array.from(libraryData.tracks.values()) : [];
   const hasLibrary = tracks.length > 0;
 
@@ -25,8 +25,8 @@ export const MaintenancePage: React.FC = () => {
         <BrokenEntriesPanel />
       </div>
 
-      <ConsolidatePanel tracks={tracks} libraryPath={libraryPath} hasLibrary={hasLibrary} />
-      <FilterMovePanel tracks={tracks} libraryPath={libraryPath} hasLibrary={hasLibrary} />
+      <ConsolidatePanel tracks={tracks} libraryPath={libraryPath} hasLibrary={hasLibrary} onLibraryChanged={setLibraryData} />
+      <FilterMovePanel tracks={tracks} libraryPath={libraryPath} hasLibrary={hasLibrary} onLibraryChanged={setLibraryData} />
 
       <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md opacity-50">
         <h3 className="font-semibold text-te-grey-800 mb-1">Coming soon</h3>

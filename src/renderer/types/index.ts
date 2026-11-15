@@ -234,6 +234,7 @@ declare global {
       getTrackArtwork: (filePath: string) => Promise<string | null>;
       getSavedDbKey: () => Promise<string>;
       saveDbKey: (key: string) => Promise<{ success: boolean }>;
+      getBundledDbKey: () => Promise<string>;
       getUpdateStatus: () => Promise<UpdateStatus>;
       checkForUpdates: () => Promise<UpdateStatus>;
       installUpdate: () => Promise<{ success: boolean }>;
@@ -242,13 +243,13 @@ declare global {
       getAppVersion: () => Promise<{ success: boolean; data?: { version: string }; error?: string }>;
       // Filter & Move/Copy APIs
       filterPreview: (data: { tracks: any[]; filters: any[]; destination: string }) => Promise<any>;
-      filterLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; filters: any[]; options: any }) => Promise<any>;
+      filterLibrary: (data: FilterMovePayload) => Promise<IpcResult<ConsolidateRunResult>>;
       cancelFilter?: (operationId: string) => Promise<any>;
       onFilterProgress?: (callback: (progress: any) => void) => () => void;
 
       // Consolidate Library APIs
       consolidatePreview: (data: { tracks: any[]; destination: string }) => Promise<any>;
-      consolidateLibrary: (data: { operationId: string; tracks: any[]; libraryPath: string; options: any }) => Promise<any>;
+      consolidateLibrary: (data: ConsolidatePayload) => Promise<IpcResult<ConsolidateRunResult>>;
       cancelConsolidate?: (operationId: string) => Promise<any>;
       onConsolidateProgress?: (callback: (progress: any) => void) => () => void;
       // Format conversion APIs
@@ -260,6 +261,12 @@ declare global {
       runConversion: (data: ConvertRunPayload) => Promise<IpcResult<ConvertRunResult>>;
       cancelConversion: (operationId: string) => Promise<IpcResult>;
       onConversionProgress: (callback: (progress: ConvertProgress) => void) => () => void;
+      // Fix-my-library wizard
+      wizardCheck: (data: WizardRequest) => Promise<IpcResult<WizardCheck>>;
+      wizardPlanStep: (data: WizardPlanPayload) => Promise<IpcResult<StepPlan>>;
+      wizardApplyStep: (data: WizardApplyPayload) => Promise<IpcResult<StepResult>>;
+      cancelWizard: (operationId: string) => Promise<IpcResult>;
+      onWizardProgress: (callback: (progress: WizardProgress) => void) => () => void;
       // File Drop APIs
       handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
@@ -274,5 +281,7 @@ declare global {
 import type {
   UpdateStatusPayload, IpcResult, ConvertCandidate, ConvertPreviewItem, ConvertProgress, ConvertRunPayload,
   ConvertRunResult, FfmpegInstallProgress, FfmpegStatus, PlayerProfileId, TargetFormat,
+  ConsolidatePayload, FilterMovePayload, ConsolidateRunResult,
+  WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
 } from '../../main/ipcContract';
 export type UpdateStatus = UpdateStatusPayload;

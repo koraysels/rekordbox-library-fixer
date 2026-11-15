@@ -2,8 +2,10 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FolderOpen, Play, X, CheckCircle, AlertCircle, SkipForward } from 'lucide-react';
 import { formatFileSize } from '../../utils';
 import type { TrackPayload } from '../../../main/ipcContract';
+import type { LibraryData } from '../../types';
 import {
-  QualityInfo, type ConflictResolution, type Mode, type Phase, type Progress, type Result,
+  CLASH_NOTE, dbKeyFor, isDatabaseLibrary, readLibraryAgain,
+  type Mode, type Phase, type Progress, type Result,
 } from './shared';
 
 interface Preview {
@@ -17,19 +19,20 @@ interface ConsolidatePanelProps {
   tracks: TrackPayload[];
   libraryPath: string;
   hasLibrary: boolean;
+  /** The library as it is after a run changed it. */
+  onLibraryChanged?: (data: LibraryData) => void;
 }
 
 /**
  * Copy or move every track to one destination — an external SSD before a gig,
- * usually — and point the library at the new locations.
+ * usually — and point the library at the new locations: in the rekordbox
+ * database for a database library, in the XML for an XML one.
  */
 export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
-  tracks, libraryPath, hasLibrary,
+  tracks, libraryPath, hasLibrary, onLibraryChanged,
 }) => {
   const [destination, setDestination] = useState('');
   const [mode, setMode] = useState<Mode>('copy');
-  const [conflictResolution, setConflictResolution] = useState<ConflictResolution>('skip');
-  const [preferLossless, setPreferLossless] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [progress, setProgress] = useState<Progress | null>(null);
@@ -38,8 +41,6 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
 
   const operationIdRef = useRef<string>('');
   const cancelledRef = useRef(false);
-
-  // Filter & Move state
 
   useEffect(() => {
     const unsub = window.electronAPI.onConsolidateProgress?.((p: any) => {
@@ -89,23 +90,26 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
         operationId,
         tracks,
         libraryPath: libraryPath ?? '',
-        options: { destination, mode, conflictResolution, preferLossless },
+        options: { destination, mode },
+        dbKey: dbKeyFor(libraryPath),
       });
-      if (cancelledRef.current) {return;}
-      if (res.success) {
+      if (res.success && res.data) {
+        // A cancelled run still wrote what it had done, so it is shown too.
         setResult(res.data);
-        setPhase('done');
+        setPhase(cancelledRef.current ? 'cancelled' : 'done');
+        if (res.data.entriesUpdated > 0) {
+          const fresh = await readLibraryAgain(libraryPath);
+          if (fresh) {onLibraryChanged?.(fresh);}
+        }
       } else {
         setError(res.error ?? 'Consolidation failed');
         setPhase('idle');
       }
     } catch {
-      if (!cancelledRef.current) {
-        setError('Consolidation failed');
-        setPhase('idle');
-      }
+      setError('Consolidation failed');
+      setPhase('idle');
     }
-  }, [destination, hasLibrary, tracks, libraryPath, mode, conflictResolution, preferLossless]);
+  }, [destination, hasLibrary, tracks, libraryPath, mode, onLibraryChanged]);
 
   const cancel = useCallback(async () => {
     cancelledRef.current = true;
@@ -132,7 +136,8 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-te-amber-100 text-te-amber-600 border border-te-amber-200">Beta / Untested</span>
       </div>
       <p className="text-sm text-te-grey-500 font-te-mono mb-te-md">
-        Copy or move all tracks to a single destination (e.g. an external SSD) and update the XML locations.
+        Copy or move all tracks to a single destination (e.g. an external SSD) and point the library at them
+        {isDatabaseLibrary(libraryPath) ? ' in the rekordbox database. Close rekordbox first; a backup is taken.' : ' in the XML.'}
       </p>
 
       {!hasLibrary && (
@@ -182,44 +187,7 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
             </div>
           </fieldset>
 
-          {/* Conflict resolution */}
-          <fieldset>
-            <legend className="block text-xs font-medium text-te-grey-600 mb-2 uppercase">When file already exists at destination</legend>
-            <div className="flex flex-col gap-2">
-              {[
-                { value: 'skip', label: 'Skip', desc: 'Keep the existing destination file' },
-                { value: 'overwrite', label: 'Overwrite', desc: 'Always replace with source file' },
-                { value: 'quality', label: 'Use quality score', desc: 'Keep whichever is lossless or higher bitrate/sample rate' },
-              ] .map(opt => (
-                <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="conflict"
-                    value={opt.value}
-                    checked={conflictResolution === opt.value}
-                    onChange={() => { setConflictResolution(opt.value as ConflictResolution); reset(); }}
-                    className="mt-0.5 text-te-orange"
-                  />
-                  <div>
-                    <span className="text-sm font-medium text-te-grey-800">{opt.label}</span>
-                    {opt.value === 'quality' && <QualityInfo />}
-                    <span className="text-xs text-te-grey-400 ml-2 font-te-mono">{opt.desc}</span>
-                  </div>
-                </label>
-              ))}
-              {conflictResolution === 'quality' && (
-                <label className="flex items-center gap-2 ml-5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferLossless}
-                    onChange={e => setPreferLossless(e.target.checked)}
-                    className="text-te-orange"
-                  />
-                  <span className="text-sm text-te-grey-700">Prefer FLAC over lossy formats</span>
-                </label>
-              )}
-            </div>
-          </fieldset>
+          <p className="text-xs text-te-grey-500 font-te-mono">{CLASH_NOTE}</p>
 
           {/* Preview */}
           {preview && phase === 'previewed' && (
@@ -227,7 +195,7 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
               <div className="font-semibold text-te-grey-700">Preview</div>
               <div>{preview.total} tracks — {formatFileSize(preview.totalSizeBytes)}</div>
               {preview.conflicts > 0 && (
-                <div className="text-amber-600">{preview.conflicts} conflict{preview.conflicts !== 1 ? 's' : ''} at destination</div>
+                <div className="text-amber-600">{preview.conflicts} already at the destination — reused if identical, otherwise saved as &quot;(2)&quot;</div>
               )}
               {preview.missing > 0 && (
                 <div className="text-te-grey-400">{preview.missing} source files not found (will be skipped)</div>
@@ -268,6 +236,11 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
                 <span className="text-te-grey-400 flex items-center gap-1"><SkipForward className="w-3 h-3" />{result.skipped} skipped</span>
                 {result.failed > 0 && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{result.failed} failed</span>}
               </div>
+              {result.backupPath && (
+                <div className="text-xs text-te-grey-500">
+                  {result.entriesUpdated ?? 0} library entr{result.entriesUpdated === 1 ? 'y' : 'ies'} updated. A backup was saved first.
+                </div>
+              )}
               {result.errors.length > 0 && (
                 <details className="mt-2">
                   <summary className="cursor-pointer text-red-500 text-xs">Show errors</summary>
@@ -309,7 +282,7 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
                   {mode === 'copy' ? 'Copy Library' : 'Move Library'}
                 </button>
                 {(phase === 'done' || phase === 'cancelled') && (
-                  <button onClick={() => { reset(); setPreferLossless(false); }} className="btn-secondary">Reset</button>
+                  <button onClick={reset} className="btn-secondary">Reset</button>
                 )}
               </>
             )}

@@ -14,6 +14,10 @@ import type { AudioFacts, PlayerProfile, UnplayableReason } from './convert/play
 import type { OutputFacts, Readiness, TargetFormat } from './convert/conversionPlan';
 import type { SwitchSkip } from './convert/applyConversions';
 import type { FfmpegStatus } from './convert/ffmpegBinary';
+import type { ConsolidateOptions, ConsolidatePreview } from './libraryConsolidator';
+import type { ConsolidateRunResult } from './consolidateRun';
+import type { StepPlan, StepResult, WizardCheck, WizardStepId } from './wizard/types';
+import type { WizardProgress } from './wizard/context';
 
 export type { TargetFormat, FfmpegStatus };
 
@@ -161,6 +165,23 @@ export interface FilterRulePayload {
   value: string;
 }
 
+/** Copy or move the library under one folder ('consolidate-library'). Nothing is ever overwritten. */
+export interface ConsolidatePayload {
+  operationId: string;
+  tracks: TrackPayload[];
+  libraryPath: string;
+  options: ConsolidateOptions;
+  /** Required for a database library, whose new locations are written into the database. */
+  dbKey?: string;
+}
+
+/** The same, for the part of the library that matches some rules ('filter-library'). */
+export interface FilterMovePayload extends ConsolidatePayload {
+  filters: FilterRulePayload[];
+}
+
+export type { ConsolidateOptions, ConsolidatePreview, ConsolidateRunResult };
+
 /** Unsubscribes an event listener registered through the bridge. */
 export type Unsubscribe = () => void;
 
@@ -245,4 +266,33 @@ export interface ConvertRunResult {
 
 export interface FfmpegInstallProgress {
   percent: number;
+}
+
+// ---- Wizard ----
+
+export type { StepPlan, StepResult, WizardCheck, WizardStepId, WizardProgress };
+
+/** What every wizard call carries ('wizard-check'); progress arrives on 'wizard-progress'. */
+export interface WizardRequest {
+  /** Names the call so 'cancel-wizard' can stop it. */
+  operationId: string;
+  dbPath: string;
+  key: string;
+  musicFolder: string;
+  profileId: PlayerProfileId;
+  /** The Relocate page's search folders; the music folder is searched first regardless. */
+  searchPaths: string[];
+}
+
+/** 'wizard-plan-step': what one step would do, from the library as it is now. */
+export interface WizardPlanPayload extends WizardRequest {
+  step: WizardStepId;
+}
+
+/**
+ * 'wizard-apply-step': do what a plan the user confirmed says. The result is
+ * returned even when the step refused or its write failed — then `error` is set.
+ */
+export interface WizardApplyPayload extends WizardRequest {
+  plan: StepPlan;
 }

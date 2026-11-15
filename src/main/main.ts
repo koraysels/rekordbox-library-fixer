@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { app, BrowserWindow, shell, Menu, protocol, net } from 'electron';
+import { app, BrowserWindow, shell, Menu, protocol, net, session } from 'electron';
 import { pathToFileURL } from 'url';
 import { mediaUrlToFilePath, isAllowedMediaPath } from './mediaProtocol';
 import { mainLogger as appLogger } from './appLogger';
@@ -12,6 +12,7 @@ import { registerBackupIpc } from './ipc/backups';
 import { registerSystemIpc } from './ipc/system';
 import { registerUpdateIpc } from './ipc/updates';
 import { registerConvertIpc } from './ipc/convert';
+import { registerWizardIpc } from './ipc/wizard';
 import { startUpdateChecks, checkForUpdates } from './updates/updater';
 
 
@@ -293,6 +294,7 @@ app.whenReady().then(async () => {
   registerSystemIpc();
   registerUpdateIpc();
   registerConvertIpc();
+  registerWizardIpc();
 
   // Database storage is now handled via Dexie in the renderer process
   safeConsole.log('✅ Application initialized');
@@ -305,6 +307,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Chromium writes localStorage to disk lazily; a quit right after a change
+// (the Wizard / Advanced switch, a setting) could otherwise lose it.
+app.on('before-quit', () => {
+  session.defaultSession?.flushStorageData();
 });
 
 app.on('activate', () => {

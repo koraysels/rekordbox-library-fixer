@@ -11,6 +11,7 @@ import {
 const TYPE_META: Record<ActivityEntry['type'], { label: string; Icon: typeof Layers }> = {
   'duplicate-merge': { label: 'Duplicates', Icon: Layers },
   relocation: { label: 'Relocation', Icon: Move },
+  'entry-removal': { label: 'Removed entries', Icon: Trash2 },
   consolidate: { label: 'Consolidate', Icon: Copy },
   'filter-move': { label: 'Filter copy/move', Icon: Copy },
   'xml-save': { label: 'Library saved', Icon: Save },

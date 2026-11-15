@@ -3,7 +3,8 @@ import type {
   TrackPayload, ScanOptionsPayload, ScanProgressPayload, DuplicateSet, MergePlanPayload,
   RelocationPayload, RelocateProgressPayload, FilterRulePayload, OperationProgress, UpdateStatusPayload,
   ConvertCandidate, ConvertRunPayload, ConvertProgress, FfmpegInstallProgress,
-  PlayerProfileId, TargetFormat,
+  PlayerProfileId, TargetFormat, ConsolidatePayload, FilterMovePayload, ConsolidateRunResult, IpcResult,
+  WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -91,6 +92,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   getSavedDbKey: (): Promise<string> => ipcRenderer.invoke('get-saved-db-key'),
   saveDbKey: (key: string): Promise<{ success: boolean }> => ipcRenderer.invoke('save-db-key', key),
+  getBundledDbKey: (): Promise<string> => ipcRenderer.invoke('get-bundled-db-key'),
   getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
@@ -134,10 +136,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Consolidate Library
   consolidatePreview: (data: { tracks: TrackPayload[]; destination: string }) =>
     ipcRenderer.invoke('consolidate-preview', data),
-  consolidateLibrary: (data: {
-    operationId: string; tracks: TrackPayload[]; libraryPath: string;
-    options: Record<string, unknown>;
-  }) =>
+  consolidateLibrary: (data: ConsolidatePayload): Promise<IpcResult<ConsolidateRunResult>> =>
     ipcRenderer.invoke('consolidate-library', data),
   cancelConsolidate: (operationId: string) =>
     ipcRenderer.invoke('cancel-consolidate', operationId),
@@ -152,10 +151,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     tracks: TrackPayload[]; filters: FilterRulePayload[]; destination: string;
   }) =>
     ipcRenderer.invoke('filter-preview', data),
-  filterLibrary: (data: {
-    operationId: string; tracks: TrackPayload[]; libraryPath: string;
-    filters: FilterRulePayload[]; options: Record<string, unknown>;
-  }) =>
+  filterLibrary: (data: FilterMovePayload): Promise<IpcResult<ConsolidateRunResult>> =>
     ipcRenderer.invoke('filter-library', data),
   cancelFilter: (operationId: string) =>
     ipcRenderer.invoke('cancel-filter', operationId),
@@ -183,6 +179,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_: Electron.IpcRendererEvent, progress: ConvertProgress) => callback(progress);
     ipcRenderer.on('conversion-progress', handler);
     return () => { ipcRenderer.removeListener('conversion-progress', handler); };
+  },
+
+  // Fix-my-library wizard
+  wizardCheck: (data: WizardRequest): Promise<IpcResult<WizardCheck>> =>
+    ipcRenderer.invoke('wizard-check', data),
+  wizardPlanStep: (data: WizardPlanPayload): Promise<IpcResult<StepPlan>> =>
+    ipcRenderer.invoke('wizard-plan-step', data),
+  wizardApplyStep: (data: WizardApplyPayload): Promise<IpcResult<StepResult>> =>
+    ipcRenderer.invoke('wizard-apply-step', data),
+  cancelWizard: (operationId: string): Promise<IpcResult> => ipcRenderer.invoke('cancel-wizard', operationId),
+  onWizardProgress: (callback: (progress: WizardProgress) => void) => {
+    const handler = (_: Electron.IpcRendererEvent, progress: WizardProgress) => callback(progress);
+    ipcRenderer.on('wizard-progress', handler);
+    return () => { ipcRenderer.removeListener('wizard-progress', handler); };
   },
 
   // Native drag-and-drop

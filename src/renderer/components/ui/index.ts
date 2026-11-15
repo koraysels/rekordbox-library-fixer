@@ -21,3 +21,4 @@ export { MiniPlayer } from './MiniPlayer';
 export { PlayButton } from './PlayButton';
 export { DuplicateHelp } from './DuplicateHelp';
 export { SearchDepthControl } from './SearchDepthControl';
+export { MusicFolderSetting, useChooseMusicFolder } from './MusicFolderSetting';

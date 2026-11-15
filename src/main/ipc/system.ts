@@ -2,7 +2,8 @@ import * as path from 'path';
 import { ipcMain, dialog, shell, Notification, app } from 'electron';
 import { runtime, safeConsole, getMainWindow, sendToWindow } from '../runtime';
 import { readTrackArtwork } from '../trackArtwork';
-import { readSavedDbKey, writeSavedDbKey } from '../savedDbKey';
+import { readSavedDbKey, rememberDbKey } from '../savedDbKey';
+import { readBundledKey, BUNDLED_KEY_DIR } from '../bundledKey';
 
 /**
  * Talking to the desktop: notifications, file dialogs, revealing a
@@ -57,8 +58,14 @@ export function registerSystemIpc(): void {
     }
   });
 
-  ipcMain.handle('get-saved-db-key', async () => readSavedDbKey(app.getPath('userData')));
-  ipcMain.handle('save-db-key', async (_e, key: string) => ({ success: writeSavedDbKey(app.getPath('userData'), key) }));
+  // A key the user pasted wins; otherwise the one bundled with the build, if any.
+  ipcMain.handle('get-saved-db-key', async () =>
+    readSavedDbKey(app.getPath('userData')) || readBundledKey(BUNDLED_KEY_DIR));
+  ipcMain.handle('save-db-key', async (_e, key: string) =>
+    ({ success: rememberDbKey(app.getPath('userData'), key, readBundledKey(BUNDLED_KEY_DIR)) }));
+  // Tried once more when the key in hand does not open the database: a new
+  // release may bundle a key that a rekordbox update changed.
+  ipcMain.handle('get-bundled-db-key', async () => readBundledKey(BUNDLED_KEY_DIR));
 
   ipcMain.handle('get-track-artwork', async (_e, filePath: string) => readTrackArtwork(filePath));
 

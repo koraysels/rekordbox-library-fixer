@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { glob } from 'glob';
 import FuzzySearch from 'fuzzy-search';
 import { Logger } from './logger';
 import { isStreamingLocation } from './brokenEntries';
+import { indexAudioFiles, type UnsearchedFolder } from './audioFileIndex';
+import { errorCode, isGoneError } from './fileState';
 
 export interface MissingTrack {
   id: string;
@@ -14,6 +15,12 @@ export interface MissingTrack {
   size?: number;
   duration?: number;
   dateAdded?: string;
+  /**
+   * Set when the file check failed for a reason other than "not there" — on a
+   * Mac, usually the app not being allowed into ~/Downloads, ~/Documents or a
+   * removable drive. The error code. Such a file may well exist.
+   */
+  unreadable?: string;
 }
 
 export interface RelocationCandidate {
@@ -45,6 +52,22 @@ interface FileIndex {
   files: string[];
   fileNames: Array<{ path: string; name: string }>;
   fuzzy: FuzzySearch<{ path: string; name: string }>;
+  unsearched: UnsearchedFolder[];
+}
+
+/** What a run's index covers: how many files, and which folders it could not look through. */
+export interface IndexSummary {
+  files: number;
+  unsearched: UnsearchedFolder[];
+}
+
+export interface CandidateSearchOptions {
+  /**
+   * Throw when the index cannot be built instead of answering "no candidates".
+   * The wizard reads "no candidate" as "the file is gone", so a failed search
+   * must never look like one.
+   */
+  strict?: boolean;
 }
 
 /** Is this location too damaged to name a file? */
@@ -96,8 +119,9 @@ export class TrackRelocator {
    * findRelocationCandidates call builds and reuses its own index too. Calling
    * this primes the index up front so the first track isn't slow.
    */
-  async beginRelocationRun(options: RelocationOptions): Promise<void> {
-    await this.getFileIndex(options);
+  async beginRelocationRun(options: RelocationOptions): Promise<IndexSummary> {
+    const index = await this.getFileIndex(options);
+    return { files: index.files.length, unsearched: index.unsearched };
   }
 
   /** Free the cached index so a large library's file list isn't retained. */
@@ -116,19 +140,13 @@ export class TrackRelocator {
       ? options.fileExtensions
       : this.audioExtensions;
 
-    const files: string[] = [];
-    for (const searchPath of options.searchPaths) {
-      if (!(await this.fileExists(searchPath))) {
-        this.logger.warning('TRACK_RELOCATOR_PATH_NOT_FOUND', { searchPath });
-        continue;
-      }
-      const globPattern = path.join(
-        searchPath,
-        options.includeSubdirectories ? '**' : '',
-        `*.{${extensions.map(ext => ext.replace('.', '')).join(',')}}`
-      );
-      const found = await glob(globPattern, { maxDepth: options.searchDepth, nocase: true });
-      files.push(...found);
+    const { files, unsearched } = await indexAudioFiles(options.searchPaths, {
+      extensions,
+      recursive: options.includeSubdirectories,
+      maxDepth: options.searchDepth,
+    });
+    for (const folder of unsearched) {
+      this.logger.warning('TRACK_RELOCATOR_PATH_NOT_SEARCHED', { ...folder });
     }
 
     const fileNames = files.map(file => ({
@@ -137,7 +155,7 @@ export class TrackRelocator {
     }));
     const fuzzy = new FuzzySearch(fileNames, ['name'], { caseSensitive: false, sort: true });
 
-    this.fileIndex = { key, files, fileNames, fuzzy };
+    this.fileIndex = { key, files, fileNames, fuzzy, unsearched };
     this.logger.info('TRACK_RELOCATOR_INDEX_BUILT', { files: files.length });
     return this.fileIndex;
   }
@@ -156,9 +174,8 @@ export class TrackRelocator {
       if (isStreamingLocation(track.location)) { continue; }
 
       try {
-        // Check if file exists at original location
-        const exists = await this.fileExists(track.location);
-        if (!exists) {
+        const failure = await this.accessFailure(track.location);
+        if (failure !== null) {
           missingTracks.push({
             id,
             name: track.name || 'Unknown',
@@ -167,7 +184,8 @@ export class TrackRelocator {
             originalLocation: track.location,
             size: track.size,
             duration: track.duration,
-            dateAdded: track.dateAdded
+            dateAdded: track.dateAdded,
+            ...(isGoneError(failure) ? {} : { unreadable: errorCode(failure) }),
           });
         }
       } catch (error) {
@@ -189,7 +207,8 @@ export class TrackRelocator {
 
   async findRelocationCandidates(
     track: MissingTrack,
-    options: RelocationOptions
+    options: RelocationOptions,
+    search: CandidateSearchOptions = {}
   ): Promise<RelocationCandidate[]> {
     const candidates: RelocationCandidate[] = [];
     // A damaged location gives a useless search term: a folder path yields the
@@ -206,15 +225,14 @@ export class TrackRelocator {
     try {
       const { files, fileNames, fuzzy } = await this.getFileIndex(options);
 
-      // 1. Exact filename match
-      const exactMatch = files.find(file => {
-        const fileName = path.basename(file, path.extname(file));
-        return fileName.toLowerCase() === originalFileName.toLowerCase();
-      });
-
-      if (exactMatch) {
+      // 1. Exact filename match — every one of them. Several files with the
+      // track's name (`Intro.mp3` in three album folders) is not a match but a
+      // choice, and a caller can only see that if all of them are listed.
+      const wanted = originalFileName.toLowerCase();
+      for (const file of files) {
+        if (path.basename(file, path.extname(file)).toLowerCase() !== wanted) {continue;}
         candidates.push({
-          path: exactMatch,
+          path: file,
           score: 100,
           matchType: 'exact',
           confidence: 0.95
@@ -288,6 +306,7 @@ export class TrackRelocator {
         trackId: track.id,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+      if (search.strict) {throw error;}
     }
 
     // Sort candidates by score (descending) and remove duplicates
@@ -423,6 +442,16 @@ export class TrackRelocator {
     }
 
     return matrix[str2.length][str1.length];
+  }
+
+  /** null when the file can be reached; otherwise why not. */
+  private async accessFailure(filePath: string): Promise<unknown> {
+    try {
+      await fs.promises.access(filePath);
+      return null;
+    } catch (e) {
+      return e ?? new Error('unknown');
+    }
   }
 
   private async fileExists(filePath: string): Promise<boolean> {

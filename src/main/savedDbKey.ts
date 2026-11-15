@@ -12,12 +12,33 @@ const SHAPE = /^[0-9a-f]{64}$/i;
  * key again. This copy lives outside that storage and refills it.
  */
 export function readSavedDbKey(dir: string): string {
+  return readKeyFile(path.join(dir, FILE));
+}
+
+/** A `{"key": "<64 hex>"}` file's key, or '' when it is missing, damaged or not a key. */
+export function readKeyFile(file: string): string {
   try {
-    const { key } = JSON.parse(fs.readFileSync(path.join(dir, FILE), 'utf8'));
+    const { key } = JSON.parse(fs.readFileSync(file, 'utf8'));
     return typeof key === 'string' && SHAPE.test(key) ? key : '';
   } catch {
     return '';
   }
+}
+
+/**
+ * Keep a key the user gave — but not the bundled one. A saved key wins over the
+ * bundled key, so saving the bundled one would pin it: after a rekordbox update
+ * a new release's bundled key would never be used. That key is dropped from the
+ * file instead, so the file only ever holds a key the user pasted.
+ */
+export function rememberDbKey(dir: string, key: string, bundledKey: string): boolean {
+  const trimmed = key.trim();
+  if (!SHAPE.test(trimmed)) { return false; }
+  if (bundledKey && trimmed.toLowerCase() === bundledKey.toLowerCase()) {
+    fs.rmSync(path.join(dir, FILE), { force: true });
+    return true;
+  }
+  return writeSavedDbKey(dir, trimmed);
 }
 
 /** Only a key of the right shape is kept; anything else would only fail later. */

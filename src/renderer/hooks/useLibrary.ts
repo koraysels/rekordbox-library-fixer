@@ -1,6 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { LibraryData, ShowNotification } from '../types';
 import { useSettingsStore } from '../stores/settingsStore';
+import { looksLikeDbKey } from '../utils/keyExtractionCommand';
+
+/** The key that ships with this build, or '' when there is none or it cannot be asked for. */
+async function bundledDbKey(): Promise<string> {
+  try {
+    const key = await window.electronAPI.getBundledDbKey?.();
+    return looksLikeDbKey(key ?? '') ? (key as string) : '';
+  } catch {
+    return '';
+  }
+}
 
 export const useLibrary = (showNotification: ShowNotification) => {
   const [libraryPath, setLibraryPath] = useState<string>('');
@@ -76,15 +87,29 @@ export const useLibrary = (showNotification: ShowNotification) => {
         target = detected.dbPath;
       }
 
-      const key = useSettingsStore.getState().rekordboxDbKey;
-      if (!key.trim()) {
+      const key = useSettingsStore.getState().rekordboxDbKey.trim();
+      const bundled = await bundledDbKey();
+      if (!key && !bundled) {
         showNotification('error', 'The rekordbox database needs its key — click the database entry on the load screen to paste it.');
         return false;
       }
 
       setLibraryData(null);
-      const result = await window.electronAPI.parseRekordboxDb({ dbPath: target, key });
+      let used = key || bundled;
+      let result = await window.electronAPI.parseRekordboxDb({ dbPath: target, key: used });
+      // The key in hand may be one an older release bundled, kept in settings:
+      // after a rekordbox update changed it, this release's bundled key is the
+      // one that works. Tried once, before the user is asked to paste a key.
+      if (!(result.success && result.data) && key && bundled && bundled.toLowerCase() !== key.toLowerCase()) {
+        const retry = await window.electronAPI.parseRekordboxDb({ dbPath: target, key: bundled });
+        if (retry.success && retry.data) {
+          result = retry;
+          used = bundled;
+        }
+      }
       if (result.success && result.data) {
+        // Every later write uses the key from settings: make it the one that opened the database.
+        if (used !== key) {useSettingsStore.getState().setRekordboxDbKey(used);}
         setLibraryPath(target);
         setLibraryData(result.data);
         showNotification('success', `Loaded ${result.data.tracks.size} tracks from the rekordbox database`);

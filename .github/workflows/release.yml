@@ -42,6 +42,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The database key reaches the build only through this gitignored file;
+      # scripts/write-bundled-key.mjs bundles it. Without the secret the build
+      # still works and the app asks for the key instead.
+      - name: Write .env from the database key secret
+        shell: bash
+        env:
+          REKORDBOX_DB_KEY: ${{ secrets.REKORDBOX_DB_KEY }}
+        run: printf 'REKORDBOX_DB_KEY=%s\n' "$REKORDBOX_DB_KEY" > .env
+
       - run: pnpm build
 
       # Package only — publishing happens once in the release job below,

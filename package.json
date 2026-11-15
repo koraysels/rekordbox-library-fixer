@@ -1,6 +1,6 @@
 {
   "name": "rekordbox-library-manager",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "packageManager": "pnpm@10.28.0",
   "engines": {
     "node": ">=24.0.0"
@@ -13,7 +13,7 @@
     "build": "pnpm typecheck && pnpm build:vite && pnpm build:main",
     "build:check": "pnpm lint:check && pnpm build",
     "build:vite": "vite build",
-    "build:main": "tsc -p tsconfig.main.json",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/write-bundled-key.mjs",
     "dist": "pnpm clean:release && pnpm build && electron-builder",
     "dist:mac": "pnpm clean:release && pnpm build && electron-builder --mac",
     "dist:win": "pnpm clean:release && pnpm build && electron-builder --win",

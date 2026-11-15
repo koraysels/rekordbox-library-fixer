@@ -6,6 +6,8 @@ import { useRouteData } from './hooks/useRouteData';
 import { NotificationToast, AppFooter, SplashScreen, AboutModal, TutorialModal, SkeletonCard, NativeDropHandler, MiniPlayer } from './components/ui';
 import { Library } from 'lucide-react';
 import { Sidebar } from './components/Sidebar';
+import { WizardPage } from './components/wizard/WizardPage';
+import { useSettingsStore } from './stores/settingsStore';
 import type { TabType, LibraryData, NotificationType } from './types';
 import { usePersistedDbKey } from './hooks/usePersistedDbKey';
 
@@ -19,7 +21,8 @@ interface AppContextType {
   /** Open a library file by path, e.g. after restoring a backup. */
   onLoadLibrary?: (path: string) => void;
   onSelectLibrary?: () => void;
-  onLoadFromDb?: (dbPath?: string) => void;
+  /** Resolves false when the database did not open, e.g. with the wrong key. */
+  onLoadFromDb?: (dbPath?: string) => Promise<boolean> | void;
   onUnloadLibrary?: () => void;
 }
 
@@ -51,6 +54,8 @@ const AppWithRouter: React.FC = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const appMode = useSettingsStore((s) => s.appMode);
+  const setAppMode = useSettingsStore((s) => s.setAppMode);
 
   // Derive active tab from route
   const routeTab = pathToTab[location.pathname] || 'duplicates';
@@ -115,6 +120,25 @@ const AppWithRouter: React.FC = () => {
     return <SplashScreen />;
   }
 
+  const appContext: AppContextType = {
+    libraryData,
+    libraryPath,
+    showNotification,
+    setLibraryData,
+    onLoadLibrary: loadLibrary,
+    onSelectLibrary: selectLibrary,
+    onLoadFromDb: loadFromDb,
+    onUnloadLibrary: clearStoredData
+  };
+
+  const modals = (
+    <>
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+      <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />
+    </>
+  );
+
   return (
     <div className="h-screen bg-te-grey-100 flex flex-col overflow-hidden font-te-sans">
       {/* Title Bar for Window Controls */}
@@ -130,6 +154,8 @@ const AppWithRouter: React.FC = () => {
         onSelectLibrary={selectLibrary}
         onUnloadLibrary={clearStoredData}
         onShowTutorial={() => setShowTutorial(true)}
+        appMode={appMode}
+        onSwitchMode={() => setAppMode(appMode === 'wizard' ? 'advanced' : 'wizard')}
       />
 
       {/* Main Content Area */}
@@ -139,7 +165,12 @@ const AppWithRouter: React.FC = () => {
 
         {/* Content with route-based rendering */}
         <div className="flex-1 pt-3 pb-3 overflow-hidden">
-        {isLoading ? (
+        {appMode === 'wizard' ? (
+          // The wizard opens its own library and says when it is loading.
+          <AppContext.Provider value={appContext}>
+            <WizardPage isLoading={isLoading} />
+          </AppContext.Provider>
+        ) : isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-te-grey-500">
             <div className="w-10 h-10 border-4 border-te-grey-300 border-t-te-orange rounded-full animate-spin" />
             <p className="text-sm font-te-mono">Parsing library…</p>
@@ -160,16 +191,7 @@ const AppWithRouter: React.FC = () => {
             </div>
           </div>
         ) : (
-          <AppContext.Provider value={{
-            libraryData: libraryData as LibraryData,
-            libraryPath,
-            showNotification,
-            setLibraryData,
-            onLoadLibrary: loadLibrary,
-            onSelectLibrary: selectLibrary,
-            onLoadFromDb: loadFromDb,
-            onUnloadLibrary: clearStoredData
-          }}>
+          <AppContext.Provider value={appContext}>
             {/* No mode="wait": the outgoing page's exit would otherwise have to
                 finish before the new one starts, doubling the perceived delay. */}
             <AnimatePresence initial={false}>
@@ -202,14 +224,7 @@ const AppWithRouter: React.FC = () => {
           of every page and half of the mini player. */}
       <AppFooter libraryData={libraryData} />
 
-      {/* About Modal */}
-      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
-
-      {/* Tutorial Modal */}
-      <TutorialModal isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
-
-      {/* Native Drop Handler */}
-      <NativeDropHandler onFileDrop={loadLibrary} acceptedExtensions={['.xml']} />
+      {modals}
     </div>
   );
 };

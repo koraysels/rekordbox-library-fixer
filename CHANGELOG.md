@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0] - 2026-11-15
+
+### 🎉 New Features
+- **Fix my library**: a wizard is the default screen. One check, a short summary, then one confirm per step — find moved tracks (90 % matches or better), remove entries that can't be found, merge sure duplicates, move everything into your music folder, convert what your oldest player can't play. Each step takes its own verified backup and lands in History; anything unsure is set aside to check yourself. Never touches a track on an unplugged drive, never overwrites a file. **Advanced** shows the pages as before, in the same window: in the wizard the sidebar shows the steps as a timeline. The app remembers which mode you used last.
+- **No key to paste**: release builds include the database key. The paste screen stays as the fallback.
+- **Music folder** is a new setting: the wizard searches it first for moved tracks and gathers files into it.
+
+### 🐛 Fixes
+- **Consolidate never overwrites**: an identical file at the destination is reused, a different one gets a ` (2)`. On a database library it now writes the new paths to `master.db`.
+
 ## [0.7.0] - 2026-11-11
 
 ### 🎉 New Features

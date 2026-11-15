@@ -3,6 +3,7 @@ import { safeConsole, sendToWindow } from '../runtime';
 import { findUnplayable, preflightRefusal, previewConversion, runConversion } from '../convert/conversionRun';
 import { ffmpegStatus, installFfmpeg } from '../convert/ffmpegBinary';
 import { RunRegistry } from '../convert/runRegistry';
+import { convertDeps } from '../wizard/convertDeps';
 import type {
   ConvertCandidate, ConvertPreviewItem, ConvertRunPayload, ConvertRunResult, FfmpegInstallProgress,
   FfmpegStatus, IpcResult, PlayerProfileId, TargetFormat, TrackPayload,
@@ -60,21 +61,19 @@ export function registerConvertIpc(): void {
     try {
       // Registered before the checks, so a cancel sent meanwhile is not lost.
       controller = runs.begin(operationId);
-      const ff = status();
-      if (ff.state !== 'ready') {
-        throw new Error('ffmpeg is not installed yet — install it before converting.');
-      }
-      // runConversion refuses on its own too; asked here first so the page reports it as a run
-      // that never started, not as one that ran and changed nothing.
-      const refusal = preflightRefusal(data);
-      if (refusal) {throw new Error(refusal);}
-      const result = await runConversion(data, {
-        ffmpeg: ff.path,
+      // Throws when ffmpeg is not installed yet.
+      const deps = convertDeps({
+        ffmpeg: status(),
         operationId,
         signal: controller.signal,
         emit: (p) => sendToWindow('conversion-progress', p),
         trash: (p) => shell.trashItem(p),
       });
+      // runConversion refuses on its own too; asked here first so the page reports it as a run
+      // that never started, not as one that ran and changed nothing.
+      const refusal = preflightRefusal(data);
+      if (refusal) {throw new Error(refusal);}
+      const result = await runConversion(data, deps);
       return { success: true, data: result };
     } catch (error) {
       // A refused second run must not report an error under the id of the run still going.

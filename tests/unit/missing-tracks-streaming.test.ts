@@ -22,6 +22,20 @@ describe('findMissingTracks', () => {
     expect(missing.map((m) => m.id)).toEqual(['1']);
   });
 
+  it('marks a file it was not allowed to look at, apart from a file that is gone', async () => {
+    const denied = Object.assign(new Error('operation not permitted'), { code: 'EPERM' });
+    const gone = Object.assign(new Error('no such file'), { code: 'ENOENT' });
+    vi.spyOn(fs.promises, 'access').mockImplementation(async (p) => {
+      throw String(p).includes('Downloads') ? denied : gone;
+    });
+    const missing = await relocator.findMissingTracks(asMap([
+      { id: 'denied', name: 'Song', artist: 'A', location: '/Users/k/Downloads/song.mp3' },
+      { id: 'gone', name: 'Song', artist: 'A', location: '/music/song.mp3' },
+    ]));
+    expect(missing.find((m) => m.id === 'denied')?.unreadable).toBe('EPERM');
+    expect(missing.find((m) => m.id === 'gone')).not.toHaveProperty('unreadable');
+  });
+
   it('leaves streaming tracks out', async () => {
     // Rekordbox does not mark a TIDAL track missing, so neither can we — the
     // app's missing list has to match what the DJ sees in rekordbox.
