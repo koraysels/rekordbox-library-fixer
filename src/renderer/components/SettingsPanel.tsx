@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { FolderOpen, Plus, X, Info } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { ScanOptions, ResolutionStrategy } from '../types';
 import { useSettingsStore } from '../stores/settingsStore';
 import { PLAYER_PROFILES } from '../../main/convert/playerProfiles';
 import { MusicFolderSetting } from './ui/MusicFolderSetting';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@ui-sdk/react/tooltip';
 
 interface SettingsPanelProps {
   isOpen?: boolean;
@@ -21,35 +22,33 @@ interface FormData {
   pathPreferenceInput: string;
 }
 
-const QualityInfo: React.FC = () => {
-  const [open, setOpen] = useState(false);
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="font-medium text-te-grey-800">Keep Highest Quality</span>
-      <span className="relative inline-flex">
-        <button
-          type="button"
-          onClick={e => { e.preventDefault(); setOpen(v => !v); }}
-          className="text-te-grey-400 hover:text-te-orange focus:outline-none"
+const QualityInfo: React.FC = () => (
+  <span className="inline-flex items-center gap-1.5">
+    <span className="font-medium text-te-grey-800">Keep Highest Quality</span>
+    {/* Inside the radio's label: a press on the tip must not choose the strategy. On the trigger itself,
+        preventDefault would also skip the tooltip's own toggle, so it is cancelled here instead. */}
+    <span className="inline-flex" role="presentation" onClick={e => e.preventDefault()}>
+      <Tooltip toggleable delay={0}>
+        <TooltipTrigger
           aria-label="Quality scoring info"
+          className="text-te-grey-400 hover:text-te-orange"
         >
-          <Info className="w-3.5 h-3.5" />
-        </button>
-        {open && (
-          <div
-            className="absolute z-50 left-5 top-0 w-64 bg-white border border-te-grey-200 rounded-te shadow-lg p-3 text-xs font-te-mono text-te-grey-700 space-y-1"
-            onMouseLeave={() => setOpen(false)}
-          >
-            <div className="font-semibold text-te-grey-800 mb-1">Quality scoring</div>
-            <div><span className="text-green-600 font-semibold">WAV / AIFF</span> — always top tier</div>
-            <div><span className="text-blue-600 font-semibold">FLAC</span> — top tier only when "Prefer FLAC" is on</div>
-            <div><span className="text-te-grey-500 font-semibold">MP3 / AAC / OGG</span> — scored by bitrate &amp; size</div>
-          </div>
-        )}
-      </span>
+          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+        </TooltipTrigger>
+        <TooltipContent
+          side="right"
+          collisionPadding={8}
+          className="w-64 bg-white border border-te-grey-200 rounded-te shadow-lg p-3 text-xs font-te-mono text-te-grey-700 space-y-1"
+        >
+          <div className="font-semibold text-te-grey-800 mb-1">Quality scoring</div>
+          <div><span className="text-green-600 font-semibold">WAV / AIFF</span> — always top tier</div>
+          <div><span className="text-blue-600 font-semibold">FLAC</span> — top tier only when "Prefer FLAC" is on</div>
+          <div><span className="text-te-grey-500 font-semibold">MP3 / AAC / OGG</span> — scored by bitrate &amp; size</div>
+        </TooltipContent>
+      </Tooltip>
     </span>
-  );
-};
+  </span>
+);
 
 const OldestPlayerSetting: React.FC = () => {
   const oldestPlayer = useSettingsStore((s) => s.oldestPlayer);

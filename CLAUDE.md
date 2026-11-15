@@ -294,7 +294,7 @@ Test framework uses:
 - **xml2js**: XML parsing
 - **music-metadata**: Audio file metadata extraction
 - **Zustand**: State management with persist middleware for localStorage sync
-- **Radix UI**: Professional UI components (Popover for playlist display) 
+- **ui-sdk** (`@ui-sdk/react`): keyboard, focus and ARIA for dialogs, popovers and tooltips
 
 ## Key File Locations
 
@@ -373,7 +373,7 @@ await relocationStorage.saveRelocationResult(resultData);
 - **Fixed Footer**: Status bar positioned at bottom with library stats
 
 ### Interactive Elements
-- **Radix UI Popover**: Professional playlist display with click-to-expand
+- **Playlist overview**: a ui-sdk Popover from the footer's playlist count
 - **Loading Animations**: Spinner states for all async operations  
 - **Debounced Loading**: Visual feedback during heavy operations
 - **Hover States**: Consistent interactive feedback
@@ -451,8 +451,11 @@ is the signal that something in it wants to move out.
 - Development mode loads from `http://localhost:3000` - ensure Electron listens on same port as Vite
 - Production builds load from `dist/renderer/index.html`
 - ui-sdk (`@ui-sdk/react`, imported per component like `@ui-sdk/react/dialog`) supplies keyboard, focus and ARIA
-  for modals and the settings side sheet. Its `--ui-*` tokens (TE palette, light only) and the resets that keep
-  `web.css`'s default look out sit at the end of `src/renderer/index.css`; parts are styled with Tailwind classes.
+  for modals, the settings side sheet, the footer's playlist popover and tooltips. `PopoverButton` is a Tooltip on
+  a button that uses `aria-disabled` rather than `disabled`, so its tip still shows on a disabled action; its tip
+  is mounted hidden with every button, which is why `MissingTrackItem` rows are memoised. Its `--ui-*` tokens
+  (TE palette, light only), the resets that keep `web.css`'s default look out and `.te-popup-arrow` sit at the end
+  of `src/renderer/index.css`; parts are styled with Tailwind classes.
   The settings side sheet is a Dialog, not a Drawer: the Drawer's pointer driver lets a mouse drag move the sheet.
   Tests need the jsdom stubs at the top of `tests/setup.ts`.
 - TE theme with Tailwind CSS and orange accent (`te-orange`)

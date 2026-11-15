@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Settings,
   RefreshCw,
@@ -17,6 +17,7 @@ import { useTrackRelocator } from '../hooks/useTrackRelocator';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAppContext } from '../AppWithRouter';
 import type {
+  MissingTrack,
   RelocationCandidate
 } from '../types';
 import { SettingsSlideout, PopoverButton, PageHeader, SearchDepthControl } from './ui';
@@ -85,17 +86,19 @@ const TrackRelocator: React.FC = () => {
   ), [missingTracks, searchTerm, sortBy]);
 
   // Handle track selection
-  const toggleTrackSelection = (trackId: string) => {
+  const toggleTrackSelection = useCallback((track: MissingTrack) => {
     setSelectedMissingTracks(prev => {
       const newSelection = new Set(prev);
-      if (newSelection.has(trackId)) {
-        newSelection.delete(trackId);
+      if (newSelection.has(track.id)) {
+        newSelection.delete(track.id);
       } else {
-        newSelection.add(trackId);
+        newSelection.add(track.id);
       }
       return newSelection;
     });
-  };
+  }, []);
+
+  const removeTrackRelocation = useCallback((track: MissingTrack) => removeRelocation(track.id), [removeRelocation]);
 
   // Select all tracks
   const selectAllTracks = () => {
@@ -375,9 +378,9 @@ const TrackRelocator: React.FC = () => {
                 <MissingTrackItem
                   track={track}
                   isSelected={selectedMissingTracks.has(track.id)}
-                  onToggleSelection={(track) => toggleTrackSelection(track.id)}
-                  onFindCandidates={(track) => findRelocationCandidates(track)}
-                  onRemoveRelocation={(track) => removeRelocation(track.id)}
+                  onToggleSelection={toggleTrackSelection}
+                  onFindCandidates={findRelocationCandidates}
+                  onRemoveRelocation={removeTrackRelocation}
                   hasRelocation={relocations.has(track.id)}
                   relocationPath={relocations.get(track.id)}
                   isFindingCandidates={isFindingCandidates}

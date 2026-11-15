@@ -273,7 +273,35 @@
     color: inherit;
   }
 
-  :where([data-slot="dialog-close"], [data-slot="alert-dialog-close"]) {
+  :where([data-slot="tooltip-content"], [data-slot="popover-content"]) {
+    display: block;
+    gap: 0;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    border: 0 solid;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  :where([data-slot="popover-title"]) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  :where(
+    [data-slot="dialog-close"],
+    [data-slot="alert-dialog-close"],
+    [data-slot="tooltip-trigger"],
+    [data-slot="popover-trigger"],
+    [data-slot="popover-close"]
+  ) {
     display: inline-block;
     gap: 0;
     width: auto;
@@ -287,5 +315,37 @@
     white-space: normal;
     cursor: default;
     user-select: auto;
+  }
+
+  .te-popup-arrow {
+    width: 10px;
+    height: 10px;
+    rotate: 45deg;
+    border: 0 solid var(--color-te-grey-300);
+    background: var(--color-te-cream);
+
+    &[data-side="top"] {
+      bottom: -7px;
+      border-right-width: 2px;
+      border-bottom-width: 2px;
+    }
+
+    &[data-side="bottom"] {
+      top: -7px;
+      border-top-width: 2px;
+      border-left-width: 2px;
+    }
+
+    &[data-side="left"] {
+      right: -7px;
+      border-top-width: 2px;
+      border-right-width: 2px;
+    }
+
+    &[data-side="right"] {
+      left: -7px;
+      border-bottom-width: 2px;
+      border-left-width: 2px;
+    }
   }
 }

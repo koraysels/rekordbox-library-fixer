@@ -82,7 +82,6 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "@radix-ui/react-popover": "^1.1.15",
     "@tanstack/react-router": "^1.170.11",
     "@ui-sdk/core": "0.1.0-beta.3",
     "@ui-sdk/react": "0.1.0-beta.3",

@@ -39,7 +39,7 @@ const show = (over: any = {}) => {
 describe('DuplicateToolbar', () => {
   it('offers a scan', () => {
     const props = show();
-    fireEvent.click(screen.getByText(/Find Duplicates|Scan/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Scan for Duplicates' }));
     expect(props.scanForDuplicates).toHaveBeenCalled();
   });
 
