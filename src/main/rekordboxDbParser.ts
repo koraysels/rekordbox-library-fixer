@@ -46,6 +46,10 @@ export interface DbPlaylist {
   tracks: string[];
   type: 'FOLDER' | 'PLAYLIST';
   children?: DbPlaylist[];
+  /** `djmdPlaylist.ID`, decimal — the id a stick's sync list names in hex. */
+  id?: string;
+  /** `djmdPlaylist.Attribute`: 0 a playlist, 1 a folder, 4 a smart playlist (its tracks are not listed). */
+  attribute?: number;
 }
 
 export interface DbLibrary {
@@ -194,6 +198,8 @@ function buildPlaylists(db: Db): DbPlaylist[] {
       type: row.Attribute === 1 ? 'FOLDER' : 'PLAYLIST',
       tracks: trackIdsByPlaylist.get(String(row.ID)) ?? [],
       children: [],
+      id: String(row.ID),
+      attribute: row.Attribute ?? 0,
     });
   }
 
