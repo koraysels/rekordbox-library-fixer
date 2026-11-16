@@ -14,7 +14,8 @@ import {
     X,
     HelpCircle,
     Wand2,
-    SlidersHorizontal
+    SlidersHorizontal,
+    Usb
 } from 'lucide-react';
 import {motion} from 'framer-motion';
 import type {TabType, LibraryData} from '../types';
@@ -48,6 +49,13 @@ const navItems = [
         label: 'Convert',
         icon: RefreshCw,
         description: 'Convert tracks your player cannot play'
+    },
+    {
+        id: 'usb' as TabType,
+        path: '/usb',
+        label: 'USB Sticks',
+        icon: Usb,
+        description: 'See what a synced USB stick is missing, and why'
     },
     {
         id: 'import' as TabType,

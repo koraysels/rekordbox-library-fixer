@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCw, History } from 'lucide-react';
+import { RotateCw, History, Usb } from 'lucide-react';
 import type { StepResult } from '../../../main/wizard/types';
 import { DONE_NOTE } from '../../wizard/stepText';
 import { describeResult } from '../../wizard/wizardHistory';
@@ -12,10 +12,12 @@ interface Props {
   results: StepResult[];
   onCheckAgain: () => void;
   onOpenHistory: () => void;
+  /** Opens the USB Sticks page in Advanced: what a synced stick still lacks. */
+  onCheckUsb: () => void;
 }
 
 /** The end of a run: what changed, and the one thing left to do in rekordbox. */
-export const DoneScreen: React.FC<Props> = ({ results, onCheckAgain, onOpenHistory }) => (
+export const DoneScreen: React.FC<Props> = ({ results, onCheckAgain, onOpenHistory, onCheckUsb }) => (
   <WizardFrame
     title="That's everything"
     lead={DONE_NOTE}
@@ -28,6 +30,10 @@ export const DoneScreen: React.FC<Props> = ({ results, onCheckAgain, onOpenHisto
         <button type="button" className="btn-ghost flex items-center gap-2" onClick={onOpenHistory}>
           <History className="w-4 h-4" />
           See History and backups
+        </button>
+        <button type="button" className="btn-ghost flex items-center gap-2" onClick={onCheckUsb}>
+          <Usb className="w-4 h-4" />
+          Check your USB stick
         </button>
       </>
     }
