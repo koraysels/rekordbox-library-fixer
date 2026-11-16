@@ -168,6 +168,20 @@ collection has to go through the database.
   headroom or with rekordbox running, and puts every file back if the write fails. Convert is
   `runConversion` with AIFF and originals to the Trash. Advanced's Consolidate shares the clash rule
   and writes to the database for a database library; it has no overwrite option any more.
+- **USB check** (`src/main/usb/`, IPC in `src/main/ipc/usb.ts`; spec
+  `docs/superpowers/specs/2026-11-16-usb-check-design.md`): what a synced USB stick lacks and why.
+  Read-only: the stick's files and master.db are copied to a temp folder and read there.
+  `findSticks.ts` lists mounted volumes with `PIONEER/rekordbox/export.pdb`; `pdbReader.ts` is a pure
+  DeviceSQL reader (tracks, artists, playlist tree, entries; rows whose presence bit is clear are
+  skipped); `syncList.ts` reads `playlists3.sync` (hex ids → the library's decimal `djmdPlaylist.ID`;
+  absent on a stick made with Export); `usbCheck.ts` is the pure compare, fs through `UsbCheckDeps`.
+  Rules: the playlists checked are the sync list's (a listed folder carries everything below it; all of
+  them with `AllPlaylists="1"`), or without a sync list the library playlists the stick carries by
+  path/name; entries pair as multisets by file name (NFC, case-insensitive), then title + artist;
+  a missing entry's reason is `streaming`, then `drive-unplugged` (named, totalled per drive), then
+  `missing` (ENOENT/ENOTDIR), `no-access` (any other error), else `not-synced-yet`; smart playlists
+  are "not checked". `DbPlaylist` carries `id` and `attribute` for this. Tests build a synthetic
+  `export.pdb` in code (`tests/unit/helpers/pdbBuilder.ts`); never commit a real stick's files.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by

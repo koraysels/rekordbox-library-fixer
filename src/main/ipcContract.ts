@@ -18,6 +18,11 @@ import type { ConsolidateOptions, ConsolidatePreview } from './libraryConsolidat
 import type { ConsolidateRunResult } from './consolidateRun';
 import type { StepPlan, StepResult, WizardCheck, WizardStepId } from './wizard/types';
 import type { WizardProgress } from './wizard/context';
+import type { UsbStick } from './usb/findSticks';
+import type { UsbCheckRequest } from './usb/checkStick';
+import type {
+  NotOnStickEntry, NotOnStickReason, PlaylistCheck, UsbCheckResult,
+} from './usb/usbCheck';
 
 export type { TargetFormat, FfmpegStatus };
 
@@ -296,3 +301,13 @@ export interface WizardPlanPayload extends WizardRequest {
 export interface WizardApplyPayload extends WizardRequest {
   plan: StepPlan;
 }
+
+// ---- USB check ----
+
+/**
+ * 'usb-find-sticks' lists the mounted rekordbox sticks; 'usb-check-stick' compares
+ * one with the library. Both only read: the stick and master.db are read from copies.
+ */
+export type {
+  UsbStick, UsbCheckRequest, UsbCheckResult, PlaylistCheck, NotOnStickEntry, NotOnStickReason,
+};

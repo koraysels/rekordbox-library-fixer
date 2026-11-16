@@ -5,6 +5,7 @@ import type {
   ConvertCandidate, ConvertRunPayload, ConvertProgress, FfmpegInstallProgress,
   PlayerProfileId, TargetFormat, ConsolidatePayload, FilterMovePayload, ConsolidateRunResult, IpcResult,
   WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
+  UsbStick, UsbCheckRequest, UsbCheckResult,
 } from './ipcContract';
 
 // Expose protected methods that allow the renderer process to use
@@ -194,6 +195,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('wizard-progress', handler);
     return () => { ipcRenderer.removeListener('wizard-progress', handler); };
   },
+
+  // USB check: read-only
+  usbFindSticks: (): Promise<IpcResult<UsbStick[]>> => ipcRenderer.invoke('usb-find-sticks'),
+  usbCheckStick: (data: UsbCheckRequest): Promise<IpcResult<UsbCheckResult>> =>
+    ipcRenderer.invoke('usb-check-stick', data),
 
   // Native drag-and-drop
   handleNativeDrop: (filePaths: string[]) => ipcRenderer.invoke('handle-native-drop', filePaths),
