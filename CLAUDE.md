@@ -182,6 +182,20 @@ collection has to go through the database.
   `missing` (ENOENT/ENOTDIR), `no-access` (any other error), else `not-synced-yet`; smart playlists
   are "not checked". `DbPlaylist` carries `id` and `attribute` for this. Tests build a synthetic
   `export.pdb` in code (`tests/unit/helpers/pdbBuilder.ts`); never commit a real stick's files.
+  Facts it depends on: `playlists3.sync` holds `Lib_Type="1"` nodes with 64-bit ids that are not library
+  playlists (read via BigInt, counted as unknown, ignored); in the older page layout the row count at
+  0x18 is a 24-bit field (13 bits row offsets ever allocated, 11 bits live rows), so rows are walked by
+  the offset count plus the presence bits; only the Device Library (`export.pdb`) is read — OneLibrary
+  (`exportLibrary.db`) is out of scope and the page says so in one line.
+  The page is **USB Sticks** (route `/usb`, Advanced, `src/renderer/components/pages/UsbPage.tsx`, parts
+  in `components/usb/`), state in `useUsbCheck` (one stick is checked at once; of several, the one
+  checked before, else the page asks; a result for a stick no longer chosen is dropped). Wording and
+  grouping live in `src/renderer/usb/` (`usbText.ts`, `usbReport.ts`): the summary first ("N playlists
+  incomplete on STICK", "Plug in DRIVE: N tracks" on top when a drive is unplugged, one line per reason
+  with its fix), then incomplete playlists, shortest first (complete ones behind a toggle), each a ui-sdk
+  Collapsible whose panel unmounts while closed, so a long result costs nothing until opened (first 100
+  entries per reason, then "Show all"). An XML library gets a one-line message; the wizard's Done screen
+  has "Check your USB stick", which switches to Advanced and opens `/usb`.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
@@ -408,6 +422,7 @@ src/renderer/
 │   │   └── shared.tsx             # What both genuinely share
 │   ├── wizard/                    # The wizard's screens: WizardPage sequences
 │   │                              # Setup, Close rekordbox, Summary, Step, Done
+│   ├── usb/                       # USB Sticks page parts: summary, playlist row
 │   ├── DuplicateDetector.tsx      # The page: state, results, modals
 │   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
 │   └── TrackRelocator.tsx
@@ -415,6 +430,9 @@ src/renderer/
 │   ├── reasons.ts                 # Why a track cannot play, in words
 │   ├── switchedItems.ts           # What a run switched, for the page and history
 │   └── conversionHistory.ts       # The Activity-history entry for a run
+├── usb/                           # The USB check's page apart from React
+│   ├── usbReport.ts               # Status, order, grouping by reason, which stick
+│   └── usbText.ts                 # What the page says: headline, reasons, fixes
 ├── wizard/                        # The wizard apart from React
 │   ├── wizardFlow.ts              # Which steps a check calls for; empty plans
 │   ├── wizardScreen.ts            # Which screen shows (setup, close, summary…)
@@ -424,6 +442,7 @@ src/renderer/
 │   └── wizardHistory.ts           # The Activity-history entry for a step
 ├── hooks/                         # Custom business logic hooks
 │   ├── useWizard.ts               # Check, plan, apply, cancel; reloads after a write
+│   ├── useUsbCheck.ts             # Find sticks, check the chosen one
 │   ├── useDuplicates.ts           # Duplicate detection state
 │   ├── useDuplicateResolution.ts  # The three resolve flows (XML, database, trash)
 │   ├── useTrackRelocator.ts       # Relocation state
@@ -444,14 +463,16 @@ src/renderer/
 The main process mirrors this for conversion: `src/main/convert/` (player profiles, plan, run, file
 conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`; and for
 the wizard: `src/main/wizard/` (volumes, the four planners, `sameContent`, gather apply, the service
-and its deps) with its IPC in `src/main/ipc/wizard.ts`. `tests/unit/wizard-whole-run.test.ts` applies
+and its deps) with its IPC in `src/main/ipc/wizard.ts`; and for the USB check: `src/main/usb/` (find
+sticks, read `export.pdb` and the sync list, compare) with its IPC in `src/main/ipc/usb.ts`.
+`tests/unit/wizard-whole-run.test.ts` applies
 relocate, remove, duplicates and gather on an encrypted temp database and checks cues, loops and
 playlists survive; convert is only planned there (a real conversion needs ffmpeg and real audio — its
 database switch is tested in `apply-conversions.test.ts`). `tests/unit/wizard-remove-search.test.ts`
 runs the remove step against the real search: a bracketed music folder, a file far below it, cwd `/`.
 
 Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/`,
-`scan/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
+`scan/`, `usb/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
 is the signal that something in it wants to move out.
 
 ### Component Patterns

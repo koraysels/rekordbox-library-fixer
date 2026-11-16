@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### 🎉 New Features
+- **USB Sticks**: a new page that checks a synced stick against your library. Per playlist it shows how many tracks made it onto the stick and why the rest didn't: a drive that wasn't plugged in ("Plug in DJ SSD: 120 tracks"), a missing file, a streaming track, or just not synced yet. Only reads; the wizard's last screen links to it.
+
 ## [0.8.0] - 2026-11-15
 
 ### 🎉 New Features
