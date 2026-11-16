@@ -75,7 +75,7 @@ export interface UsbCheckResult {
     byReason: Record<NotOnStickReason, number>;
     /** One row per unplugged drive: "Plug in DJ SSD: 120 tracks". */
     byDrive: Array<{ drive: string; entries: number; tracks: number }>;
-    /** Checked playlists that hold tracks in the library and none on the stick. */
+    /** Checked playlists the stick has, that hold tracks in the library and none on the stick. */
     emptyOnStick: number;
   };
   /** Playlists on the stick that no checked library playlist accounts for: leftovers from older exports. */
@@ -84,7 +84,8 @@ export interface UsbCheckResult {
   missingOnStick: string[][];
   /** Smart playlists: the library does not list their tracks, so they are not compared. */
   notChecked: Array<{ id: string; path: string[]; stickCount: number | null }>;
-  stick: { tracks: number; playlists: number };
+  /** `unreadableRows`: rows the stick's export.pdb lists that could not be read — a damaged file. */
+  stick: { tracks: number; playlists: number; unreadableRows: number };
   syncList: { present: boolean; allPlaylists: boolean; unknownIds: number };
 }
 
@@ -133,21 +134,17 @@ function stickPlaylistPaths(playlists: PdbPlaylist[]): Map<number, string[]> {
   return paths;
 }
 
-/** Which library playlists the stick is meant to carry. */
+/**
+ * Which library playlists the stick is meant to carry. Without a sync list (a
+ * stick made with Export) that is every playlist: the ones the stick evidently
+ * carries are picked once the stick's playlists are matched to them.
+ */
 function playlistsToCheck(
   library: LibraryPlaylistRef[],
   syncList: SyncList | null,
-  stickPaths: Set<string>,
-  stickNames: Set<string>,
 ): { checked: LibraryPlaylistRef[]; unknownIds: number } {
   const candidates = library.filter((p) => p.kind !== 'folder');
-  if (!syncList) {
-    // A stick made with Export: check what it evidently carries.
-    return {
-      checked: candidates.filter((p) => stickPaths.has(pathKey(p.path)) || stickNames.has(fold(p.path[p.path.length - 1]))),
-      unknownIds: 0,
-    };
-  }
+  if (!syncList) {return { checked: candidates, unknownIds: 0 };}
   const known = new Set(library.map((p) => p.id));
   const unknownIds = syncList.nodes.filter((n) => !known.has(n.id)).length;
   if (syncList.allPlaylists) {return { checked: candidates, unknownIds };}
@@ -157,6 +154,42 @@ function playlistsToCheck(
     checked: candidates.filter((p) => listed.has(p.id) || p.ancestorIds.some((a) => listed.has(a))),
     unknownIds,
   };
+}
+
+/**
+ * Which stick playlist is which library playlist: the same path first, then the
+ * same name, but only when one stick playlist and one library playlist are left
+ * with it — of two library playlists called Techno, the stick's one Techno could
+ * be either, and a guess would report the other as missing from the stick.
+ */
+function matchStickPlaylists(
+  library: LibraryPlaylistRef[],
+  stickLists: PdbPlaylist[],
+  stickPaths: Map<number, string[]>,
+): Map<string, PdbPlaylist> {
+  const claimed = new Set<number>();
+  const stickFor = new Map<string, PdbPlaylist>();
+  const byPath = new Map<string, PdbPlaylist[]>();
+  for (const p of stickLists) {
+    const k = pathKey(stickPaths.get(p.id)!);
+    byPath.set(k, [...(byPath.get(k) ?? []), p]);
+  }
+  for (const lib of library) {
+    const match = byPath.get(pathKey(lib.path))?.find((p) => !claimed.has(p.id));
+    if (match) {claimed.add(match.id); stickFor.set(lib.id, match);}
+  }
+  const group = <T>(items: T[], name: (t: T) => string) => {
+    const m = new Map<string, T[]>();
+    for (const t of items) {m.set(name(t), [...(m.get(name(t)) ?? []), t]);}
+    return m;
+  };
+  const freeStick = group(stickLists.filter((p) => !claimed.has(p.id)), (p) => fold(p.name));
+  const freeLibrary = group(library.filter((p) => !stickFor.has(p.id)), (p) => fold(p.path[p.path.length - 1]));
+  for (const [name, libs] of freeLibrary) {
+    const sticks = freeStick.get(name) ?? [];
+    if (libs.length === 1 && sticks.length === 1) {stickFor.set(libs[0].id, sticks[0]);}
+  }
+  return stickFor;
 }
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -243,32 +276,12 @@ export async function checkUsb(input: UsbCheckInput, deps: UsbCheckDeps): Promis
     (entriesByPlaylist.get(id) ?? []).sort((a, b) => a.index - b.index).map((e) => e.track);
   const artistOf = (t: PdbTrack) => stick.artists.get(t.artistId) ?? '';
 
-  const { checked, unknownIds } = playlistsToCheck(
-    input.playlists,
-    syncList,
-    new Set(stickLists.map((p) => pathKey(stickPaths.get(p.id)!))),
-    new Set(stickLists.map((p) => fold(p.name))),
-  );
-
-  // Which stick playlist is which: the same path first, then a name only one has.
-  const claimed = new Set<number>();
-  const stickFor = new Map<string, PdbPlaylist>();
-  const byPath = new Map<string, PdbPlaylist[]>();
-  const byName = new Map<string, PdbPlaylist[]>();
-  for (const p of stickLists) {
-    const k = pathKey(stickPaths.get(p.id)!);
-    byPath.set(k, [...(byPath.get(k) ?? []), p]);
-    byName.set(fold(p.name), [...(byName.get(fold(p.name)) ?? []), p]);
-  }
-  for (const lib of checked) {
-    const match = byPath.get(pathKey(lib.path))?.find((p) => !claimed.has(p.id));
-    if (match) {claimed.add(match.id); stickFor.set(lib.id, match);}
-  }
-  for (const lib of checked) {
-    if (stickFor.has(lib.id)) {continue;}
-    const free = (byName.get(fold(lib.path[lib.path.length - 1])) ?? []).filter((p) => !claimed.has(p.id));
-    if (free.length === 1) {claimed.add(free[0].id); stickFor.set(lib.id, free[0]);}
-  }
+  const toCheck = playlistsToCheck(input.playlists, syncList);
+  const stickFor = matchStickPlaylists(toCheck.checked, stickLists, stickPaths);
+  const { unknownIds } = toCheck;
+  // Without a sync list, only what the stick evidently carries is checked.
+  const checked = syncList ? toCheck.checked : toCheck.checked.filter((p) => stickFor.has(p.id));
+  const claimed = new Set([...stickFor.values()].map((p) => p.id));
 
   const notChecked: UsbCheckResult['notChecked'] = [];
   const pending: Array<{ check: PlaylistCheck; missing: LibraryTrackRef[] }> = [];
@@ -330,14 +343,15 @@ export async function checkUsb(input: UsbCheckInput, deps: UsbCheckDeps): Promis
       byReason,
       byDrive: [...drives].map(([drive, d]) => ({ drive, entries: d.entries, tracks: d.tracks.size }))
         .sort((a, b) => b.entries - a.entries),
-      emptyOnStick: playlists.filter((p) => p.libraryCount > 0 && p.stickCount === 0).length,
+      // A playlist the stick lacks altogether is counted in missingOnStick, not here.
+      emptyOnStick: playlists.filter((p) => p.onStick && p.libraryCount > 0 && p.stickCount === 0).length,
     },
     leftovers: stickLists
       .filter((p) => !claimed.has(p.id))
       .map((p) => ({ path: stickPaths.get(p.id)!, stickCount: (entriesByPlaylist.get(p.id) ?? []).length })),
     missingOnStick,
     notChecked,
-    stick: { tracks: stick.tracks.length, playlists: stickLists.length },
+    stick: { tracks: stick.tracks.length, playlists: stickLists.length, unreadableRows: stick.unreadableRows },
     syncList: { present: syncList !== null, allPlaylists: syncList?.allPlaylists ?? false, unknownIds },
   };
 }

@@ -5,7 +5,7 @@ import {
 } from '../../src/renderer/usb/usbReport';
 import {
   extraLine, headline, playlistCounts, plugInDetail, plugInLine, reasonCountLine, reasonFix, reasonLabel,
-  stickNotes, subline,
+  damageWarning, stickNotes, subline,
 } from '../../src/renderer/usb/usbText';
 
 const entry = (trackId: string, reason: NotOnStickEntry['reason'], drive?: string): NotOnStickEntry => ({
@@ -27,7 +27,7 @@ const result = (over: Partial<UsbCheckResult> = {}): UsbCheckResult => ({
   leftovers: [],
   missingOnStick: [],
   notChecked: [],
-  stick: { tracks: 0, playlists: 0 },
+  stick: { tracks: 0, playlists: 0, unreadableRows: 0 },
   syncList: { present: true, allPlaylists: false, unknownIds: 0 },
   ...over,
 });
@@ -144,6 +144,12 @@ describe('wording', () => {
     expect(playlistCounts(playlist('a', { libraryCount: 87, stickCount: 27 }))).toBe('27 of 87 on the stick');
     expect(playlistCounts(playlist('a', { onStick: false, libraryCount: 3, stickCount: 0 }))).toBe('Not on the stick · 3 tracks in the library');
     expect(extraLine(2)).toBe('2 tracks on the stick are no longer in this playlist in the library.');
+  });
+
+  it('warns when rows of the stick\'s database could not be read, and says nothing otherwise', () => {
+    expect(damageWarning(result())).toBeNull();
+    expect(damageWarning(result({ stick: { tracks: 5, playlists: 1, unreadableRows: 2 } })))
+      .toMatch(/^2 rows of the stick's export\.pdb could not be read.*sync the stick again in rekordbox/i);
   });
 
   it('says in one line that a OneLibrary database is not checked, and when the stick was exported rather than synced', () => {

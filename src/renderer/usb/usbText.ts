@@ -25,6 +25,17 @@ export function subline(result: UsbCheckResult): string {
   return parts.join(' · ');
 }
 
+/**
+ * Rows of the stick's database that could not be read: the file is damaged, so
+ * a track it holds can read as missing from the stick. Null when every row read.
+ */
+export function damageWarning(result: UsbCheckResult): string | null {
+  const n = result.stick.unreadableRows;
+  if (n === 0) {return null;}
+  return `${plural(n, 'row')} of the stick's export.pdb could not be read: the file looks damaged, ` +
+    'so tracks that are on the stick may show as missing here. Sync the stick again in rekordbox.';
+}
+
 /** "Plug in ICYFAST BLA: 634 tracks" — the top action when a drive was not there for the sync. */
 export const plugInLine = (d: { drive: string; tracks: number }) =>
   `Plug in ${d.drive}: ${plural(d.tracks, 'track')}`;

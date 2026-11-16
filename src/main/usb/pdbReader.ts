@@ -131,10 +131,19 @@ function readHeader(buf: Buffer): Header {
   return { pageSize, tables };
 }
 
+const tableNames: Record<number, string> = {
+  [PdbTable.tracks]: 'track',
+  [PdbTable.artists]: 'artist',
+  [PdbTable.playlistTree]: 'playlist',
+  [PdbTable.playlistEntries]: 'playlist entry',
+};
+
 /**
  * The start of every present row of one table. Follows the page chain from the
- * first page to the last, stopping early at a page of another type, a page past
- * the end of the file, or a loop.
+ * first page to the last. A chain that breaks off first — a link past the end
+ * of the file, to a page of another table, or back into itself — is a damaged
+ * or cut-short file, and is refused: read as far as it goes, it would pass for
+ * a smaller stick, and every track it lost would read as "not synced yet".
  */
 function rowOffsets(buf: Buffer, header: Header, type: number): number[] {
   const table = header.tables.get(type);
@@ -142,11 +151,16 @@ function rowOffsets(buf: Buffer, header: Header, type: number): number[] {
   const { pageSize } = header;
   const rows: number[] = [];
   const seen = new Set<number>();
+  const broken = (index: number) => new PdbFormatError(
+    `the ${tableNames[type] ?? `type ${type}`} table breaks off at page ${index}, before its last page. ` +
+    'The file looks damaged or cut short: sync the stick again in rekordbox.',
+  );
   let index = table.firstPage;
-  while (!seen.has(index) && (index + 1) * pageSize <= buf.length) {
+  for (;;) {
+    if (seen.has(index) || (index + 1) * pageSize > buf.length) {throw broken(index);}
     seen.add(index);
     const page = index * pageSize;
-    if (u32(buf, page + 8) !== type) {break;}
+    if (u32(buf, page + 8) !== type) {throw broken(index);}
     const flags = u8(buf, page + 0x1b);
     if ((flags & NON_DATA_PAGE) === 0) {
       // A 24-bit field: 13 bits of row offsets ever allocated, then 11 of live rows.

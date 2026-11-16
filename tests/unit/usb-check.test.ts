@@ -186,6 +186,8 @@ describe('checkUsb', () => {
     }, fakeDeps());
     expect(result.missingOnStick).toEqual([['Gigs', 'Friday']]);
     expect(result.playlists[0]).toMatchObject({ onStick: false, stickCount: 0, libraryCount: 1 });
+    // Absent, not empty: the summary names it once, under "not on the stick at all".
+    expect(result.totals.emptyOnStick).toBe(0);
     expect(result.playlists[0].notOnStick[0]).toMatchObject({ reason: 'drive-unplugged', drive: 'GONE' });
   });
 
@@ -263,6 +265,47 @@ describe('checkUsb', () => {
     expect(result.syncList).toEqual({ present: false, allPlaylists: false, unknownIds: 0 });
   });
 
+  it('without a sync list, checks only the one of two same-named playlists the stick carries', async () => {
+    const result = await checkUsb({
+      playlists: flattenLibraryPlaylists([
+        folder('1', '2024', [list('2', 'Techno', ['a'])]),
+        folder('3', '2025', [list('4', 'Techno', ['b', 'c'])]),
+      ]),
+      tracks: tracksMap(track('a', '/Music/a.mp3'), track('b', '/Music/b.mp3'), track('c', '/Music/c.mp3')),
+      stick: stick([
+        { id: 1, name: '2024', files: [], folder: true },
+        { id: 2, name: 'Techno', files: ['a.mp3'], parentId: 1 },
+      ]),
+      syncList: null,
+    }, fakeDeps());
+    expect(result.playlists.map((p) => p.path.join('/'))).toEqual(['2024/Techno']);
+    expect(result.missingOnStick).toEqual([]);
+    expect(result.totals.byReason['not-synced-yet']).toBe(0);
+    expect(result.leftovers).toEqual([]);
+  });
+
+  it('without a sync list, does not guess which of two same-named playlists a stick list is', async () => {
+    const result = await checkUsb({
+      playlists: flattenLibraryPlaylists([
+        folder('1', '2024', [list('2', 'Techno', ['a'])]),
+        folder('3', '2025', [list('4', 'Techno', ['b'])]),
+      ]),
+      tracks: tracksMap(track('a', '/Music/a.mp3'), track('b', '/Music/b.mp3')),
+      stick: stick([{ name: 'Techno', files: ['a.mp3'] }]),
+      syncList: null,
+    }, fakeDeps());
+    expect(result.playlists).toEqual([]);
+    expect(result.missingOnStick).toEqual([]);
+    expect(result.leftovers).toEqual([{ path: ['Techno'], stickCount: 1 }]);
+  });
+
+  it('passes on how many rows of the stick could not be read', async () => {
+    const result = await checkUsb({
+      playlists: [], tracks: tracksMap(), stick: { ...stick([]), unreadableRows: 3 }, syncList: sync([]),
+    }, fakeDeps());
+    expect(result.stick.unreadableRows).toBe(3);
+  });
+
   it('works on what the reader makes of a real export file', async () => {
     const pdb = readPdb(buildExport({
       artists: [{ id: 1, name: 'Artist' }],
@@ -280,7 +323,7 @@ describe('checkUsb', () => {
     expect(result.playlists[0].notOnStick).toEqual([
       { trackId: 'b', name: 'Title b', artist: 'Artist', location: '/Volumes/GONE/b.mp3', reason: 'drive-unplugged', drive: 'GONE' },
     ]);
-    expect(result.stick).toEqual({ tracks: 1, playlists: 1 });
+    expect(result.stick).toEqual({ tracks: 1, playlists: 1, unreadableRows: 0 });
   });
 });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PdbFormatError, readDeviceSqlString, readPdb } from '../../src/main/usb/pdbReader';
 import {
-  artistRow, buildExport, buildPdb, deviceSqlString, entryRow, garbageRow, playlistRow, trackRow,
+  artistRow, buildExport, buildPdb, deviceSqlString, entryRow, garbageRow, PAGE_SIZE, playlistRow, trackRow,
 } from './helpers/pdbBuilder';
 
 describe('readDeviceSqlString', () => {
@@ -111,6 +111,34 @@ describe('readPdb', () => {
     const pdb = readPdb(buildPdb([{ type: 0, pages: [[]] }]));
     expect(pdb).toMatchObject({ tracks: [], playlists: [], entries: [] });
     expect(pdb.artists.size).toBe(0);
+  });
+
+  describe('a table that breaks off before its last page', () => {
+    // buildExport lays out: header, then tracks on pages 1-2, artists 3-4, playlists 5-6, entries 7-8.
+    const whole = () => buildExport({
+      artists: [{ id: 1, name: 'A' }],
+      tracks: [{ id: 1, title: 'T', artistId: 1, filePath: '/Contents/t.mp3' }],
+      playlists: [{ id: 1, name: 'P' }],
+      entries: [{ playlistId: 1, trackId: 1 }],
+    });
+    const linkPage = (buf: Buffer, page: number, next: number) => { buf.writeUInt32LE(next, page * PAGE_SIZE + 12); return buf; };
+
+    it('reads the whole file as it is', () => {
+      expect(readPdb(whole())).toMatchObject({ tracks: [{ id: 1 }], playlists: [{ id: 1 }], entries: [{ trackId: 1 }] });
+    });
+
+    it('refuses a file cut short, rather than reading a smaller stick', () => {
+      expect(() => readPdb(whole().subarray(0, PAGE_SIZE))).toThrow(PdbFormatError);
+      expect(() => readPdb(whole().subarray(0, 5 * PAGE_SIZE))).toThrow(/playlist.*damaged/);
+    });
+
+    it('refuses a link to a page of another table', () => {
+      expect(() => readPdb(linkPage(whole(), 1, 5))).toThrow(/track.*damaged/);
+    });
+
+    it('refuses a chain that loops', () => {
+      expect(() => readPdb(linkPage(whole(), 7, 7))).toThrow(PdbFormatError);
+    });
   });
 
   it('refuses a file that is not an export', () => {

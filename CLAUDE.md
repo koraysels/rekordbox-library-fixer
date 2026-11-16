@@ -173,11 +173,13 @@ collection has to go through the database.
   Read-only: the stick's files and master.db are copied to a temp folder and read there.
   `findSticks.ts` lists mounted volumes with `PIONEER/rekordbox/export.pdb`; `pdbReader.ts` is a pure
   DeviceSQL reader (tracks, artists, playlist tree, entries; rows whose presence bit is clear are
-  skipped); `syncList.ts` reads `playlists3.sync` (hex ids → the library's decimal `djmdPlaylist.ID`;
+  skipped; a table chain that breaks off before its last page — cut-short or damaged file — is a
+  `PdbFormatError`, never a smaller stick; rows it cannot read are counted, and the page warns); `syncList.ts` reads `playlists3.sync` (hex ids → the library's decimal `djmdPlaylist.ID`;
   absent on a stick made with Export); `usbCheck.ts` is the pure compare, fs through `UsbCheckDeps`.
   Rules: the playlists checked are the sync list's (a listed folder carries everything below it; all of
-  them with `AllPlaylists="1"`), or without a sync list the library playlists the stick carries by
-  path/name; entries pair as multisets by file name (NFC, case-insensitive), then title + artist;
+  them with `AllPlaylists="1"`), or without a sync list the library playlists the stick carries — a stick
+  playlist matches the library one at its path, else by name only when one of each is left with it;
+  `emptyOnStick` counts only playlists the stick has (an absent one is in `missingOnStick`); entries pair as multisets by file name (NFC, case-insensitive), then title + artist;
   a missing entry's reason is `streaming`, then `drive-unplugged` (named, totalled per drive), then
   `missing` (ENOENT/ENOTDIR), `no-access` (any other error), else `not-synced-yet`; smart playlists
   are "not checked". `DbPlaylist` carries `id` and `attribute` for this. Tests build a synthetic
@@ -192,7 +194,7 @@ collection has to go through the database.
   checked before, else the page asks; a result for a stick no longer chosen is dropped). Wording and
   grouping live in `src/renderer/usb/` (`usbText.ts`, `usbReport.ts`): the summary first ("N playlists
   incomplete on STICK", "Plug in DRIVE: N tracks" on top when a drive is unplugged, one line per reason
-  with its fix), then incomplete playlists, shortest first (complete ones behind a toggle), each a ui-sdk
+  with its fix), then incomplete playlists, the most entries missing first (complete ones behind a toggle), each a ui-sdk
   Collapsible whose panel unmounts while closed, so a long result costs nothing until opened (first 100
   entries per reason, then "Show all"). An XML library gets a one-line message; the wizard's Done screen
   has "Check your USB stick", which switches to Advanced and opens `/usb`.

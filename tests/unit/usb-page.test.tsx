@@ -37,7 +37,7 @@ const fakeResult: UsbCheckResult = {
   leftovers: [{ path: ['Old export'], stickCount: 12 }],
   missingOnStick: [['Closing']],
   notChecked: [{ id: '9', path: ['Smart', 'New this week'], stickCount: 8 }],
-  stick: { tracks: 6, playlists: 3 },
+  stick: { tracks: 6, playlists: 3, unreadableRows: 0 },
   syncList: { present: true, allPlaylists: false, unknownIds: 0 },
 };
 
@@ -79,6 +79,19 @@ describe('UsbPage', () => {
     fireEvent.click(within(playlists).getByRole('button', { name: /Sets \/ Warm up/ }));
     expect(await screen.findByText('Lost One')).toBeInTheDocument();
     expect(screen.getByText('On DJ SSD, not plugged in · 1')).toBeInTheDocument();
+  });
+
+  it('warns at the top of the summary when the stick\'s database is damaged', async () => {
+    api.usbCheckStick.mockResolvedValue({ success: true, data: { ...fakeResult, stick: { ...fakeResult.stick, unreadableRows: 4 } } });
+    render(<UsbPage />);
+    const summary = await screen.findByRole('region', { name: 'Summary' });
+    expect(within(summary).getByRole('alert')).toHaveTextContent(/^4 rows of the stick's export\.pdb could not be read/);
+  });
+
+  it('shows the error when the stick cannot be read at all', async () => {
+    api.usbCheckStick.mockResolvedValue({ success: false, error: 'Not a readable export.pdb: the track table breaks off at page 5' });
+    render(<UsbPage />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/track table breaks off/);
   });
 
   it('points missing files at Track Relocation', async () => {
