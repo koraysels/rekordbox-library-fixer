@@ -20,12 +20,6 @@ export const VirtualizedDuplicateList: React.FC<VirtualizedDuplicateListProps> =
   deleteFromDisk = false,
   playlistMembership
 }) => {
-  console.log('🎯 VirtualizedDuplicateList render:', {
-    duplicatesCount: duplicates.length,
-    firstDuplicate: duplicates[0]?.id,
-    selectedCount: selectedDuplicates.size
-  });
-
   return (
     <VirtualizedList
       items={duplicates}
