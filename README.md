@@ -74,6 +74,9 @@ Resolving duplicates, relocating tracks, converting files and removing dead entr
 ### Library tab
 The first tab in the sidebar. With nothing loaded it holds the picker, including the libraries found on your system. With a library open it shows what is loaded — file name, full path, track count, playlists, missing files and duplicate entries — and lets you close it or switch to another one. Backups and History stay reachable at all times, even with no library loaded.
 
+### USB sticks
+Plug in a stick rekordbox synced to and the **USB Sticks** page shows, per synced playlist, what is on the stick, what is not and why — a drive that wasn't plugged in during the sync, a file that is gone, a streaming track, or simply not synced yet. Read-only: nothing is written to the stick or the library.
+
 ### Duplicate Detection
 - **Audio fingerprinting**: Finds identical tracks even with different filenames
 - **Metadata matching**: Compares artist, title, BPM, key — configurable

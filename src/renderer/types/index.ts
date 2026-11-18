@@ -1,6 +1,6 @@
 // Global types and interfaces
 
-export type TabType = 'duplicates' | 'import' | 'relocate' | 'convert' | 'maintenance' | 'statistics' | 'history' | 'backups' | 'library';
+export type TabType = 'duplicates' | 'import' | 'relocate' | 'convert' | 'usb' | 'maintenance' | 'statistics' | 'history' | 'backups' | 'library';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
@@ -267,6 +267,9 @@ declare global {
       wizardApplyStep: (data: WizardApplyPayload) => Promise<IpcResult<StepResult>>;
       cancelWizard: (operationId: string) => Promise<IpcResult>;
       onWizardProgress: (callback: (progress: WizardProgress) => void) => () => void;
+      // USB check: read-only
+      usbFindSticks: () => Promise<IpcResult<UsbStick[]>>;
+      usbCheckStick: (data: UsbCheckRequest) => Promise<IpcResult<UsbCheckResult>>;
       // File Drop APIs
       handleNativeDrop: (filePaths: string[]) => Promise<{ success: boolean; data?: { filePaths: string[]; filePath?: string }; error?: string }>;
       onNativeFileDrop: (callback: (filePaths: string[]) => void) => () => void;
@@ -283,5 +286,6 @@ import type {
   ConvertRunResult, FfmpegInstallProgress, FfmpegStatus, PlayerProfileId, TargetFormat,
   ConsolidatePayload, FilterMovePayload, ConsolidateRunResult,
   WizardRequest, WizardPlanPayload, WizardApplyPayload, WizardCheck, StepPlan, StepResult, WizardProgress,
+  UsbStick, UsbCheckRequest, UsbCheckResult,
 } from '../../main/ipcContract';
 export type UpdateStatus = UpdateStatusPayload;

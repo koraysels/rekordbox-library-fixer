@@ -1,6 +1,8 @@
 import React from 'react';
 import { Loader2, StopCircle } from 'lucide-react';
+import { Dialog, DialogBackdrop, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 import type { ConvertProgress } from '../../../main/ipcContract';
+import { ProgressBar } from '../ui/ProgressBar';
 
 interface Props {
   isOpen: boolean;
@@ -13,28 +15,28 @@ interface Props {
 /** Shown while a run is going. It closes itself when the run ends; Hide keeps the run and shows a strip on the page. */
 export const ConvertProgressDialog: React.FC<Props> = ({ isOpen, progress, installPercent, onHide, onCancel }) => {
   const [cancelling, setCancelling] = React.useState(false);
-  if (!isOpen) { return null; }
   const installing = installPercent !== null;
   const percent = installing
     ? Math.round(installPercent)
     : progress && progress.total ? Math.round((progress.current / progress.total) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" role="dialog" aria-label="Converting tracks">
-      <div className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[520px] max-w-[92vw] border-2 border-te-grey-700">
+    <Dialog open={isOpen} closeOnOutsidePress={false} onOpenChange={(open) => { if (!open) {onHide();} }}>
+      <DialogBackdrop className="bg-black/50" />
+      <DialogContent className="bg-te-grey-800 rounded-te-lg shadow-2xl w-[520px] max-w-[92vw] border-2 border-te-grey-700">
         <div className="p-4 border-b-2 border-te-grey-700 bg-te-grey-900">
-          <h2 className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">
+          <DialogTitle className="text-xl font-semibold text-te-cream font-te-display tracking-te-display uppercase">
             {installing ? 'Downloading ffmpeg' : 'Converting Tracks'}
-          </h2>
+          </DialogTitle>
         </div>
         <div className="p-6 space-y-3">
           <div className="flex justify-between text-sm text-te-grey-400 font-te-mono">
             <span>{installing ? 'ffmpeg' : `${progress?.current ?? 0} / ${progress?.total ?? 0} files`}</span>
             <span>{percent}%</span>
           </div>
-          <div className="w-full bg-te-grey-700 rounded-full h-3 overflow-hidden border border-te-grey-600">
-            <div className="bg-te-orange h-full transition-all duration-300" style={{ width: `${percent}%` }} />
-          </div>
+          {installing
+            ? <ProgressBar label="Downloading ffmpeg" value={percent} size="lg" tone="dark" />
+            : <ProgressBar label="Converting tracks" value={progress?.current ?? 0} max={progress?.total ?? 0} unit="files" size="lg" tone="dark" />}
           <div className="p-3 bg-te-grey-700 rounded-te border border-te-grey-600 flex items-center gap-2">
             <Loader2 className="w-4 h-4 text-te-orange animate-spin flex-shrink-0" />
             <span className="text-sm text-te-cream font-te-mono normal-case break-all">
@@ -64,7 +66,7 @@ export const ConvertProgressDialog: React.FC<Props> = ({ isOpen, progress, insta
             {cancelling ? 'Cancelling…' : 'Cancel'}
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

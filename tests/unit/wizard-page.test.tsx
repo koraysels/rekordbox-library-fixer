@@ -313,6 +313,18 @@ describe('WizardPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Start fixing' }));
     expect(await screen.findByText('Sync your USB sticks from rekordbox so they get these changes.')).toBeInTheDocument();
   });
+
+  it('"Check your USB stick" on the done screen switches to Advanced and opens the USB page', async () => {
+    wizard.plan.mockImplementation(async (step: string) => (
+      step === 'relocate' ? { step: 'relocate', apply: [], setAside: [] } : { step: 'remove', remove: [], setAside: [] }
+    ));
+    render(<WizardPage isLoading={false} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Check my library' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Start fixing' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Check your USB stick' }));
+    expect(useSettingsStore.getState().appMode).toBe('advanced');
+    expect(navigate).toHaveBeenCalledWith({ to: '/usb' });
+  });
 });
 
 describe('wizardScreen', () => {

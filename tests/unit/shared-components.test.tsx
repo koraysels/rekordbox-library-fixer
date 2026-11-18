@@ -20,7 +20,7 @@ import {
 import { useFileOperations } from '../../src/renderer/hooks';
 
 // Mock Lucide React icons
-const MockIcon = () => <span data-testid="mock-icon">Icon</span>;
+const MockIcon = (props: React.HTMLAttributes<HTMLSpanElement>) => <span data-testid="mock-icon" {...props}>Icon</span>;
 
 describe('Shared Components Integration', () => {
   describe('PopoverButton', () => {
@@ -71,10 +71,47 @@ describe('Shared Components Integration', () => {
       expect(screen.getByText('Click me')).toBeInTheDocument();
     });
 
-    it('should handle disabled state', () => {
-      render(<PopoverButton {...defaultProps} disabled={true} />);
-      const button = screen.getByRole('button');
-      expect(button).toBeDisabled();
+    it('stays focusable while disabled and ignores presses', async () => {
+      const handleClick = vitest.fn();
+      const user = userEvent.setup();
+      render(<PopoverButton {...defaultProps} disabled={true} onClick={handleClick} />);
+      const button = screen.getByRole('button', { name: 'Click me' });
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      await user.click(button);
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('ignores presses while loading', async () => {
+      const handleClick = vitest.fn();
+      const user = userEvent.setup();
+      render(<PopoverButton {...defaultProps} loading={true} onClick={handleClick} />);
+      await user.click(screen.getByRole('button', { name: 'Click me' }));
+      expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('is described by its tip', () => {
+      render(<PopoverButton {...defaultProps} />);
+      expect(screen.getByRole('button', { name: 'Click me' })).toHaveAccessibleDescription(
+        'Test Button Test description'
+      );
+    });
+
+    it('shows its tip on keyboard focus and hides it on Escape', async () => {
+      const user = userEvent.setup();
+      render(<PopoverButton {...defaultProps} />);
+      await user.tab();
+      expect(screen.getByRole('button', { name: 'Click me' })).toHaveFocus();
+      expect(await screen.findByRole('tooltip')).toHaveTextContent('Test description');
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('tooltip')).toBeNull();
+      expect(screen.getByRole('button', { name: 'Click me' })).toHaveFocus();
+    });
+
+    it('shows its tip on hover', async () => {
+      const user = userEvent.setup();
+      render(<PopoverButton {...defaultProps} />);
+      await user.hover(screen.getByRole('button', { name: 'Click me' }));
+      expect(await screen.findByRole('tooltip')).toHaveTextContent('Test Button');
     });
   });
 

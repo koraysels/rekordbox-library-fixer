@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Dialog, DialogBackdrop, DialogClose, DialogContent, DialogTitle } from '@ui-sdk/react/dialog';
 
 interface TutorialModalProps {
   isOpen: boolean;
@@ -43,8 +44,6 @@ const tutorialSteps: TutorialStep[] = [
 export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
-  if (!isOpen) return null;
-
   const handleNext = () => {
     if (currentStep < tutorialSteps.length - 1) {
       setCurrentStep(currentStep + 1);
@@ -65,20 +64,21 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
   const step = tutorialSteps[currentStep];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+    <Dialog open={isOpen} closeOnOutsidePress={false} onOpenChange={(open) => { if (!open) {handleClose();} }}>
+      <DialogBackdrop className="bg-black/50" />
+      <DialogContent className="bg-te-grey-800 border-2 border-te-grey-700 rounded-te p-6 max-w-2xl w-[calc(100%-2rem)] max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <BookOpen className="w-6 h-6 text-te-orange" />
-            <h2 className="text-xl font-bold text-te-cream font-te-display">XML Export & Import Tutorial</h2>
+            <DialogTitle className="text-xl font-bold text-te-cream font-te-display">XML Export & Import Tutorial</DialogTitle>
           </div>
-          <button
-            onClick={handleClose}
+          <DialogClose
+            aria-label="Close"
             className="text-te-grey-400 hover:text-te-cream transition-colors"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <X className="w-5 h-5" aria-hidden="true" />
+          </DialogClose>
         </div>
 
         {/* Progress indicator */}
@@ -133,12 +133,11 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
             <span>Previous</span>
           </button>
 
-          <button
-            onClick={handleClose}
+          <DialogClose
             className="px-6 py-2 bg-te-grey-700 hover:bg-te-grey-600 text-te-cream rounded-te border border-te-grey-600 transition-colors font-te-mono text-sm"
           >
             Close
-          </button>
+          </DialogClose>
 
           <button
             onClick={handleNext}
@@ -149,7 +148,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };

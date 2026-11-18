@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download } from 'lucide-react';
 import { WizardFrame, ErrorLine } from './WizardFrame';
+import { ProgressBar } from '../ui/ProgressBar';
 
 interface Props {
   sizeBytes: number;
@@ -55,9 +56,7 @@ export const ConvertConsent: React.FC<Props> = ({ sizeBytes, onInstalled, onBack
       {downloading && (
         <div role="status" className="flex flex-col gap-2">
           <p className="text-sm font-te-mono normal-case text-te-grey-800">Downloading ffmpeg… {percent}%</p>
-          <div className="w-full bg-te-grey-200 rounded-full h-2 overflow-hidden">
-            <div className="bg-te-orange h-full transition-all duration-300" style={{ width: `${percent}%` }} />
-          </div>
+          <ProgressBar label="Downloading ffmpeg" value={percent} />
         </div>
       )}
       <ErrorLine message={error} />

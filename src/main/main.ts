@@ -13,6 +13,7 @@ import { registerSystemIpc } from './ipc/system';
 import { registerUpdateIpc } from './ipc/updates';
 import { registerConvertIpc } from './ipc/convert';
 import { registerWizardIpc } from './ipc/wizard';
+import { registerUsbIpc } from './ipc/usb';
 import { startUpdateChecks, checkForUpdates } from './updates/updater';
 
 
@@ -295,6 +296,7 @@ app.whenReady().then(async () => {
   registerUpdateIpc();
   registerConvertIpc();
   registerWizardIpc();
+  registerUsbIpc();
 
   // Database storage is now handled via Dexie in the renderer process
   safeConsole.log('✅ Application initialized');

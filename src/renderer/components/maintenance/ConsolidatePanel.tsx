@@ -7,6 +7,7 @@ import {
   CLASH_NOTE, dbKeyFor, isDatabaseLibrary, readLibraryAgain,
   type Mode, type Phase, type Progress, type Result,
 } from './shared';
+import { ProgressBar } from '../ui/ProgressBar';
 
 interface Preview {
   total: number;
@@ -125,10 +126,6 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
     setError(null);
   }, []);
 
-  const pct = progress && progress.total > 0
-    ? Math.round((progress.current / progress.total) * 100)
-    : 0;
-
   return (
     <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md">
       <div className="flex items-center gap-2 mb-1">
@@ -210,12 +207,12 @@ export const ConsolidatePanel: React.FC<ConsolidatePanelProps> = ({
                 <span className="truncate max-w-xs">{progress.currentFile}</span>
                 <span>{progress.current} / {progress.total}</span>
               </div>
-              <div className="w-full bg-te-grey-200 rounded-full h-2">
-                <div
-                  className="bg-te-orange h-2 rounded-full transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
+              <ProgressBar
+                label={mode === 'copy' ? 'Copying files' : 'Moving files'}
+                value={progress.current}
+                max={progress.total}
+                unit="files"
+              />
               <div className="flex gap-4 text-xs font-te-mono text-te-grey-500">
                 <span className="text-green-600">{progress.succeeded} {mode === 'copy' ? 'copied' : 'moved'}</span>
                 <span className="text-te-grey-400">{progress.skipped} skipped</span>

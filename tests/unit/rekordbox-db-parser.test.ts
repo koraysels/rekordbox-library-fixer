@@ -112,6 +112,12 @@ describe('mapRowsToLibrary', () => {
     });
   });
 
+  it('keeps each playlist\'s id and attribute, which a stick\'s sync list refers to', () => {
+    const [crates] = mapRowsToLibrary(db, file).playlists;
+    expect(crates).toMatchObject({ id: 'p0', attribute: 1 });
+    expect(crates.children![0]).toMatchObject({ id: 'p1', attribute: 0 });
+  });
+
   it('uses the database path as the library path', () => {
     expect(mapRowsToLibrary(db, file).libraryPath).toBe(file);
   });

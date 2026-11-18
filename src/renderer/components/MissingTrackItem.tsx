@@ -15,7 +15,7 @@ interface MissingTrackItemProps {
   isLoadingThis: boolean;
 }
 
-export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
+export const MissingTrackItem = React.memo<MissingTrackItemProps>(({
   track,
   isSelected,
   onToggleSelection,
@@ -95,7 +95,7 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <PopoverButton
             onClick={(e) => {
               e?.stopPropagation();
@@ -129,4 +129,6 @@ export const MissingTrackItem: React.FC<MissingTrackItemProps> = ({
       </div>
     </ListItem>
   );
-};
+});
+
+MissingTrackItem.displayName = 'MissingTrackItem';

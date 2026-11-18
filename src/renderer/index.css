@@ -1,6 +1,9 @@
+@layer ui-sdk;
+
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Space+Mono:wght@400;700&display=swap');
 
 @import "tailwindcss";
+@import "@ui-sdk/core/web.css" layer(components);
 
 @theme {
   /* TE colours */
@@ -217,4 +220,156 @@
 .no-drag button,
 .no-drag a {
   -webkit-app-region: no-drag;
+}
+
+/* ui-sdk theme. Unnested rules in `components` outrank web.css (nested as components.ui-sdk) and lose to utilities;
+   the resets use :where() so classes like .btn-secondary in this same layer still win. */
+@layer components {
+  :root {
+    color-scheme: light;
+    --ui-background: #FAF6F2;
+    --ui-foreground: #1A1A1A;
+    --ui-muted: #E8E8E8;
+    --ui-muted-foreground: #4A4A4A;
+    --ui-border: #D1D1D1;
+    /* te-grey-400 is about 2.2:1 on cream, below the 3:1 a control edge needs. */
+    --ui-input: #7A7A7A;
+    --ui-primary: #FF6B35;
+    --ui-primary-foreground: #FAF6F2;
+    --ui-destructive: #E53E3E;
+    --ui-ring: #FF6B35;
+    --ui-ring-border: #FF6B35;
+    --ui-overlay: rgb(0 0 0 / 0.5);
+    --ui-radius: 4px;
+    --ui-font-sans: 'Space Mono', monospace;
+    --ui-font-mono: 'Space Mono', monospace;
+  }
+
+  :where([data-slot]):focus-visible {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+
+  :where([data-slot="dialog-content"], [data-slot="alert-dialog-content"]) {
+    display: block;
+    gap: 0;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  :where([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  :where([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) {
+    margin: 0;
+    color: inherit;
+  }
+
+  :where([data-slot="tooltip-content"], [data-slot="popover-content"]) {
+    display: block;
+    gap: 0;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    overflow: visible;
+    border: 0 solid;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  :where([data-slot="popover-title"]) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  :where(
+    [data-slot="dialog-close"],
+    [data-slot="alert-dialog-close"],
+    [data-slot="tooltip-trigger"],
+    [data-slot="popover-trigger"],
+    [data-slot="popover-close"]
+  ) {
+    display: inline-block;
+    gap: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    white-space: normal;
+    cursor: default;
+    user-select: auto;
+  }
+
+  :where([data-slot="number-input-decrement"], [data-slot="number-input-increment"]) {
+    width: auto;
+    height: auto;
+    border-radius: var(--ui-radius);
+    background: transparent;
+    color: inherit;
+  }
+
+  :where([data-slot="number-input-control"]) {
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+    background: transparent;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  [data-slot="slider-thumb"]:has(:focus-visible) {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+
+  .te-popup-arrow {
+    width: 10px;
+    height: 10px;
+    rotate: 45deg;
+    border: 0 solid var(--color-te-grey-300);
+    background: var(--color-te-cream);
+
+    &[data-side="top"] {
+      bottom: -7px;
+      border-right-width: 2px;
+      border-bottom-width: 2px;
+    }
+
+    &[data-side="bottom"] {
+      top: -7px;
+      border-top-width: 2px;
+      border-left-width: 2px;
+    }
+
+    &[data-side="left"] {
+      right: -7px;
+      border-top-width: 2px;
+      border-right-width: 2px;
+    }
+
+    &[data-side="right"] {
+      left: -7px;
+      border-bottom-width: 2px;
+      border-left-width: 2px;
+    }
+  }
 }

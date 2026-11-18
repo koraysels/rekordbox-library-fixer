@@ -168,6 +168,36 @@ collection has to go through the database.
   headroom or with rekordbox running, and puts every file back if the write fails. Convert is
   `runConversion` with AIFF and originals to the Trash. Advanced's Consolidate shares the clash rule
   and writes to the database for a database library; it has no overwrite option any more.
+- **USB check** (`src/main/usb/`, IPC in `src/main/ipc/usb.ts`; spec
+  `docs/superpowers/specs/2026-11-16-usb-check-design.md`): what a synced USB stick lacks and why.
+  Read-only: the stick's files and master.db are copied to a temp folder and read there.
+  `findSticks.ts` lists mounted volumes with `PIONEER/rekordbox/export.pdb`; `pdbReader.ts` is a pure
+  DeviceSQL reader (tracks, artists, playlist tree, entries; rows whose presence bit is clear are
+  skipped; a table chain that breaks off before its last page — cut-short or damaged file — is a
+  `PdbFormatError`, never a smaller stick; rows it cannot read are counted, and the page warns); `syncList.ts` reads `playlists3.sync` (hex ids → the library's decimal `djmdPlaylist.ID`;
+  absent on a stick made with Export); `usbCheck.ts` is the pure compare, fs through `UsbCheckDeps`.
+  Rules: the playlists checked are the sync list's (a listed folder carries everything below it; all of
+  them with `AllPlaylists="1"`), or without a sync list the library playlists the stick carries — a stick
+  playlist matches the library one at its path, else by name only when one of each is left with it;
+  `emptyOnStick` counts only playlists the stick has (an absent one is in `missingOnStick`); entries pair as multisets by file name (NFC, case-insensitive), then title + artist;
+  a missing entry's reason is `streaming`, then `drive-unplugged` (named, totalled per drive), then
+  `missing` (ENOENT/ENOTDIR), `no-access` (any other error), else `not-synced-yet`; smart playlists
+  are "not checked". `DbPlaylist` carries `id` and `attribute` for this. Tests build a synthetic
+  `export.pdb` in code (`tests/unit/helpers/pdbBuilder.ts`); never commit a real stick's files.
+  Facts it depends on: `playlists3.sync` holds `Lib_Type="1"` nodes with 64-bit ids that are not library
+  playlists (read via BigInt, counted as unknown, ignored); in the older page layout the row count at
+  0x18 is a 24-bit field (13 bits row offsets ever allocated, 11 bits live rows), so rows are walked by
+  the offset count plus the presence bits; only the Device Library (`export.pdb`) is read — OneLibrary
+  (`exportLibrary.db`) is out of scope and the page says so in one line.
+  The page is **USB Sticks** (route `/usb`, Advanced, `src/renderer/components/pages/UsbPage.tsx`, parts
+  in `components/usb/`), state in `useUsbCheck` (one stick is checked at once; of several, the one
+  checked before, else the page asks; a result for a stick no longer chosen is dropped). Wording and
+  grouping live in `src/renderer/usb/` (`usbText.ts`, `usbReport.ts`): the summary first ("N playlists
+  incomplete on STICK", "Plug in DRIVE: N tracks" on top when a drive is unplugged, one line per reason
+  with its fix), then incomplete playlists, the most entries missing first (complete ones behind a toggle), each a ui-sdk
+  Collapsible whose panel unmounts while closed, so a long result costs nothing until opened (first 100
+  entries per reason, then "Show all"). An XML library gets a one-line message; the wizard's Done screen
+  has "Check your USB stick", which switches to Advanced and opens `/usb`.
 - **Streaming tracks** (`isStreamingLocation` in `src/main/streamingLocation.ts`, Node-free so
   the renderer can filter a cached missing list with it too): rekordbox gives
   a TIDAL or Spotify track a made-up location like `tidal:tracks:123`. They have no file by
@@ -201,7 +231,7 @@ collection has to go through the database.
   (`src/renderer/audio/aiffToWav.ts`). Player state in `src/renderer/stores/playerStore.ts`
   (volume persisted, key `rekordbox-player`); element commands via
   `src/renderer/audio/audioController.ts`.
-- **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, and other UI elements
+- **Shared UI Components**: Reusable PopoverButton, ConfidenceBadge, ProgressBar (ui-sdk Progress: a named progressbar) and other UI elements
 - **Utility Functions**: Centralized formatters for file size, duration, dates, and other data
 - **Custom Hooks**: File operations and other reusable business logic
 - Path aliases configured: `@/`, `@renderer/`, `@main/`, `@shared/`
@@ -294,7 +324,7 @@ Test framework uses:
 - **xml2js**: XML parsing
 - **music-metadata**: Audio file metadata extraction
 - **Zustand**: State management with persist middleware for localStorage sync
-- **Radix UI**: Professional UI components (Popover for playlist display) 
+- **ui-sdk** (`@ui-sdk/react`): keyboard, focus and ARIA for dialogs, popovers and tooltips
 
 ## Key File Locations
 
@@ -373,7 +403,7 @@ await relocationStorage.saveRelocationResult(resultData);
 - **Fixed Footer**: Status bar positioned at bottom with library stats
 
 ### Interactive Elements
-- **Radix UI Popover**: Professional playlist display with click-to-expand
+- **Playlist overview**: a ui-sdk Popover from the footer's playlist count
 - **Loading Animations**: Spinner states for all async operations  
 - **Debounced Loading**: Visual feedback during heavy operations
 - **Hover States**: Consistent interactive feedback
@@ -394,6 +424,7 @@ src/renderer/
 │   │   └── shared.tsx             # What both genuinely share
 │   ├── wizard/                    # The wizard's screens: WizardPage sequences
 │   │                              # Setup, Close rekordbox, Summary, Step, Done
+│   ├── usb/                       # USB Sticks page parts: summary, playlist row
 │   ├── DuplicateDetector.tsx      # The page: state, results, modals
 │   ├── DuplicateToolbar.tsx       # Its toolbar — scan, search, filter, resolve
 │   └── TrackRelocator.tsx
@@ -401,6 +432,9 @@ src/renderer/
 │   ├── reasons.ts                 # Why a track cannot play, in words
 │   ├── switchedItems.ts           # What a run switched, for the page and history
 │   └── conversionHistory.ts       # The Activity-history entry for a run
+├── usb/                           # The USB check's page apart from React
+│   ├── usbReport.ts               # Status, order, grouping by reason, which stick
+│   └── usbText.ts                 # What the page says: headline, reasons, fixes
 ├── wizard/                        # The wizard apart from React
 │   ├── wizardFlow.ts              # Which steps a check calls for; empty plans
 │   ├── wizardScreen.ts            # Which screen shows (setup, close, summary…)
@@ -410,6 +444,7 @@ src/renderer/
 │   └── wizardHistory.ts           # The Activity-history entry for a step
 ├── hooks/                         # Custom business logic hooks
 │   ├── useWizard.ts               # Check, plan, apply, cancel; reloads after a write
+│   ├── useUsbCheck.ts             # Find sticks, check the chosen one
 │   ├── useDuplicates.ts           # Duplicate detection state
 │   ├── useDuplicateResolution.ts  # The three resolve flows (XML, database, trash)
 │   ├── useTrackRelocator.ts       # Relocation state
@@ -430,14 +465,16 @@ src/renderer/
 The main process mirrors this for conversion: `src/main/convert/` (player profiles, plan, run, file
 conversion, library switching, ffmpeg download) with its IPC in `src/main/ipc/convert.ts`; and for
 the wizard: `src/main/wizard/` (volumes, the four planners, `sameContent`, gather apply, the service
-and its deps) with its IPC in `src/main/ipc/wizard.ts`. `tests/unit/wizard-whole-run.test.ts` applies
+and its deps) with its IPC in `src/main/ipc/wizard.ts`; and for the USB check: `src/main/usb/` (find
+sticks, read `export.pdb` and the sync list, compare) with its IPC in `src/main/ipc/usb.ts`.
+`tests/unit/wizard-whole-run.test.ts` applies
 relocate, remove, duplicates and gather on an encrypted temp database and checks cues, loops and
 playlists survive; convert is only planned there (a real conversion needs ffmpeg and real audio — its
 database switch is tested in `apply-conversions.test.ts`). `tests/unit/wizard-remove-search.test.ts`
 runs the remove step against the real search: a bracketed music folder, a file far below it, cwd `/`.
 
 Anything worth testing belongs outside a component: a pure module in `utils/`, `relocation/`,
-`scan/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
+`scan/`, `usb/` or `wizard/` can be tested without rendering, which is why those exist. A file growing past ~500 lines
 is the signal that something in it wants to move out.
 
 ### Component Patterns
@@ -450,6 +487,14 @@ is the signal that something in it wants to move out.
 
 - Development mode loads from `http://localhost:3000` - ensure Electron listens on same port as Vite
 - Production builds load from `dist/renderer/index.html`
+- ui-sdk (`@ui-sdk/react`, imported per component like `@ui-sdk/react/dialog`) supplies keyboard, focus and ARIA
+  for modals, the settings side sheet, the footer's playlist popover and tooltips. `PopoverButton` is a Tooltip on
+  a button that uses `aria-disabled` rather than `disabled`, so its tip still shows on a disabled action; its tip
+  is mounted hidden with every button, which is why `MissingTrackItem` rows are memoised. Its `--ui-*` tokens
+  (TE palette, light only), the resets that keep `web.css`'s default look out and `.te-popup-arrow` sit at the end
+  of `src/renderer/index.css`; parts are styled with Tailwind classes.
+  The settings side sheet is a Dialog, not a Drawer: the Drawer's pointer driver lets a mouse drag move the sheet.
+  Tests need the jsdom stubs at the top of `tests/setup.ts`.
 - TE theme with Tailwind CSS and orange accent (`te-orange`)
 - Uses strict TypeScript configuration
 - Path resolution configured for clean imports

@@ -9,6 +9,7 @@ import { HistoryPage } from './components/pages/HistoryPage';
 import { BackupsPage } from './components/pages/BackupsPage';
 import { ConvertPage } from './components/pages/ConvertPage';
 import { LibraryPage } from './components/pages/LibraryPage';
+import { UsbPage } from './components/pages/UsbPage';
 
 // Root route - wraps entire app
 export const rootRoute = createRootRoute({
@@ -32,6 +33,12 @@ export const convertRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/convert',
   component: ConvertPage,
+});
+
+export const usbRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/usb',
+  component: UsbPage,
 });
 
 export const importRoute = createRoute({
@@ -75,6 +82,7 @@ const routeTree = rootRoute.addChildren([
   duplicatesRoute,
   relocateRoute,
   convertRoute,
+  usbRoute,
   importRoute,
   maintenanceRoute,
   statisticsRoute,

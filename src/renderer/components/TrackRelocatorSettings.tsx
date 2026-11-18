@@ -1,9 +1,24 @@
 import React from 'react';
-import { Plus, X, FolderOpen } from 'lucide-react';
+import { Minus, Plus, X, FolderOpen } from 'lucide-react';
+import { Field, FieldDescription, FieldLabel } from '@ui-sdk/react/field';
+import {
+  NumberInput,
+  NumberInputControl,
+  NumberInputDecrement,
+  NumberInputGroup,
+  NumberInputIncrement,
+} from '@ui-sdk/react/number-input';
+import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack, SliderValue } from '@ui-sdk/react/slider';
 import { useSettingsStore } from '../stores/settingsStore';
 import type { RelocationOptions } from '../types';
+import { MAX_DEPTH, MIN_DEPTH, useSearchDepth } from './ui/SearchDepthControl';
 
 const ALL_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.flac', '.aiff', '.aif', '.ogg'];
+
+const formatThreshold = (value: number) => `${Math.round(value * 100)}% similarity`;
+
+const stepButton =
+  'px-2 rounded-te border-2 border-te-grey-300 bg-te-grey-100 text-te-grey-700 hover:border-te-orange data-disabled:opacity-40';
 
 interface TrackRelocatorSettingsProps {
   searchOptions: RelocationOptions;
@@ -22,6 +37,7 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
 }) => {
   // Get store functions for direct updates (avoid feedback loops)
   const updateRelocationOption = useSettingsStore((state) => state.updateRelocationOption);
+  const [, setSearchDepth] = useSearchDepth();
   const handleBrowseFolder = async () => {
     try {
       const folderPath = await window.electronAPI.selectFolder();
@@ -38,41 +54,50 @@ export const TrackRelocatorSettings: React.FC<TrackRelocatorSettingsProps> = ({
       <div>
         <h3 className="te-title mb-4">Search Configuration</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm te-label mb-2 font-te-mono">Search Depth</label>
-            <input
-              type="number"
-              min="1"
-              max="10"
+          <Field className="block">
+            <FieldLabel className="block text-sm te-label mb-2 font-te-mono">Search Depth</FieldLabel>
+            <NumberInput
               value={searchOptions.searchDepth}
-              onChange={(e) => {
-                const newValue = parseInt(e.target.value);
-                updateRelocationOption('searchDepth', newValue);
-              }}
-              className="input w-full"
-            />
-            <p className="text-xs te-label mt-1 font-te-mono">How many folder levels deep to search</p>
-          </div>
-          <div>
-            <label className="block text-sm te-label mb-2 font-te-mono">Match Threshold</label>
-            <input
-              type="range"
-              min="0.1"
-              max="1"
-              step="0.1"
+              min={MIN_DEPTH}
+              max={MAX_DEPTH}
+              onValueChange={setSearchDepth}
+            >
+              <NumberInputGroup className="flex w-full items-stretch gap-2">
+                <NumberInputDecrement aria-label="Search fewer folder levels" className={stepButton}>
+                  <Minus size={14} aria-hidden="true" />
+                </NumberInputDecrement>
+                <NumberInputControl className="input flex-1 min-w-0" />
+                <NumberInputIncrement aria-label="Search more folder levels" className={stepButton}>
+                  <Plus size={14} aria-hidden="true" />
+                </NumberInputIncrement>
+              </NumberInputGroup>
+            </NumberInput>
+            <FieldDescription className="text-xs te-label mt-1 font-te-mono">How many folder levels deep to search</FieldDescription>
+          </Field>
+          <Field className="block">
+            <FieldLabel className="block text-sm te-label mb-2 font-te-mono">Match Threshold</FieldLabel>
+            <Slider
               value={searchOptions.matchThreshold}
-              onChange={(e) => {
-                const newValue = parseFloat(e.target.value);
-                updateRelocationOption('matchThreshold', newValue);
-              }}
-              className="w-full accent-te-orange"
-            />
-            <div className="flex justify-between text-xs te-label mt-1 font-te-mono">
-              <span>10%</span>
-              <span className="text-te-orange font-medium">{Math.round(searchOptions.matchThreshold * 100)}% similarity</span>
-              <span>100%</span>
-            </div>
-          </div>
+              min={0.1}
+              max={1}
+              step={0.1}
+              format={formatThreshold}
+              onValueChange={(value) => updateRelocationOption('matchThreshold', value)}
+              className="block min-w-0"
+            >
+              <SliderControl className="h-5">
+                <SliderTrack className="h-1.5 rounded-te bg-te-grey-300">
+                  <SliderIndicator className="bg-te-orange" />
+                  <SliderThumb className="size-4 rounded-full border-2 border-te-cream bg-te-orange shadow" />
+                </SliderTrack>
+              </SliderControl>
+              <div className="flex justify-between text-xs te-label mt-1 font-te-mono">
+                <span>10%</span>
+                <SliderValue className="text-te-orange font-medium" />
+                <span>100%</span>
+              </div>
+            </Slider>
+          </Field>
         </div>
       </div>
 

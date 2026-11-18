@@ -251,6 +251,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
           results={results}
           onCheckAgain={() => { setPhase('summary'); void runCheck(); }}
           onOpenHistory={() => openAdvanced('/history')}
+          onCheckUsb={() => openAdvanced('/usb')}
         />
       );
     case 'step':

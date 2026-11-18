@@ -4,6 +4,7 @@ import { formatFileSize } from '../../utils';
 import type { TrackPayload } from '../../../main/ipcContract';
 import type { LibraryData } from '../../types';
 import { CLASH_NOTE, dbKeyFor, readLibraryAgain, type Mode, type Phase, type Progress, type Result } from './shared';
+import { ProgressBar } from '../ui/ProgressBar';
 
 // ── Filter & Move types ──────────────────────────────────────────────────────
 type FilterField = 'artist' | 'album' | 'genre' | 'rating' | 'bpm' | 'year' | 'format';
@@ -123,10 +124,6 @@ export const FilterMovePanel: React.FC<FilterMovePanelProps> = ({
     setFPhase('cancelled');
   }, []);
 
-  const fPct = fProgress && fProgress.total > 0
-    ? Math.round((fProgress.current / fProgress.total) * 100)
-    : 0;
-
   return (
     <div className="bg-white rounded-te shadow-sm p-te-md mt-te-md">
       <div className="flex items-center gap-2 mb-1">
@@ -222,9 +219,12 @@ export const FilterMovePanel: React.FC<FilterMovePanelProps> = ({
                 <span className="truncate max-w-xs">{fProgress.currentFile}</span>
                 <span>{fProgress.current} / {fProgress.total}</span>
               </div>
-              <div className="w-full bg-te-grey-200 rounded-full h-2">
-                <div className="bg-te-orange h-2 rounded-full transition-all" style={{ width: `${fPct}%` }} />
-              </div>
+              <ProgressBar
+                label={fMode === 'copy' ? 'Copying files' : 'Moving files'}
+                value={fProgress.current}
+                max={fProgress.total}
+                unit="files"
+              />
               <div className="flex gap-4 text-xs font-te-mono text-te-grey-500">
                 <span className="text-green-600">{fProgress.succeeded} {fMode === 'copy' ? 'copied' : 'moved'}</span>
                 <span className="text-te-grey-400">{fProgress.skipped} skipped</span>

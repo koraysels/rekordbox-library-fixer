@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { AutoRelocateProgressDialog } from '../../src/renderer/components/ui/AutoRelocateProgressDialog';
 
@@ -13,17 +14,58 @@ beforeEach(() => {
   (window as any).electronAPI.cancelAutoRelocate = vi.fn(async () => ({ success: true }));
 });
 
-const show = (isRunning: boolean, onHide: () => void = () => undefined) => render(
+const show = (
+  isRunning: boolean,
+  onHide: () => void = () => undefined,
+  onClose: () => void = () => undefined,
+  onCancel: () => void = () => undefined,
+) => render(
   <AutoRelocateProgressDialog
     isOpen
     isRunning={isRunning}
-    onClose={() => undefined}
+    onClose={onClose}
     onHide={onHide}
-    onCancel={() => undefined}
+    onCancel={onCancel}
   />
 );
 
 describe('AutoRelocateProgressDialog', () => {
+  it('is a dialog named by its title', () => {
+    show(true);
+    expect(screen.getByRole('dialog', { name: 'Auto-Relocating Tracks' })).toBeTruthy();
+  });
+
+  it('Escape hides a running run and never cancels it', async () => {
+    const onHide = vi.fn();
+    const onCancel = vi.fn();
+    show(true, onHide, undefined, onCancel);
+    await userEvent.setup().keyboard('{Escape}');
+    expect(onHide).toHaveBeenCalledTimes(1);
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(window.electronAPI.cancelAutoRelocate).not.toHaveBeenCalled();
+  });
+
+  it('Escape closes a finished run', async () => {
+    const onClose = vi.fn();
+    const onHide = vi.fn();
+    show(false, onHide, onClose);
+    await userEvent.setup().keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onHide).not.toHaveBeenCalled();
+  });
+
+  it('names the X Close, and shows it only once the run is over', async () => {
+    const onClose = vi.fn();
+    const { unmount } = show(true);
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    unmount();
+    show(false, undefined, onClose);
+    const closes = screen.getAllByRole('button', { name: 'Close' });
+    expect(closes).toHaveLength(2);
+    await userEvent.setup().click(closes[0]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it('can be hidden while the run carries on', () => {
     const onHide = vi.fn();
     show(true, onHide);
