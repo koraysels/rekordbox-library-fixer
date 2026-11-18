@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FolderOpen, FileText, Database, Clock, Copy, Check } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import logoUrl from '../../assets/logo.png';
 import {
   keyCommandFor, platformFromUserAgent, looksLikeDbKey,
 } from '../../utils/keyExtractionCommand';
@@ -105,7 +106,7 @@ export const EmptyLibraryState: React.FC<EmptyLibraryStateProps> = ({
         <div className="mb-te-xl">
           <div className="w-16 h-16 mx-auto mb-te-lg bg-white rounded-te flex items-center justify-center">
             <img
-              src="/icons/64x64.png"
+              src={logoUrl}
               alt="Rekordbox Library Fixer"
               className="w-12 h-12 opacity-90"
             />

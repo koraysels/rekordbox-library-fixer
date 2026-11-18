@@ -1,6 +1,7 @@
 import React from 'react';
 import { FolderOpen, Upload, FileText, AlertCircle } from 'lucide-react';
 import { useFileDropzone } from '../../hooks/useFileDropzone';
+import logoUrl from '../../assets/logo.png';
 
 interface FileDropzoneProps {
   onFileDrop: (filePath: string) => void;
@@ -33,7 +34,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       {/* App Logo */}
       <div className="mb-8">
         <img
-          src="/icons/64x64.png"
+          src={logoUrl}
           alt="Rekordbox Library Fixer"
           className="w-24 h-24 mx-auto mb-4 bg-white rounded-3xl p-3 shadow-lg"
         />
