@@ -9,6 +9,7 @@ rl.on('line', async (line: string) => {
   if (req.method === 'facts') result = await readFileFacts(req.params.path);
   else if (req.method === 'sticks') result = (await findSticks()).map((s: { name: string }) => s.name);
   else if (req.method === 'mem') result = Math.round(process.memoryUsage().rss / 1048576);
+  else if (req.method === 'version') result = { node: process.version, platform: process.platform, arch: process.arch };
   process.stdout.write(JSON.stringify({ id: req.id, result }) + '\n');
 });
 void fs;

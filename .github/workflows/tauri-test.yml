@@ -1,20 +1,31 @@
-name: Tauri spike
+name: Tauri test build
+
+# feat/tauri: build and check on all three systems.
+# release/tauri: the same, plus a prerelease tagged tauri-v<version> for testers.
+# Prereleases never reach Electron users: their updaters and the website read releases/latest,
+# which skips prereleases, and release.yml only runs on v* tags.
 
 on:
   workflow_dispatch:
   push:
-    branches: [feat/tauri]
-    paths: ['spike/**', '.github/workflows/spike-tauri.yml']
+    branches: [feat/tauri, release/tauri]
+    paths: ['spike/**', '.github/workflows/tauri-test.yml']
+
+permissions:
+  contents: write
 
 jobs:
-  spike:
+  build:
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-15
+            bundles: app,dmg
           - os: windows-latest
+            bundles: nsis
           - os: ubuntu-24.04
+            bundles: deb,appimage
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -35,7 +46,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf xvfb \
+          sudo apt-get install -y libwebkit2gtk-4.1-dev librsvg2-dev patchelf xvfb libfuse2t64 \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
 
       - run: pnpm install --frozen-lockfile
@@ -69,11 +80,10 @@ jobs:
 
       - name: Tauri build
         working-directory: spike/tauri
-        run: |
-          case "$RUNNER_OS" in
-            macOS) B=app ;; Windows) B=nsis ;; Linux) B=deb ;;
-          esac
-          npx --yes @tauri-apps/cli@2.9.4 build --bundles $B
+        env:
+          # Only the release branch bundles the key; it is never written to the repo.
+          REKORDBOX_DB_KEY: ${{ github.ref == 'refs/heads/release/tauri' && secrets.REKORDBOX_DB_KEY || '' }}
+        run: npx --yes @tauri-apps/cli@2.9.4 build --bundles ${{ matrix.bundles }}
 
       - name: Run checks
         run: |
@@ -81,7 +91,7 @@ jobs:
           export SPIKE_MP3="$RUNNER_TEMP/audio/tone.wav" SPIKE_AIF="$RUNNER_TEMP/audio/tone.aiff" SPIKE_UI=1
           REL=spike/tauri/src-tauri/target/release
           case "$RUNNER_OS" in
-            macOS) EXE="$REL/bundle/macos/RBLF Spike.app/Contents/MacOS/rblf-spike"; RUN="" ;;
+            macOS) EXE="$(ls -d $REL/bundle/macos/*.app)/Contents/MacOS/rblf-spike"; RUN="" ;;
             Windows) EXE="$REL/rblf-spike.exe"; RUN="" ;;
             Linux) EXE="$REL/rblf-spike"; RUN="xvfb-run -a" ;;
           esac
@@ -89,22 +99,59 @@ jobs:
           sleep 40
           kill $! 2>/dev/null || true
           [ "$RUNNER_OS" = Windows ] && taskkill //F //IM rblf-spike.exe >/dev/null 2>&1 || true
-          echo "### ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          grep -E "SPIKE|panick|rror" run.log | cut -c1-300 >> $GITHUB_STEP_SUMMARY || echo "no output" >> $GITHUB_STEP_SUMMARY
-          echo "--- sizes" >> $GITHUB_STEP_SUMMARY
-          du -sh spike/pydb/build/dist/rbdb spike/tauri/src-tauri/binaries/* >> $GITHUB_STEP_SUMMARY
-          find $REL/bundle -maxdepth 2 -type f \( -name '*.deb' -o -name '*.exe' \) -exec du -h {} \; >> $GITHUB_STEP_SUMMARY || true
-          [ "$RUNNER_OS" = macOS ] && (cd $REL/bundle/macos && ditto -c -k --keepParent "RBLF Spike.app" /tmp/s.zip && du -h /tmp/s.zip >> $GITHUB_STEP_SUMMARY) || true
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### ${{ matrix.os }}"
+            echo '```'
+            grep -E "SPIKE|panick|rror" run.log | cut -c1-400 || echo "no output"
+            echo "--- sizes"
+            du -sh spike/pydb/build/dist/rbdb spike/tauri/src-tauri/binaries/*
+            find $REL/bundle -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.deb' -o -name '*.AppImage' \) -exec du -h {} \;
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
           cat run.log
+          grep -q "SPIKE DONE" run.log
+
+      - name: Collect installers
+        if: github.ref == 'refs/heads/release/tauri'
+        run: |
+          mkdir -p out
+          find spike/tauri/src-tauri/target/release/bundle -type f \( -name '*.dmg' -o -name '*-setup.exe' -o -name '*.deb' -o -name '*.AppImage' \) \
+            -exec sh -c 'cp "$1" "out/$(basename "$1" | tr " " "-")"' _ {} \;
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/release/tauri'
+        with:
+          name: installers-${{ matrix.os }}
+          path: out/*
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: spike-${{ matrix.os }}
-          path: |
-            run.log
-            spike/tauri/src-tauri/target/release/bundle/nsis/*.exe
-            spike/tauri/src-tauri/target/release/bundle/deb/*.deb
+          name: log-${{ matrix.os }}
+          path: run.log
           if-no-files-found: ignore
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/release/tauri'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: out
+          merge-multiple: true
+      - name: Prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(python3 -c "import json;print(json.load(open('spike/tauri/src-tauri/tauri.conf.json'))['version'])")
+          TAG="tauri-v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --clobber
+          else
+            gh release create "$TAG" out/* --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Tauri test build $VERSION" --notes-file spike/tauri/RELEASE_NOTES.md
+          fi

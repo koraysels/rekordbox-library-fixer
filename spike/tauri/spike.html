@@ -1,30 +1,139 @@
-<!doctype html><meta charset="utf-8"><title>spike</title>
-<body style="font:14px system-ui;padding:20px"><h3>Tauri spike</h3><pre id="log"></pre><a href="app.html">open real UI</a>
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Tauri test</title>
+<style>
+  :root { color-scheme: light; --fg: #1a1a1a; --muted: #666; --line: #ddd; --accent: #ff5a1f; --bg: #fafaf8; }
+  body { font: 14px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 28px; max-width: 760px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 0 0 16px; color: var(--muted); }
+  section { border-top: 1px solid var(--line); padding: 16px 0; }
+  h2 { font-size: 15px; margin: 0 0 8px; }
+  button, a.btn { font: inherit; padding: 6px 14px; border: 1px solid var(--fg); background: #fff; border-radius: 4px; cursor: pointer; color: var(--fg); text-decoration: none; display: inline-block; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .out { font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; margin-top: 8px; }
+  .ok { color: #0a7a2f; } .bad { color: #b00020; }
+  audio { width: 100%; margin-top: 8px; }
+  textarea { width: 100%; height: 160px; font: 12px ui-monospace, monospace; margin-top: 8px; box-sizing: border-box; }
+</style>
+<body>
+<h1>Rekordbox Library Fixer: Tauri test build</h1>
+<p>This build tests whether a smaller version of the app runs on your computer. It doesn't change anything: your library is copied to a temporary folder and only read. Run the three checks, then copy the results into the GitHub issue.</p>
+
+<section>
+  <h2>1. Read your rekordbox library</h2>
+  <button class="primary" id="lib">Read my library</button>
+  <div class="out" id="libOut"></div>
+</section>
+
+<section>
+  <h2>2. Play a track</h2>
+  <button id="pick">Choose an audio file…</button>
+  <div class="out" id="playOut"></div>
+  <audio id="player" controls></audio>
+  <div id="seek" hidden><button data-to="0.25">Jump to 25 %</button> <button data-to="0.75">Jump to 75 %</button></div>
+</section>
+
+<section>
+  <h2>3. Look at the app screen</h2>
+  <p>Opens the app's normal screen. It isn't connected to anything yet, so buttons do nothing. Check that it looks right, then close the window.</p>
+  <a class="btn" href="app.html">Open the app screen</a>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <button id="copy">Copy results</button>
+  <textarea id="results" readonly></textarea>
+</section>
+
 <script>
-const log = (m) => { document.getElementById('log').textContent += m + '\n'; window.__TAURI__.core.invoke('report', { msg: m }); };
-const rpc = (target, obj) => window.__TAURI__.core.invoke('rpc', { target, line: JSON.stringify(obj) });
-async function audioTest(name, src) {
-  return new Promise((res) => {
-    const a = new Audio(src); a.muted = true; let t0 = performance.now();
-    a.onerror = () => res(name + ' ERROR ' + (a.error && a.error.code));
-    a.onloadedmetadata = async () => {
-      const dur = a.duration; try { await a.play(); } catch (e) { return res(name + ' play failed ' + e); }
-      a.currentTime = Math.min(60, dur / 2);
-      a.onseeked = () => setTimeout(() => res(name + ' ok dur=' + dur.toFixed(1) + ' seekedTo=' + a.currentTime.toFixed(1) + ' firstMeta=' + Math.round(t0 && (performance.now() - t0)) + 'ms'), 500);
-    };
-    setTimeout(() => res(name + ' TIMEOUT'), 8000);
-  });
-}
+const T = window.__TAURI__;
+const invoke = T.core.invoke;
+const results = {};
+const show = () => { document.getElementById('results').value = JSON.stringify(results, null, 2); };
+const report = (m) => invoke('report', { msg: m }).catch(() => {});
+const rpc = async (target, method, params) => JSON.parse(await invoke('rpc', { target, line: JSON.stringify({ id: Date.now() % 1e6, method, params }) }));
 const base = navigator.userAgent.includes('Windows') ? 'http://media.localhost' : 'media://localhost';
 const media = (p) => { const u = p.replace(/\\/g, '/'); return base + encodeURI(u.startsWith('/') ? u : '/' + u); };
+const line = (el, text, ok) => { const d = document.createElement('div'); d.textContent = text; if (ok !== undefined) d.className = ok ? 'ok' : 'bad'; document.getElementById(el).appendChild(d); };
+
+async function startup() {
+  const t0 = performance.now();
+  results.system = await invoke('sys_info');
+  results.system.userAgent = navigator.userAgent;
+  try { results.node = (await rpc('node', 'version')).reply.result; } catch (e) { results.node = { error: String(e) }; }
+  try { results.python = (await rpc('py', 'version')).reply.result; } catch (e) { results.python = { error: String(e) }; }
+  results.system.sidecarsMs = Math.round(performance.now() - t0);
+  show();
+}
+
+document.getElementById('lib').onclick = async (ev) => {
+  ev.target.disabled = true; document.getElementById('libOut').textContent = 'Reading…';
+  try {
+    const r = JSON.parse(await invoke('check_library'));
+    const res = r.reply.result, err = r.reply.error;
+    document.getElementById('libOut').textContent = '';
+    if (err) { line('libOut', 'Failed: ' + err, false); results.library = { error: err }; }
+    else if (!res.found) { line('libOut', res.reason || 'No rekordbox library found on this computer.', false); results.library = res; }
+    else {
+      line('libOut', `${res.tracks} tracks, ${res.playlists} playlists, ${res.cues} cues`, true);
+      line('libOut', `Copied in ${res.copyMs} ms, opened in ${res.openMs} ms, read in ${res.readMs} ms`);
+      results.library = { ...res, path: undefined };
+    }
+  } catch (e) { line('libOut', 'Failed: ' + e, false); results.library = { error: String(e) }; }
+  ev.target.disabled = false; show();
+};
+
+const player = document.getElementById('player');
+async function play(path, label) {
+  const out = (t, ok) => line('playOut', t, ok);
+  const r = { file: path.split(/[\\/]/).pop() };
+  try { r.facts = (await rpc('node', 'facts', { path })).reply.result; out(`Read by the app: ${JSON.stringify(r.facts)}`); }
+  catch (e) { r.factsError = String(e); out('Could not read the file: ' + e, false); }
+  const t0 = performance.now();
+  player.src = media(path);
+  await new Promise((resolve) => {
+    const done = (ok, msg) => { r.playback = msg; out(msg, ok); resolve(); };
+    player.onerror = () => done(false, 'Does not play here (error ' + (player.error && player.error.code) + ')');
+    player.onloadedmetadata = async () => {
+      r.loadMs = Math.round(performance.now() - t0);
+      try { await player.play(); } catch (e) { return done(false, 'Does not start: ' + e); }
+      player.currentTime = player.duration / 2;
+      player.onseeked = () => setTimeout(() => done(true, `Plays and seeks (${player.duration.toFixed(1)} s, loaded in ${r.loadMs} ms)`), 400);
+    };
+    setTimeout(() => done(false, 'Timed out'), 10000);
+  });
+  document.getElementById('seek').hidden = false;
+  (results.playback ||= []).push(r);
+  show();
+  report(label + ' ' + r.playback);
+}
+
+document.getElementById('pick').onclick = async () => {
+  const path = await T.dialog.open({ multiple: false, filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'aif', 'aiff', 'm4a', 'flac'] }] });
+  if (path) await play(path, 'picked');
+};
+document.querySelectorAll('#seek button').forEach((b) => { b.onclick = () => { player.currentTime = player.duration * Number(b.dataset.to); }; });
+document.getElementById('copy').onclick = async () => {
+  const ta = document.getElementById('results');
+  try { await navigator.clipboard.writeText(ta.value); } catch { ta.select(); document.execCommand('copy'); }
+  document.getElementById('copy').textContent = 'Copied';
+};
+
 (async () => {
-  const env = await window.__TAURI__.core.invoke('spike_env');
-  log('node: ' + await rpc('node', { id: 1, method: 'facts', params: { path: env.mp3 } }));
-  log('node mem: ' + await rpc('node', { id: 2, method: 'mem' }));
-  log('py: ' + await rpc('py', { id: 3, method: 'counts' }));
-  log(await audioTest('mp3', media(env.mp3)));
-  log(await audioTest('aiff', media(env.aif)));
-  log('DONE');
-  if (env.ui) location.href = 'app.html';
+  await startup();
+  report('startup ' + JSON.stringify(results));
+  const env = await invoke('spike_env');
+  if (env.check) { document.getElementById('lib').click(); await new Promise((r) => setTimeout(r, 6000)); report('library ' + JSON.stringify(results.library)); }
+  if (env.mp3) {
+    player.muted = true;
+    await play(env.mp3, 'mp3');
+    if (env.aif) await play(env.aif, 'aiff');
+    report('DONE');
+    if (env.ui) location.href = 'app.html';
+  }
 })();
 </script>
+</body>
+</html>
