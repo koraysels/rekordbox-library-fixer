@@ -54,11 +54,12 @@ const results = {};
 const show = () => { document.getElementById('results').value = JSON.stringify(results, null, 2); };
 const report = (m) => invoke('report', { msg: m }).catch(() => {});
 const rpc = async (target, method, params) => JSON.parse(await invoke('rpc', { target, line: JSON.stringify({ id: Date.now() % 1e6, method, params }) }));
-const base = navigator.userAgent.includes('Windows') ? 'http://media.localhost' : 'media://localhost';
+let base = 'media://localhost';
 const media = (p) => { const u = p.replace(/\\/g, '/'); return base + encodeURI(u.startsWith('/') ? u : '/' + u); };
 const line = (el, text, ok) => { const d = document.createElement('div'); d.textContent = text; if (ok !== undefined) d.className = ok ? 'ok' : 'bad'; document.getElementById(el).appendChild(d); };
 
 async function startup() {
+  base = await invoke('media_base');
   const t0 = performance.now();
   results.system = await invoke('sys_info');
   results.system.userAgent = navigator.userAgent;

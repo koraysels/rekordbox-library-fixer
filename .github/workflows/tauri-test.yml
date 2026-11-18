@@ -115,6 +115,7 @@ jobs:
           } >> $GITHUB_STEP_SUMMARY
           cat run.log
           grep -q "SPIKE DONE" run.log
+          if grep -qE "SPIKE (mp3|aiff) (Does|Timed)" run.log; then echo "::error::audio does not play"; exit 1; fi
 
       - name: Collect installers
         if: github.ref == 'refs/heads/release/tauri'

@@ -119,6 +119,61 @@ fn media(req: &tauri::http::Request<Vec<u8>>) -> Response<Vec<u8>> {
     r.body(buf).unwrap()
 }
 
+// Linux: WebKitGTK hands <audio> to GStreamer, which cannot read a custom scheme, so audio is
+// served from 127.0.0.1 instead. The random token keeps other local programs out.
+struct MediaServer { base: String }
+
+fn start_media_server() -> std::io::Result<MediaServer> {
+    use std::hash::{BuildHasher, Hasher};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+    let port = listener.local_addr()?.port();
+    let mut h = std::collections::hash_map::RandomState::new().build_hasher();
+    h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos());
+    let token = format!("{:016x}{:016x}", h.finish(), std::collections::hash_map::RandomState::new().build_hasher().finish());
+    let prefix = format!("/{token}");
+    std::thread::spawn(move || {
+        for stream in listener.incoming().flatten() {
+            let prefix = prefix.clone();
+            std::thread::spawn(move || { let _ = serve(stream, &prefix); });
+        }
+    });
+    Ok(MediaServer { base: format!("http://127.0.0.1:{port}/{token}") })
+}
+
+fn serve(mut stream: std::net::TcpStream, prefix: &str) -> std::io::Result<()> {
+    let mut reader = BufReader::new(stream.try_clone()?);
+    loop {
+        let mut request_line = String::new();
+        if reader.read_line(&mut request_line)? == 0 { return Ok(()); }
+        let mut range_header = None;
+        loop {
+            let mut l = String::new();
+            if reader.read_line(&mut l)? == 0 || l == "\r\n" || l == "\n" { break; }
+            if let Some((k, v)) = l.split_once(':') {
+                if k.eq_ignore_ascii_case("range") { range_header = Some(v.trim().to_string()); }
+            }
+        }
+        let target = request_line.split_whitespace().nth(1).unwrap_or("");
+        let Some(rest) = target.strip_prefix(prefix) else {
+            stream.write_all(b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n")?; continue;
+        };
+        let mut req = tauri::http::Request::builder().uri(format!("http://x{rest}"));
+        if let Some(r) = &range_header { req = req.header(header::RANGE, r.as_str()); }
+        let resp = media(&req.body(Vec::new()).unwrap());
+        let mut head = format!("HTTP/1.1 {} {}\r\n", resp.status().as_u16(), resp.status().canonical_reason().unwrap_or(""));
+        for (k, v) in resp.headers() { head.push_str(&format!("{}: {}\r\n", k, v.to_str().unwrap_or(""))); }
+        head.push_str("\r\n");
+        stream.write_all(head.as_bytes())?;
+        stream.write_all(resp.body())?;
+    }
+}
+
+#[tauri::command]
+fn media_base(state: tauri::State<MediaServer>) -> String {
+    if cfg!(target_os = "linux") || std::env::var("SPIKE_HTTP").is_ok() { state.base.clone() }
+    else if cfg!(windows) { "http://media.localhost".into() } else { "media://localhost".into() }
+}
+
 fn percent_decode(s: &str) -> String {
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
@@ -149,10 +204,11 @@ fn main() {
                 println!("SPIKE py open {}ms ok={}", t0.elapsed().as_millis(), r.contains("result"));
             }
             app.manage(Backends { node: Mutex::new(node), py });
+            app.manage(start_media_server()?);
             Ok(())
         })
         .register_uri_scheme_protocol("media", |_ctx, req| media(&req))
-        .invoke_handler(tauri::generate_handler![rpc, report, spike_env, sys_info, check_library])
+        .invoke_handler(tauri::generate_handler![rpc, report, spike_env, sys_info, check_library, media_base])
         .run(tauri::generate_context!())
         .expect("run");
 }
