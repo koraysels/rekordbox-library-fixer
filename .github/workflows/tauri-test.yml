@@ -47,12 +47,22 @@ jobs:
         with:
           workspaces: spike/tauri/src-tauri
 
+      # The .deb files are cached: the Ubuntu mirrors have been slow enough to cost 40 minutes a run.
+      - name: Cache Linux packages
+        if: runner.os == 'Linux'
+        uses: actions/cache@v6
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ matrix.os }}-v1
       - name: Linux packages
         if: runner.os == 'Linux'
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: libwebkit2gtk-4.1-dev librsvg2-dev patchelf xvfb libfuse2t64 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
-          version: 1
+        run: |
+          mkdir -p ~/apt-archives/partial
+          sudo apt-get update -q
+          sudo apt-get install -y -q -o Dir::Cache::Archives="$HOME/apt-archives" \
+            libwebkit2gtk-4.1-dev librsvg2-dev patchelf xvfb libfuse2t64 \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+          sudo chown -R "$USER" ~/apt-archives
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:vite
