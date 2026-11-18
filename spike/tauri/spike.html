@@ -47,6 +47,7 @@
   <textarea id="results" readonly></textarea>
 </section>
 
+<script src="aiff.js"></script>
 <script>
 const T = window.__TAURI__;
 const invoke = T.core.invoke;
@@ -93,7 +94,14 @@ async function play(path, label) {
   try { r.facts = (await rpc('node', 'facts', { path })).reply.result; out(`Read by the app: ${JSON.stringify(r.facts)}`); }
   catch (e) { r.factsError = String(e); out('Could not read the file: ' + e, false); }
   const t0 = performance.now();
-  player.src = media(path);
+  if (/\.aiff?$/i.test(path)) {
+    // Same as the app's player: fetch the AIFF, rewrap it as WAV, play the blob.
+    const buf = await (await fetch(media(path))).arrayBuffer();
+    player.src = URL.createObjectURL(new Blob([AiffToWav.aiffToWav(buf)], { type: 'audio/wav' }));
+    r.via = 'aiffToWav';
+  } else {
+    player.src = media(path);
+  }
   await new Promise((resolve) => {
     const done = (ok, msg) => { r.playback = msg; out(msg, ok); resolve(); };
     player.onerror = () => done(false, 'Does not play here (error ' + (player.error && player.error.code) + ')');
