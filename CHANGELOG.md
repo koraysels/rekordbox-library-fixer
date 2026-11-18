@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.9.1] - 2026-11-18
 
 ### 🐛 Fixes
 - **Track Relocation and Duplicates open fast**: their lists render only the rows in view. With 10,000 missing tracks the page took over 5 seconds to open on every visit.

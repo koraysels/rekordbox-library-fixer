@@ -459,7 +459,11 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.9.0** *(current)*
+**v0.9.1** *(current)*
+- Track Relocation and Duplicates open fast with thousands of tracks
+- The logo shows on the home screen in the installed app
+
+**v0.9.0**
 - A USB Sticks page shows, per synced playlist, which tracks didn't make it onto the stick and why
 
 **v0.8.0**
