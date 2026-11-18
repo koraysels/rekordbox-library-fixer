@@ -459,7 +459,10 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.8.0** *(current)*
+**v0.9.0** *(current)*
+- A USB Sticks page shows, per synced playlist, which tracks didn't make it onto the stick and why
+
+**v0.8.0**
 - A fix-my-library wizard as the default screen: check, then relocate, remove, merge, gather and convert, one confirm per step
 - The database key is built into release builds; pasting it is the fallback
 - Consolidate writes to the database and never overwrites a file
