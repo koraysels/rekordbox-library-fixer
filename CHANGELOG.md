@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### 🐛 Fixes
+- **Track Relocation and Duplicates open fast**: their lists render only the rows in view. With 10,000 missing tracks the page took over 5 seconds to open on every visit.
+- **The logo shows on the home screen** in the installed app.
+
 ## [0.9.0] - 2026-11-18
 
 ### 🎉 New Features
