@@ -1,0 +1,7 @@
+pydb/.venv/
+pydb/build/
+node/build/
+tauri/frontend/
+tauri/src-tauri/target/
+tauri/src-tauri/binaries/
+tauri/src-tauri/gen/

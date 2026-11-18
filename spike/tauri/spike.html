@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>spike</title>
+<body style="font:14px system-ui;padding:20px"><h3>Tauri spike</h3><pre id="log"></pre><a href="app.html">open real UI</a>
+<script>
+const log = (m) => { document.getElementById('log').textContent += m + '\n'; window.__TAURI__.core.invoke('report', { msg: m }); };
+const rpc = (target, obj) => window.__TAURI__.core.invoke('rpc', { target, line: JSON.stringify(obj) });
+async function audioTest(name, src) {
+  return new Promise((res) => {
+    const a = new Audio(src); a.muted = true; let t0 = performance.now();
+    a.onerror = () => res(name + ' ERROR ' + (a.error && a.error.code));
+    a.onloadedmetadata = async () => {
+      const dur = a.duration; try { await a.play(); } catch (e) { return res(name + ' play failed ' + e); }
+      a.currentTime = Math.min(60, dur / 2);
+      a.onseeked = () => setTimeout(() => res(name + ' ok dur=' + dur.toFixed(1) + ' seekedTo=' + a.currentTime.toFixed(1) + ' firstMeta=' + Math.round(t0 && (performance.now() - t0)) + 'ms'), 500);
+    };
+    setTimeout(() => res(name + ' TIMEOUT'), 8000);
+  });
+}
+const base = navigator.userAgent.includes('Windows') ? 'http://media.localhost' : 'media://localhost';
+const media = (p) => { const u = p.replace(/\\/g, '/'); return base + encodeURI(u.startsWith('/') ? u : '/' + u); };
+(async () => {
+  const env = await window.__TAURI__.core.invoke('spike_env');
+  log('node: ' + await rpc('node', { id: 1, method: 'facts', params: { path: env.mp3 } }));
+  log('node mem: ' + await rpc('node', { id: 2, method: 'mem' }));
+  log('py: ' + await rpc('py', { id: 3, method: 'counts' }));
+  log(await audioTest('mp3', media(env.mp3)));
+  log(await audioTest('aiff', media(env.aif)));
+  log('DONE');
+  if (env.ui) location.href = 'app.html';
+})();
+</script>

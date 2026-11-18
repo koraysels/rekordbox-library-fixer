@@ -1,0 +1,7 @@
+<script>
+const noop = () => {};
+const thenableNoop = Object.assign(() => {}, { then: (res) => res(null) });
+window.electronAPI = new Proxy({}, { get: (_, k) => (...a) => (String(k).startsWith('on') ? noop : Promise.resolve([])) });
+const ce = console.error; console.error = (...a) => { try { window.__TAURI__.core.invoke('report', { msg: 'ERR ' + a.map((x) => x instanceof Error ? x.message + ' @ ' + x.stack : String(x)).join(' | ').slice(0, 1500) }); } catch {} ce(...a); };
+setTimeout(() => window.__TAURI__.core.invoke('report', { msg: 'UI ' + document.querySelectorAll('*').length + ' nodes: ' + document.body.innerText.replace(/\s+/g,' ').slice(0,160) }), 4000);
+</script>
