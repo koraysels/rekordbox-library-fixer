@@ -31,16 +31,21 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'pnpm'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: spike/pydb/requirements.txt
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: spike/tauri/src-tauri
 
       - name: Linux packages
         if: runner.os == 'Linux'
@@ -55,7 +60,7 @@ jobs:
 
       - name: Python sidecar
         run: |
-          python -m pip install -q pyrekordbox pyinstaller
+          python -m pip install -q -r spike/pydb/requirements.txt
           cd spike/pydb
           pyinstaller -y --onedir --name rbdb --log-level ERROR --distpath build/dist --workpath build/work --specpath build sidecar.py
 
@@ -83,7 +88,7 @@ jobs:
         env:
           # Only the release branch bundles the key; it is never written to the repo.
           REKORDBOX_DB_KEY: ${{ github.ref == 'refs/heads/release/tauri' && secrets.REKORDBOX_DB_KEY || '' }}
-        run: npx --yes @tauri-apps/cli@2.9.4 build --bundles ${{ matrix.bundles }}
+        run: npx --yes @tauri-apps/cli@2.12.6 build --bundles ${{ matrix.bundles }}
 
       - name: Run checks
         run: |
@@ -119,13 +124,13 @@ jobs:
             -exec sh -c 'cp "$1" "out/$(basename "$1" | tr " " "-")"' _ {} \;
           ls -la out
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: github.ref == 'refs/heads/release/tauri'
         with:
           name: installers-${{ matrix.os }}
           path: out/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: log-${{ matrix.os }}
@@ -137,8 +142,8 @@ jobs:
     if: github.ref == 'refs/heads/release/tauri'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: installers-*
           path: out
