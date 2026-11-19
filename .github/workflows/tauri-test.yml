@@ -110,10 +110,21 @@ jobs:
             Windows) EXE="$REL/rblf-spike.exe"; RUN="" ;;
             Linux) EXE="$REL/rblf-spike"; RUN="xvfb-run -a" ;;
           esac
-          $RUN "$EXE" > run.log 2>&1 &
-          sleep 40
-          kill $! 2>/dev/null || true
-          [ "$RUNNER_OS" = Windows ] && taskkill //F //IM rblf-spike.exe >/dev/null 2>&1 || true
+          # Three launches: a flaky failure has to show up here, not on a tester's machine.
+          : > run.log
+          for i in 1 2 3; do
+            $RUN "$EXE" > run$i.log 2>&1 &
+            PID=$!
+            for t in $(seq 1 80); do grep -q "SPIKE DONE" run$i.log && break; sleep 0.5; done
+            # The first launch stays a little longer so the app screen gets checked too.
+            if [ $i = 1 ]; then sleep 7; else sleep 1; fi
+            kill $PID 2>/dev/null || true
+            [ "$RUNNER_OS" != Windows ] && pkill -f rblf-spike 2>/dev/null || true
+            [ "$RUNNER_OS" = Windows ] && taskkill //F //IM rblf-spike.exe >/dev/null 2>&1 || true
+            sleep 1
+            echo "--- launch $i" >> run.log; cat run$i.log >> run.log
+            grep -q "SPIKE DONE" run$i.log || echo "SPIKE launch $i did not finish" >> run.log
+          done
           {
             echo "### ${{ matrix.os }}"
             echo '```'
@@ -124,7 +135,7 @@ jobs:
             echo '```'
           } >> $GITHUB_STEP_SUMMARY
           cat run.log
-          grep -q "SPIKE DONE" run.log
+          if grep -q "did not finish" run.log; then echo "::error::a launch did not finish"; exit 1; fi
           if grep -qE "SPIKE (mp3|aiff) (Does|Timed)" run.log; then echo "::error::audio does not play"; exit 1; fi
 
       - name: Collect installers

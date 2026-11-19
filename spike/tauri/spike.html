@@ -57,6 +57,7 @@ const report = (m) => invoke('report', { msg: m }).catch(() => {});
 const rpc = async (target, method, params) => JSON.parse(await invoke('rpc', { target, line: JSON.stringify({ id: Date.now() % 1e6, method, params }) }));
 let base = 'media://localhost';
 const media = (p) => { const u = p.replace(/\\/g, '/'); return base + encodeURI(u.startsWith('/') ? u : '/' + u); };
+const withTimeout = (p, ms, what) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(what + ' timed out')), ms))]);
 const line = (el, text, ok) => { const d = document.createElement('div'); d.textContent = text; if (ok !== undefined) d.className = ok ? 'ok' : 'bad'; document.getElementById(el).appendChild(d); };
 
 async function startup() {
@@ -91,12 +92,17 @@ const player = document.getElementById('player');
 async function play(path, label) {
   const out = (t, ok) => line('playOut', t, ok);
   const r = { file: path.split(/[\\/]/).pop() };
-  try { r.facts = (await rpc('node', 'facts', { path })).reply.result; out(`Read by the app: ${JSON.stringify(r.facts)}`); }
+  report(label + ' step: facts');
+  try { r.facts = (await withTimeout(rpc('node', 'facts', { path }), 8000, 'reading facts')).reply.result; out(`Read by the app: ${JSON.stringify(r.facts)}`); }
   catch (e) { r.factsError = String(e); out('Could not read the file: ' + e, false); }
   const t0 = performance.now();
   if (/\.aiff?$/i.test(path)) {
     // Same as the app's player: fetch the AIFF, rewrap it as WAV, play the blob.
-    const buf = await (await fetch(media(path))).arrayBuffer();
+    report(label + ' step: fetch');
+    let buf;
+    try { buf = await withTimeout(fetch(media(path)).then((res) => res.arrayBuffer()), 10000, 'fetch'); }
+    catch (e) { r.playback = 'Does not play here: ' + e.message; line('playOut', r.playback, false); (results.playback ||= []).push(r); show(); report(label + ' ' + r.playback); return; }
+    report(label + ' step: rewrap ' + buf.byteLength + ' bytes');
     player.src = URL.createObjectURL(new Blob([AiffToWav.aiffToWav(buf)], { type: 'audio/wav' }));
     r.via = 'aiffToWav';
   } else {
@@ -105,7 +111,9 @@ async function play(path, label) {
   await new Promise((resolve) => {
     const done = (ok, msg) => { r.playback = msg; out(msg, ok); resolve(); };
     player.onerror = () => done(false, 'Does not play here (error ' + (player.error && player.error.code) + ')');
+    report(label + ' step: load');
     player.onloadedmetadata = async () => {
+      report(label + ' step: metadata');
       r.loadMs = Math.round(performance.now() - t0);
       try { await player.play(); } catch (e) { return done(false, 'Does not start: ' + e); }
       player.currentTime = player.duration / 2;
