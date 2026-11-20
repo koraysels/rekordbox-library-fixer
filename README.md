@@ -459,7 +459,10 @@ Free for personal use. No ads, no subscriptions, no limits.
 
 ## Roadmap
 
-**v0.9.1** *(current)*
+**v0.9.2** *(current)*
+- Wizard steps load once, without the flickering loading box
+
+**v0.9.1**
 - Track Relocation and Duplicates open fast with thousands of tracks
 - The logo shows on the home screen in the installed app
 

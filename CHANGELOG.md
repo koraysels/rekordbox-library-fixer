@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.2] - 2026-11-20
+
+### 🐛 Fixes
+- **Wizard steps load once**: while a step was being prepared, the wizard kept starting it over, so the loading box flickered and a step could take many seconds instead of a fraction of one.
+
 ## [0.9.1] - 2026-11-18
 
 ### 🐛 Fixes
