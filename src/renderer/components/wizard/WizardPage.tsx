@@ -58,7 +58,18 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
   const [results, setResults] = useState<StepResult[]>([]);
   /** Applying a step, or checking again after one: no next step is planned meanwhile. */
   const [settling, setSettling] = useState(false);
+  /**
+   * The step whose plan is being made, or was made or failed. Cleared only on
+   * purpose, by forgetPlan: clearing it when a plan arrives let an effect still
+   * holding the render before it (no plan yet) start the same plan again, over
+   * and over, each one throwing the last away.
+   */
   const planningFor = useRef<WizardStepId | null>(null);
+  const forgetPlan = useCallback(() => {
+    planningFor.current = null;
+    setPlan(null);
+    setPlanFailed(null);
+  }, []);
 
   const askRunning = useCallback(() => {
     void Promise.resolve(window.electronAPI.isRekordboxRunning())
@@ -74,11 +85,10 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     setPhase('summary');
     setFresh(false);
     setSkipped([]);
-    setPlan(null);
-    setPlanFailed(null);
+    forgetPlan();
     setStepNote(null);
     setResults([]);
-  }, [libraryPath]);
+  }, [libraryPath, forgetPlan]);
 
   const steps = saved ? stepsForRun(saved.check, [...saved.done, ...skipped]) : [];
   const nextStep = phase === 'steps'
@@ -104,7 +114,6 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     planningFor.current = nextStep;
     setPlan(null);
     void wizard.plan(nextStep).then((p) => {
-      planningFor.current = null;
       if (!p) {setPlanFailed(nextStep);return;}
       // Skipped unseen only when there is nothing to do, nothing to look at, and
       // no reason it could not run: a refusal (music folder unplugged) is shown.
@@ -143,8 +152,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
     setFresh(true);
     setPhase('summary');
     setSkipped([]);
-    setPlan(null);
-    setPlanFailed(null);
+    forgetPlan();
     setStepNote(null);
     setResults([]);
   };
@@ -163,8 +171,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
 
   const leaveStep = (step: WizardStepId, done: boolean) => {
     if (done) {markDone(libraryPath, step);} else {setSkipped((s) => [...s, step]);}
-    setPlan(null);
-    setPlanFailed(null);
+    forgetPlan();
     setStepNote(null);
     setConsent(false);
   };
@@ -186,12 +193,12 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
       if (wrote(result)) {await wizard.recheck();}
       if (!result.error && !result.cancelled) {
         // The hook marked it done; the next step plans from the reloaded library.
-        setPlan(null);
+        forgetPlan();
         return;
       }
       setStepNote(result.error ?? 'Stopped. What was already done is kept.');
       // Part of it may have been written: plan the step again from the library as it is now.
-      if (happened(result)) {setPlan(null);}
+      if (happened(result)) {forgetPlan();}
     } finally {
       setSettling(false);
     }
@@ -286,7 +293,7 @@ export const WizardPage: React.FC<{ isLoading: boolean }> = ({ isLoading }) => {
         lead={failed ? 'This step could not be prepared.' : 'Looking at your library…'}
         actions={failed ? (
           <>
-            <button type="button" className="btn-primary" onClick={() => setPlanFailed(null)}>Try again</button>
+            <button type="button" className="btn-primary" onClick={forgetPlan}>Try again</button>
             <button type="button" className="btn-ghost" onClick={() => leaveStep(step, false)}>Skip this step</button>
           </>
         ) : undefined}
